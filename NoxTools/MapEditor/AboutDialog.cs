@@ -75,7 +75,7 @@ namespace NoxMapEditor
 			this.linkLabel1.TabStop = true;
 			this.linkLabel1.Text = "\n                   Nox Map Editor\n                       by Eric Litak\n         " +
 				"          and Andrew Wesie\n\nVisit the NoxWiki for\nupdates to this editor and inf" +
-				"ormation on Nox file formats\nand .";
+				"ormation on Nox file formats .";
 			this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
 			// 
 			// pictureBox1
@@ -104,6 +104,7 @@ namespace NoxMapEditor
 			this.Name = "AboutDialog";
 			this.ShowInTaskbar = false;
 			this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
+			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
 			this.Text = "About";
 			this.ResumeLayout(false);
 
