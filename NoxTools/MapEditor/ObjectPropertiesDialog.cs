@@ -57,6 +57,7 @@ namespace NoxMapEditor
 		private System.Windows.Forms.TextBox teamBox;
 		private System.Windows.Forms.Label label6;
 		private System.Windows.Forms.TextBox scrNameBox;
+		private System.Windows.Forms.CheckBox xtraBox;
 		private System.Windows.Forms.TextBox boxMod;
 
 		public ObjectPropertiesDialog()
@@ -89,6 +90,7 @@ namespace NoxMapEditor
 			this.teamBox = new System.Windows.Forms.TextBox();
 			this.label6 = new System.Windows.Forms.Label();
 			this.scrNameBox = new System.Windows.Forms.TextBox();
+			this.xtraBox = new System.Windows.Forms.CheckBox();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -238,22 +240,31 @@ namespace NoxMapEditor
 			this.scrNameBox.TabIndex = 19;
 			this.scrNameBox.Text = "";
 			// 
+			// xtraBox
+			// 
+			this.xtraBox.Location = new System.Drawing.Point(184, 80);
+			this.xtraBox.Name = "xtraBox";
+			this.xtraBox.Size = new System.Drawing.Size(80, 16);
+			this.xtraBox.TabIndex = 20;
+			this.xtraBox.Text = "Xtra Bytes";
+			// 
 			// ObjectPropertiesDialog
 			// 
 			this.AcceptButton = this.buttonOK;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
 			this.ClientSize = new System.Drawing.Size(274, 247);
+			this.Controls.Add(this.xtraBox);
 			this.Controls.Add(this.scrNameBox);
-			this.Controls.Add(this.label6);
-			this.Controls.Add(this.label5);
 			this.Controls.Add(this.teamBox);
-			this.Controls.Add(this.lockButton);
-			this.Controls.Add(this.enchantButton);
 			this.Controls.Add(this.boxMod);
 			this.Controls.Add(this.extentBox);
 			this.Controls.Add(this.yBox);
 			this.Controls.Add(this.xBox);
+			this.Controls.Add(this.label6);
+			this.Controls.Add(this.label5);
+			this.Controls.Add(this.lockButton);
+			this.Controls.Add(this.enchantButton);
 			this.Controls.Add(this.nameBox);
 			this.Controls.Add(this.label4);
 			this.Controls.Add(this.label3);
@@ -284,10 +295,12 @@ namespace NoxMapEditor
 			obj.Location.X = Single.Parse(xBox.Text);
 			obj.Location.Y = Single.Parse(yBox.Text);
 			obj.Extent = Int32.Parse(extentBox.Text);
+			obj.Terminator = (byte)(xtraBox.Checked==true? 0xFF : 0x00);
+			
 			if(teamBox.Text != "")
 			{
 				obj.Team = Byte.Parse(teamBox.Text);
-				obj.Terminator = 0xFF;
+				obj.Scr_Name = scrNameBox.Text;
 			}
 			//get the contents of the box and parse it to turn it into a byte[] and use it as the modbuf
 			if (boxMod.Text.Length > 0)

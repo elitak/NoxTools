@@ -835,12 +835,7 @@ namespace NoxShared
 			{
 			}
 
-			public override int Add(object obj)
-			{
-				extents.Add(((Object)obj).Extent);
-				return base.Add (obj);
-			}
-
+			public override int Add(object obj) 			{ 				extents.Add(((Object)obj).Extent); 				return base.Add (obj); 			} 
 
 			public void Read(Stream toc, Stream data)
 			{
@@ -984,15 +979,16 @@ namespace NoxShared
 				Unknown = rdr.ReadInt32();//always null?
 				Unknown = 0;
 				Location = new PointF(rdr.ReadSingle(), rdr.ReadSingle());//x then y
+				if(Location.X > 5880 || Location.Y > 5880)
+					Location = new PointF(5870,5870);
 				Terminator = rdr.ReadByte();
-				/* FIXME Andrew
 				if(Terminator == 0xFF)
 				{
 					temp1 = rdr.ReadBytes(4);
 					Scr_Name = rdr.ReadString();
 					Team = rdr.ReadByte();
-					temp2 = rdr.ReadBytes(17);
-				}*/
+					temp2 = rdr.ReadBytes(21);
+				}
 				if (rdr.BaseStream.Position < endOfData)
 				{
 					/*
@@ -1031,19 +1027,17 @@ namespace NoxShared
 				BinaryWriter wtr = new BinaryWriter(stream);
 				wtr.Write((short) toc[Name]);
 				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
-				/* FIXME Andrew
 				int xtraLength = 0;
 				if (Terminator == 0xFF)
 				{
 					if(temp1 == null)
-						temp1 = new Byte[] {0, 0, 0, 1, 0};
+						temp1 = new Byte[] {0, 0, 0, 1};
 					if(temp2 == null)
-						temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00};
-					xtraLength = temp1.Length + temp2.Length + 1 + Scr_Name.Length;
+						temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00,00,00,00,00};
+					xtraLength = temp1.Length + temp2.Length + 2 + Scr_Name.Length;
 				}
 				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length) + xtraLength;//0x15 is the minumum length of an entry
-				*/
-				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length);//0x15 is the minumum length of an entry
+				//long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length);//0x15 is the minumum length of an entry
 				wtr.Write((long) dataLength);
 				wtr.Write((int) Type);
 				wtr.Write((int) Extent);
@@ -1051,14 +1045,13 @@ namespace NoxShared
 				wtr.Write((float) Location.X);
 				wtr.Write((float) Location.Y);
 				wtr.Write((byte) Terminator);
-				/* FIXME Andrew
 				if (Terminator == 0xFF)
 				{
 					wtr.Write(temp1);
 					wtr.Write(Scr_Name);
 					wtr.Write(Team);
 					wtr.Write(temp2);
-				}*/
+				}
 				if (modbuf != null)
 					wtr.Write(modbuf);
 			}
