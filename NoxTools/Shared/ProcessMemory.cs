@@ -16,8 +16,6 @@ public class ProcessMemoryApi
 	public const int PAGE_READWRITE = 0x0004;
 	[DllImport("user32.dll")] public static extern int FindWindowA(string lpClassName, string lpWindowName);
 	[DllImport("user32.dll")] public static extern IntPtr GetWindowThreadProcessId(int hwnd, out int lpdwProcessId);
-	[DllImport("kernel32.dll")] public static extern IntPtr OpenProcess(int dwDesiredAccess,  int bInheritHandle,  int dwProcessId);
-	[DllImport("kernel32.dll")] public static extern int CloseHandle(IntPtr hObject);
 	[DllImport("kernel32.dll")]	public static extern int ReadProcessMemory(IntPtr hProcess,	IntPtr lpBaseAddress, byte[] buffer, int size, out IntPtr lpNumberOfBytesRead);
 	[DllImport("kernel32.dll")] public static extern int WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer,  int nSize, out int lpNumberOfBytesWritten);
 	[DllImport("kernel32.dll")] public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, int dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, int dwCreationFlags, out int lpThreadId);
@@ -30,58 +28,47 @@ public class ProcessMemoryApi
 //TODO: extend Stream
 public class ProcessMemory// : Stream
 {
-	protected IntPtr processHandle;
+	protected Process process;
+	protected string processName;
 
 	public IntPtr Handle
 	{
 		get
 		{
-			return processHandle;
+			if (Available)
+				return process.Handle;
+			else
+				return IntPtr.Zero;
 		}
 	}
 
-	//TODO: add error checking?
-	protected ProcessMemory(IntPtr processHandle)
+	protected bool available;
+	public bool Available
 	{
-		this.processHandle = processHandle;
+		get
+		{
+			if (!available)
+			{
+				try
+				{
+					//grabs the FIRST process matching the given name
+					process = Process.GetProcessesByName(processName)[0];
+					available = true;
+				}
+				catch (Exception) {}
+			}
+			else if (process.HasExited)
+			{
+				available = false;
+			}
+
+			return available;
+		}
 	}
 
-	//close handle on destruction
-	~ProcessMemory()
+	public ProcessMemory(string processName)
 	{
-		ProcessMemoryApi.CloseHandle(processHandle);
-	}
-
-	//call this to get an instance of ProcessMemory
-	public static ProcessMemory OpenProcess(string processName)
-	{
-		Process[] procs = Process.GetProcessesByName(processName);
-				
-		if (procs.Length != 1)
-			throw new ApplicationException("Process not found.");
-
-		IntPtr hnd = ProcessMemoryApi.OpenProcess(ProcessMemoryApi.PROCESS_ALL_ACCESS, 0, procs[0].Id);
-		if (hnd == IntPtr.Zero)
-			throw new ApplicationException("Could not open process.");
-
-		return new ProcessMemory(hnd);
-	}
-
-	public static ProcessMemory OpenProcessByWindowName(string className, string windowName)
-	{
-		int procId, wnd = ProcessMemoryApi.FindWindowA(className, windowName);
-				
-		if (wnd == 0)
-			throw new ApplicationException("Window not found.");
-
-		ProcessMemoryApi.GetWindowThreadProcessId(wnd, out procId);
-
-		return new ProcessMemory(ProcessMemoryApi.OpenProcess(ProcessMemoryApi.PROCESS_ALL_ACCESS, 0, procId));
-	}
-
-	public void Close()
-	{
-		ProcessMemoryApi.CloseHandle(processHandle);
+		this.processName = processName;
 	}
 
 	public byte[] Read(int offset, int size)
@@ -89,8 +76,10 @@ public class ProcessMemory// : Stream
 		byte[] buffer = new byte[size];
 		IntPtr numRead;
 
-		//TODO: check to see if process handle is still valid (process still active)
-		ProcessMemoryApi.ReadProcessMemory(processHandle, (IntPtr) offset, buffer, size, out numRead);
+		if (!Available)
+			throw new ApplicationException("Process no longer available.");
+
+		ProcessMemoryApi.ReadProcessMemory(process.Handle, (IntPtr) offset, buffer, size, out numRead);
 
 		return buffer;
 	}
@@ -98,9 +87,12 @@ public class ProcessMemory// : Stream
 	public void Write(int offset, byte[] data)
 	{
 		int numWritten;
+
+		if (!Available)
+			throw new ApplicationException("Process no longer available.");
+
 		//FIXME? check for PROCESS_VM_WRITE and PROCESS_VM_OPERATION?
-		//TODO: check to see if process handle is still valid (process still active)
-		ProcessMemoryApi.WriteProcessMemory(processHandle, (IntPtr) offset, data, data.Length, out numWritten);
+		ProcessMemoryApi.WriteProcessMemory(process.Handle, (IntPtr) offset, data, data.Length, out numWritten);
 		Debug.Assert(numWritten == data.Length, "Wrong number of bytes written.");
 	}
 		
@@ -117,16 +109,16 @@ public class ProcessMemory// : Stream
 	public void AddData(string key, byte[] data)
 	{
 		int numWritten;
-		IntPtr bufferAddress = ProcessMemoryApi.VirtualAllocEx(processHandle, IntPtr.Zero, data.Length, ProcessMemoryApi.MEM_COMMIT, ProcessMemoryApi.PAGE_READWRITE);
+		IntPtr bufferAddress = ProcessMemoryApi.VirtualAllocEx(process.Handle, IntPtr.Zero, data.Length, ProcessMemoryApi.MEM_COMMIT, ProcessMemoryApi.PAGE_READWRITE);
 		Debug.Assert(bufferAddress != IntPtr.Zero, "Could not allocate memory in target process.");
-		ProcessMemoryApi.WriteProcessMemory(processHandle, bufferAddress, data, data.Length, out numWritten);
+		ProcessMemoryApi.WriteProcessMemory(process.Handle, bufferAddress, data, data.Length, out numWritten);
 		Debug.Assert(numWritten == data.Length, "Bad write length returned from WriteProcessMemory()");
 		dataEntries.Add(key, bufferAddress);
 	}
 
 	public void RemoveData(string key)
 	{
-		bool freed = ProcessMemoryApi.VirtualFreeEx(processHandle, (IntPtr) dataEntries[key], 0, ProcessMemoryApi.MEM_DECOMMIT);
+		bool freed = ProcessMemoryApi.VirtualFreeEx(process.Handle, (IntPtr) dataEntries[key], 0, ProcessMemoryApi.MEM_DECOMMIT);
 		Debug.Assert(freed, "Unable to free allocated memory in process.");
 		dataEntries.Remove(key);
 	}
