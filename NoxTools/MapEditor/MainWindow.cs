@@ -9,13 +9,8 @@ using NoxShared;
 
 namespace NoxMapEditor
 {
-	/// <summary>
-	/// Summary description for Form1.
-	/// </summary>
-	public class MainWindow : System.Windows.Forms.Form, IObserver
+	public class MainWindow : Form
 	{
-		protected Map map;
-
 		private System.Windows.Forms.TabPage WallViewer;
 		private System.Windows.Forms.TabPage largeMap;
 		private NoxMapEditor.MapView mapView1;
@@ -60,26 +55,25 @@ namespace NoxMapEditor
 		private System.Windows.Forms.MenuItem menuItem2;
 		private System.Windows.Forms.MenuItem viewObjects;
 		private System.Windows.Forms.TextBox mapCopyright;
+		private System.Windows.Forms.MenuItem menuItem4;
+		private System.Windows.Forms.MenuItem menuItemGrid;
+		private System.Windows.Forms.MenuItem menuItemNxz;
+
+		protected Map map = new Map();
 
 		public MainWindow()
 		{
 			InitializeComponent();
 
-			object[] names = new object[Map.MapInfo.MapTypeNames.Count];
-			Map.MapInfo.MapTypeNames.Values.CopyTo(names, 0);
-			mapType.Items.AddRange(names);
-			mapType.SelectedIndex = 3;//arena by default FIXME?
-			map = new Map();
+			mapType.Items.AddRange(new ArrayList(Map.MapInfo.MapTypeNames.Values).ToArray());
+			mapType.SelectedIndex = 3;//arena by default
 
-			/* This init code never seems to stay after in InitComp after you edit it with VS.NET */
+			//This init code never seems to stay after you edit it with VS.NET
 			mapView1 = new MapView();
 			largeMap.Controls.Add(mapView1);
 			mapView1.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.mapView1.Location = new System.Drawing.Point(0, 0);
-			this.mapView1.Name = "mapView1";
-			this.mapView1.Size = new System.Drawing.Size(1008, 695);
-			this.mapView1.TabIndex = 0;
-			/* End of code */
+			mapView1.Location = new System.Drawing.Point(0, 0);
+			mapView1.Size = new System.Drawing.Size(1008, 695);
 		}
 
 		#region Windows Form Designer generated code
@@ -102,6 +96,11 @@ namespace NoxMapEditor
 			this.menuItemSaveAs = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
 			this.menuItemExit = new System.Windows.Forms.MenuItem();
+			this.menuItem2 = new System.Windows.Forms.MenuItem();
+			this.viewObjects = new System.Windows.Forms.MenuItem();
+			this.menuItem4 = new System.Windows.Forms.MenuItem();
+			this.menuItemGrid = new System.Windows.Forms.MenuItem();
+			this.menuItemNxz = new System.Windows.Forms.MenuItem();
 			this.itemSave = new System.Windows.Forms.MenuItem();
 			this.menuItemAbout = new System.Windows.Forms.MenuItem();
 			this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -135,8 +134,6 @@ namespace NoxMapEditor
 			this.label2 = new System.Windows.Forms.Label();
 			this.label1 = new System.Windows.Forms.Label();
 			this.mapSummary = new System.Windows.Forms.TextBox();
-			this.menuItem2 = new System.Windows.Forms.MenuItem();
-			this.viewObjects = new System.Windows.Forms.MenuItem();
 			this.tabControl1.SuspendLayout();
 			this.WallViewer.SuspendLayout();
 			this.tabPage1.SuspendLayout();
@@ -148,6 +145,7 @@ namespace NoxMapEditor
 			this.mainMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					  this.menuItem1,
 																					  this.menuItem2,
+																					  this.menuItem4,
 																					  this.itemSave});
 			// 
 			// menuItem1
@@ -197,9 +195,43 @@ namespace NoxMapEditor
 			this.menuItemExit.Text = "Exit";
 			this.menuItemExit.Click += new System.EventHandler(this.menuItemExit_Click);
 			// 
+			// menuItem2
+			// 
+			this.menuItem2.Index = 1;
+			this.menuItem2.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+																					  this.viewObjects});
+			this.menuItem2.Text = "Map";
+			// 
+			// viewObjects
+			// 
+			this.viewObjects.Index = 0;
+			this.viewObjects.Text = "List Objects";
+			this.viewObjects.Click += new System.EventHandler(this.viewObjects_Click);
+			// 
+			// menuItem4
+			// 
+			this.menuItem4.Index = 2;
+			this.menuItem4.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+																					  this.menuItemGrid,
+																					  this.menuItemNxz});
+			this.menuItem4.Text = "Options";
+			// 
+			// menuItemGrid
+			// 
+			this.menuItemGrid.Index = 0;
+			this.menuItemGrid.Text = "Grid";
+			this.menuItemGrid.Click += new System.EventHandler(this.menuItemGrid_Click);
+			// 
+			// menuItemNxz
+			// 
+			this.menuItemNxz.Checked = true;
+			this.menuItemNxz.Index = 1;
+			this.menuItemNxz.Text = "Save .nxz";
+			this.menuItemNxz.Click += new System.EventHandler(this.menuItemNxz_Click);
+			// 
 			// itemSave
 			// 
-			this.itemSave.Index = 2;
+			this.itemSave.Index = 3;
 			this.itemSave.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					 this.menuItemAbout});
 			this.itemSave.Text = "Help";
@@ -505,19 +537,6 @@ namespace NoxMapEditor
 			this.mapSummary.TabIndex = 1;
 			this.mapSummary.Text = "";
 			// 
-			// menuItem2
-			// 
-			this.menuItem2.Index = 1;
-			this.menuItem2.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
-																					  this.viewObjects});
-			this.menuItem2.Text = "Map";
-			// 
-			// viewObjects
-			// 
-			this.viewObjects.Index = 0;
-			this.viewObjects.Text = "List Objects";
-			this.viewObjects.Click += new System.EventHandler(this.viewObjects_Click);
-			// 
 			// MainWindow
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
@@ -536,9 +555,6 @@ namespace NoxMapEditor
 		}
 		#endregion
 
-		/// <summary>
-		/// The main entry point for the application.
-		/// </summary>
 		[STAThread]
 		static void Main()
 		{
@@ -562,36 +578,28 @@ namespace NoxMapEditor
 
 			if (fd.ShowDialog() == DialogResult.OK && System.IO.File.Exists(fd.FileName))
 			{
-				//TODO: check for changes and prompt to save
-				map = new Map();
-				map.AddObserver(this);
-				map.Load(fd.FileName);
-				//Update() handles any changes made to the current map
+				//TODO: check for changes and prompt to save before opening another map
+				map = new Map(fd.FileName);
+
+				mapView1.Map = map;
+				mapType.SelectedIndex = Map.MapInfo.MapTypeNames.IndexOfKey(map.Info.Type);
+				mapSummary.Text = map.Info.Summary;
+				mapDescription.Text = map.Info.Description;
+
+				mapAuthor.Text = map.Info.Author;
+				mapEmail.Text = map.Info.Email;
+				mapAuthor2.Text = map.Info.Author2;
+				mapEmail2.Text = map.Info.Email2;
+
+				mapVersion.Text = map.Info.Version;
+				mapCopyright.Text = map.Info.Copyright;
+				mapDate.Text = map.Info.Date;
+
+				mapMinRec.Text = String.Format("{0}", map.Info.RecommendedMin);
+				mapMaxRec.Text = String.Format("{0}", map.Info.RecommendedMax);
+
+				Invalidate(true);
 			}
-		}
-
-		public void Update(IObservable observable, object arg)
-		{
-			//assume we are being notified by the 1 map we have open
-			mapView1.Map = map;
-			//reload/redraw the map
-			mapType.SelectedIndex = Map.MapInfo.MapTypeNames.IndexOfKey(map.Info.Type);
-			mapSummary.Text = map.Info.Summary;
-			mapDescription.Text = map.Info.Description;
-
-			mapAuthor.Text = map.Info.Author;
-			mapEmail.Text = map.Info.Email;
-			mapAuthor2.Text = map.Info.Author2;
-			mapEmail2.Text = map.Info.Email2;
-
-			mapVersion.Text = map.Info.Version;
-			mapCopyright.Text = map.Info.Copyright;
-			mapDate.Text = map.Info.Date;
-
-			mapMinRec.Text = String.Format("{0}", map.Info.RecommendedMin);
-			mapMaxRec.Text = String.Format("{0}", map.Info.RecommendedMax);
-
-			mapView1.Invalidate();
 		}
 
 		private void menuItemExit_Click(object sender, System.EventArgs e)
@@ -639,7 +647,9 @@ namespace NoxMapEditor
 			map.Info.RecommendedMin = mapMinRec.Text.Length == 0 ? (byte) 0 : Convert.ToByte(mapMinRec.Text);
 			map.Info.RecommendedMax = mapMaxRec.Text.Length == 0 ? (byte) 0 : Convert.ToByte(mapMaxRec.Text);
 
-			map.WriteFile();
+			map.WriteMap();
+			if (menuItemNxz.Checked)
+				map.WriteNxz();
 		}
 
 		private void menuItemAbout_Click(object sender, System.EventArgs e)
@@ -671,6 +681,18 @@ namespace NoxMapEditor
 			objLd.objTable = map.Objects;
 			objLd.Show();
 			objLd.Owner = this;
+		}
+
+		private void menuItemGrid_Click(object sender, System.EventArgs e)
+		{
+			menuItemGrid.Checked = !menuItemGrid.Checked;
+			mapView1.DrawGrid = menuItemGrid.Checked;
+			Invalidate(true);
+		}
+
+		private void menuItemNxz_Click(object sender, System.EventArgs e)
+		{
+			menuItemNxz.Checked = !menuItemNxz.Checked;
 		}
 	}
 }
