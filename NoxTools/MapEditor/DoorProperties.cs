@@ -200,7 +200,12 @@ namespace NoxMapEditor
 
 		private void buttonOK_Click(object sender, System.EventArgs e)
 		{
-			System.IO.MemoryStream stream = new System.IO.MemoryStream();			System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);			wtr.Write((int)Enum.Parse(typeof(DOORS_DIR),dirBox.Text));			wtr.Write((int)Enum.Parse(typeof(DOORS_LOCK),lockBox.Text));			wtr.Write((int)Enum.Parse(typeof(DOORS_DIR),dirBox.Text));			obj.modbuf = stream.ToArray();
+			System.IO.MemoryStream stream = new System.IO.MemoryStream();
+			System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
+			wtr.Write((int)Enum.Parse(typeof(DOORS_DIR),dirBox.Text));
+			wtr.Write((int)Enum.Parse(typeof(DOORS_LOCK),lockBox.Text));
+			wtr.Write((int)Enum.Parse(typeof(DOORS_DIR),dirBox.Text));
+			obj.modbuf = stream.ToArray();
 			Close();
 		}
 

@@ -50,10 +50,6 @@ namespace NoxMapEditor
 		public ObjectPropertiesDialog()
 		{
 			InitializeComponent();
-
-			//ArrayList nameList = new ArrayList(ThingDb.Things.Keys);
-			//nameList.Sort();
-			//nameBox.Items.AddRange(nameList.ToArray());
 			nameBox.Items.AddRange(new ArrayList(ThingDb.Things.Keys).ToArray());
 		}
 

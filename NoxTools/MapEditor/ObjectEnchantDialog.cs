@@ -346,8 +346,11 @@ namespace NoxMapEditor
 		{
 			if(((ThingDb.Thing)ThingDb.Things[obj.Name]).Init == "ModifierInit")
 			{
+
 				System.IO.MemoryStream stream = new System.IO.MemoryStream();
-				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);				
+
+				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
+				
 				if(objEnchants.Contains(enchant1.Text))
 				{
 					wtr.Write((byte)enchant1.Text.Length);
