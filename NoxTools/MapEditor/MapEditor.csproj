@@ -7,9 +7,9 @@
     >
         <Build>
             <Settings
-                ApplicationIcon = ""
+                ApplicationIcon = "images\icon.ico"
                 AssemblyKeyContainerName = ""
-                AssemblyName = "NoxMapEditor"
+                AssemblyName = "MapEditor"
                 AssemblyOriginatorKeyFile = ""
                 DefaultClientScript = "JScript"
                 DefaultHTMLPageLayout = "Grid"
@@ -18,7 +18,7 @@
                 OutputType = "WinExe"
                 PreBuildEvent = ""
                 PostBuildEvent = ""
-                RootNamespace = "NoxMapEditor"
+                RootNamespace = "MapEditor"
                 RunPostBuildEvent = "OnBuildSuccess"
                 StartupObject = ""
             >
@@ -107,6 +107,10 @@
                     RelPath = "AboutDialog.resx"
                     DependentUpon = "AboutDialog.cs"
                     BuildAction = "EmbeddedResource"
+                />
+                <File
+                    RelPath = "App.config"
+                    BuildAction = "None"
                 />
                 <File
                     RelPath = "AssemblyInfo.cs"
@@ -225,23 +229,23 @@
                 />
                 <File
                     RelPath = "images\icon.ico"
-                    BuildAction = "Content"
+                    BuildAction = "EmbeddedResource"
                 />
                 <File
                     RelPath = "images\t_east.ico"
-                    BuildAction = "Content"
+                    BuildAction = "EmbeddedResource"
                 />
                 <File
                     RelPath = "images\t_north.ico"
-                    BuildAction = "Content"
+                    BuildAction = "EmbeddedResource"
                 />
                 <File
                     RelPath = "images\t_south.ico"
-                    BuildAction = "Content"
+                    BuildAction = "EmbeddedResource"
                 />
                 <File
                     RelPath = "images\t_west.ico"
-                    BuildAction = "Content"
+                    BuildAction = "EmbeddedResource"
                 />
             </Include>
         </Files>
