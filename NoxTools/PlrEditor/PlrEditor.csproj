@@ -85,9 +85,9 @@
                     HintPath = "..\..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Windows.Forms.dll"
                 />
                 <Reference
-                    Name = "System.XML"
-                    AssemblyName = "System.Xml"
-                    HintPath = "..\..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.XML.dll"
+                    Name = "NoxShared"
+                    Project = "{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}"
+                    Package = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"
                 />
             </References>
         </Build>
@@ -109,18 +109,6 @@
                     BuildAction = "Compile"
                 />
                 <File
-                    RelPath = "BinaryIO.cs"
-                    Link = "..\shared\BinaryIO.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "CryptApi.cs"
-                    Link = "..\shared\CryptApi.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
                     RelPath = "MainWindow.cs"
                     SubType = "Form"
                     BuildAction = "Compile"
@@ -129,24 +117,6 @@
                     RelPath = "MainWindow.resx"
                     DependentUpon = "MainWindow.cs"
                     BuildAction = "EmbeddedResource"
-                />
-                <File
-                    RelPath = "NoxType.cs"
-                    Link = "..\shared\NoxType.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "Observer.cs"
-                    Link = "..\shared\Observer.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "Player.cs"
-                    Link = "..\shared\Player.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
                 />
                 <File
                     RelPath = "plr.ico"

@@ -85,14 +85,9 @@
                     HintPath = "..\..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Windows.Forms.dll"
                 />
                 <Reference
-                    Name = "System.XML"
-                    AssemblyName = "System.Xml"
-                    HintPath = "..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.XML.dll"
-                />
-                <Reference
-                    Name = "System.Web"
-                    AssemblyName = "System.Web"
-                    HintPath = "..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Web.dll"
+                    Name = "NoxShared"
+                    Project = "{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}"
+                    Package = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"
                 />
             </References>
         </Build>
@@ -114,12 +109,6 @@
                     BuildAction = "Compile"
                 />
                 <File
-                    RelPath = "BinaryIO.cs"
-                    Link = "..\shared\BinaryIO.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
                     RelPath = "BlendDialog.cs"
                     SubType = "Form"
                     BuildAction = "Compile"
@@ -130,18 +119,6 @@
                     BuildAction = "EmbeddedResource"
                 />
                 <File
-                    RelPath = "CryptApi.cs"
-                    Link = "..\shared\CryptApi.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "DnsApi.cs"
-                    Link = "..\shared\DnsApi.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
                     RelPath = "DoorProperties.cs"
                     SubType = "Form"
                     BuildAction = "Compile"
@@ -149,18 +126,6 @@
                 <File
                     RelPath = "DoorProperties.resx"
                     DependentUpon = "DoorProperties.cs"
-                    BuildAction = "EmbeddedResource"
-                />
-                <File
-                    RelPath = "ExceptionDialog.cs"
-                    Link = "..\shared\ExceptionDialog.cs"
-                    SubType = "Form"
-                    BuildAction = "Compile"
-                />
-                <File
-                    RelPath = "ExceptionDialog.resx"
-                    Link = "..\shared\ExceptionDialog.resx"
-                    DependentUpon = "ExceptionDialog.cs"
                     BuildAction = "EmbeddedResource"
                 />
                 <File
@@ -174,12 +139,6 @@
                     BuildAction = "EmbeddedResource"
                 />
                 <File
-                    RelPath = "Map.cs"
-                    Link = "..\shared\Map.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
                     RelPath = "MapView.cs"
                     SubType = "UserControl"
                     BuildAction = "Compile"
@@ -188,12 +147,6 @@
                     RelPath = "MapView.resx"
                     DependentUpon = "MapView.cs"
                     BuildAction = "EmbeddedResource"
-                />
-                <File
-                    RelPath = "NoxType.cs"
-                    Link = "..\shared\NoxType.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
                 />
                 <File
                     RelPath = "ObjectEnchantDialog.cs"
@@ -224,12 +177,6 @@
                     RelPath = "ObjectPropertiesDialog.resx"
                     DependentUpon = "ObjectPropertiesDialog.cs"
                     BuildAction = "EmbeddedResource"
-                />
-                <File
-                    RelPath = "ThingDb.cs"
-                    Link = "..\shared\ThingDb.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
                 />
                 <File
                     RelPath = "WallSelector.cs"
