@@ -125,10 +125,15 @@ namespace NoxShared
 				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
 				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
 				//always "01 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00" or 4 shorter?
+				rdr.ReadInt16();
+				rdr.ReadChars(rdr.ReadInt32());
+				rdr.ReadInt32();
+				rdr.ReadInt16();
+				rdr.ReadChars(rdr.ReadInt32());
 				if (list.TermCount == 0x0003)
-					endbuf = rdr.ReadBytes(0x14);
+					endbuf = rdr.ReadBytes(0x4);
 				else if (list.TermCount == 0x0004)
-					endbuf = rdr.ReadBytes(0x18);
+					endbuf = rdr.ReadBytes(0x8);
 				else
 					Debug.Assert(false, "(Map, Polygons) Unhandled terminal count.");
 			}
