@@ -3,57 +3,129 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.IO;
 using System.Collections;
-//using System.Threading;
+using System.Threading;
 using System.Text;
 using System.Drawing;
+using System.Text.RegularExpressions;
 
 namespace NoxShared
 {
-	/// <summary>
-	/// Summary description for NoxMemoryHack.
-	/// </summary>
 	public class NoxMemoryHack
 	{
-		protected static ProcessMemory process = ProcessMemory.OpenProcess("GAME");
+		public static ProcessMemory Process = ProcessMemory.OpenProcess("GAME");
+		//public static ProcessMemory Process = ProcessMemory.OpenProcessByWindowName("Nox Game Window", "Nox");
+		public static readonly NoxMemoryHack Instance = new NoxMemoryHack();
+		
+		public TeamMemory Teams = new TeamMemory();
+		public PlayerMemory Players = new PlayerMemory();
 
-		public static ProcessMemory Process
+		private ArrayList threads = new ArrayList();
+		private NoxMemoryHack()
 		{
-			get
+			threads.Add(new Thread(new ThreadStart(RefreshThreadStart)));
+			foreach (Thread thread in threads)
+				thread.Start();
+
+			//TODO: make this optional
+			//Fixes.ApplyFixes();
+		}
+
+		~NoxMemoryHack()
+		{
+			foreach (Thread thread in threads)
+				thread.Abort(); 
+		}
+
+		protected void RefreshThreadStart()
+		{
+			Teams.Read();
+
+			while (true)
 			{
-				return process;
+				Monitor.Enter(Teams);
+				Teams.Write();
+				Teams.Read();
+				Monitor.Exit(Teams);
+
+				Monitor.Enter(Players);
+				Players.Read();
+				Monitor.Exit(Players);
+
+				Thread.Sleep(1000);
 			}
 		}
 
 		//TODO: use values from xml file for addresses
-
-		public static void Refresh()
+		public class PlayerMemory
 		{
-			Teams.Refresh();
-		}
+			private const int PLAYER_TABLE_ADDRESS = 0x62F9A4;
+			private const int MAX_PLAYERS = 32;
+			private const int PLAYER_ENTRY_LENGTH = 0x12DC;
+			private const int PLAYER_TABLE_LENGTH = MAX_PLAYERS * PLAYER_ENTRY_LENGTH;
 
-		public class Teams
-		{
-			private static ArrayList teams = new ArrayList();
-			public static ArrayList TeamList
+			public ArrayList PlayerList = new ArrayList();
+
+			public class PlayerEventArgs : EventArgs
 			{
-				get
+				public Player Player;
+				public PlayerEventArgs(Player player)
 				{
-					return teams;
-				}
-				set
-				{
-					teams = value;
+					Player = player;
 				}
 			}
+			public delegate void PlayerEvent(object sender, PlayerEventArgs e);
+			
+			public event PlayerEvent PlayerJoined;
+			public event PlayerEvent PlayerLeft;
 
-			public static int TeamCount
+			public PlayerMemory()
+			{
+				Read();
+			}
+
+			public void Read()
+			{
+				ArrayList oldList = PlayerList;
+				PlayerList = new ArrayList();
+
+				BinaryReader rdr = new BinaryReader(new MemoryStream(NoxMemoryHack.Process.Read(PLAYER_TABLE_ADDRESS, PLAYER_TABLE_LENGTH)));
+
+				for (int player = 0; player < MAX_PLAYERS; player++)
+					PlayerList.Add(Player.ReadFromMemory(rdr.BaseStream));
+
+				foreach (Player player in oldList)
+					if (!PlayerList.Contains(player) && player.Connected)
+						if (PlayerLeft != null) PlayerLeft(this, new PlayerEventArgs((Player) player.Clone()));//FIXME: clone necessary? (tryin to fix crashes)
+
+				foreach (Player player in PlayerList)
+					if (!oldList.Contains(player) && player.Connected)
+						if (PlayerJoined != null) PlayerJoined(this, new PlayerEventArgs((Player) player.Clone()));//FIXME: clone necessary? (tryin to fix crashes)
+			}
+		}
+
+		public class TeamMemory
+		{
+			public ArrayList TeamList = new ArrayList();
+
+			public class TeamEventArgs : EventArgs
+			{
+				public Team Team;
+				public TeamEventArgs(Team team)
+				{
+					Team = team;
+				}
+			}
+			public delegate void TeamEvent(object sender, TeamEventArgs e);
+			public event TeamEvent TeamChanged;
+
+			public int TeamCount
 			{
 				get
 				{
 					int count = 0;
 					foreach (Team team in TeamList)
 						if (team.Enabled)
-							count += 1;
+							count++;
 					return count;
 				}
 			}
@@ -64,45 +136,27 @@ namespace NoxShared
 				AUTO_ASSIGN = 0x02,
 				USE_TEAMS = 0x04
 			}
+			private int flags;
 
-			private static int flags;
-			public static bool UseTeams
+			public bool UseTeams
 			{
-				get
-				{
-					return (flags & (int) TeamFlags.USE_TEAMS) != 0;
-				}
-				set
-				{
-					SetTeamFlagsBit(TeamFlags.USE_TEAMS, value);
-				}
+				get {return (flags & (int) TeamFlags.USE_TEAMS) != 0;}
+				set {SetTeamFlagsBit(TeamFlags.USE_TEAMS, value);}
 			}
 
-			public static bool AutoAssign
+			public bool AutoAssign
 			{
-				get
-				{
-					return (flags & (int) TeamFlags.AUTO_ASSIGN) != 0;
-				}
-				set
-				{
-					SetTeamFlagsBit(TeamFlags.AUTO_ASSIGN, value);
-				}
+				get {return (flags & (int) TeamFlags.AUTO_ASSIGN) != 0;}
+				set {SetTeamFlagsBit(TeamFlags.AUTO_ASSIGN, value);}
 			}
 
-			public static bool TeamDamage
+			public bool TeamDamage
 			{
-				get
-				{
-					return (flags & (int) TeamFlags.TEAM_DAMAGE) != 0;
-				}
-				set
-				{
-					SetTeamFlagsBit(TeamFlags.TEAM_DAMAGE, value);
-				}
+				get {return (flags & (int) TeamFlags.TEAM_DAMAGE) != 0;}
+				set {SetTeamFlagsBit(TeamFlags.TEAM_DAMAGE, value);}
 			}
 
-			private static void SetTeamFlagsBit(TeamFlags bit, bool enable)
+			private void SetTeamFlagsBit(TeamFlags bit, bool enable)
 			{
 				if (enable)
 					flags |= (int) bit;
@@ -117,10 +171,15 @@ namespace NoxShared
 			private const int TEAM_NAME_LENGTH = 0x2C;
 			private const int TEAM_TABLE_LENGTH = TEAM_HEADER_LENGTH + MAX_TEAMS * TEAM_ENTRY_LENGTH;
 
-			public static void Refresh()
+			public TeamMemory()
 			{
-				//TODO: aquire lock somehow?
-				BinaryReader rdr = new BinaryReader(new MemoryStream(NoxMemoryHack.process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH)));
+				Read();
+			}
+
+			public void Read()
+			{
+				//TODO: aquire lock on nox's memory somehow? probably not possible
+				BinaryReader rdr = new BinaryReader(new MemoryStream(NoxMemoryHack.Process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH)));
 
 				int  numTeams = rdr.ReadInt32();
 				flags = rdr.ReadInt32();
@@ -128,17 +187,20 @@ namespace NoxShared
 				rdr.BaseStream.Seek(TEAM_HEADER_LENGTH, SeekOrigin.Begin);//skip to end of header
 
 				//read the teams
-				teams.Clear();
-				for (int ndx = 0; ndx < numTeams; ndx++)
+				ArrayList old = TeamList;
+				TeamList =  new ArrayList();
+				for (int ndx = 0; ndx < MAX_TEAMS; ndx++)
 				{
-					teams.Add(Team.FromBytes(rdr.ReadBytes(TEAM_ENTRY_LENGTH)));
-					((Team) teams[ndx]).TeamNumber = ndx + 1;//TODO? find a better way of keeping track of the team number/index
+					TeamList.Add(Team.FromBytes(rdr.ReadBytes(TEAM_ENTRY_LENGTH)));
+					((Team) TeamList[ndx]).TeamNumber = ndx + 1;//TODO? find a better way of keeping track of the team number/index
+					if (ndx >= old.Count || !TeamList[ndx].Equals(old[ndx]))
+						if (TeamChanged != null) TeamChanged(this, new TeamEventArgs((Team) TeamList[ndx]));
 				}
 			}
 
-			public static void Write()
+			public void Write()
 			{
-				BinaryWriter wtr = new BinaryWriter(new MemoryStream(NoxMemoryHack.process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH)));
+				BinaryWriter wtr = new BinaryWriter(new MemoryStream(NoxMemoryHack.Process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH)));
 
 				wtr.Write((int) TeamCount);
 				wtr.Write((int) flags);
@@ -146,17 +208,17 @@ namespace NoxShared
 				wtr.BaseStream.Seek(TEAM_HEADER_LENGTH, SeekOrigin.Begin);//skip to end of header
 
 				//write the teams
-				foreach (Team team in teams)
+				foreach (Team team in TeamList)
 				{
 					team.Write(wtr.BaseStream);
 				}
 
-				NoxMemoryHack.process.Write(TEAM_TABLE_ADDRESS, ((MemoryStream) wtr.BaseStream).ToArray());
+				NoxMemoryHack.Process.Write(TEAM_TABLE_ADDRESS, ((MemoryStream) wtr.BaseStream).ToArray());
 			}
 
-			public static void AddTeam()
+			public void AddTeam()
 			{
-				teams.Add(new Team(teams.Count + 1));
+				TeamList.Add(new Team(TeamList.Count + 1));
 			}
 
 			public class Team
@@ -181,27 +243,10 @@ namespace NoxShared
 													  Color.White,
 													  Color.Orange
 												  };
-
-				/*
-				public enum ColorCode
-				{
-					RED = 0x01,
-					BLUE = 0x02,
-					GREEN = 0x03,
-					DARK_BLUE = 0x04,
-					DARK_RED = 0x05,
-					YELLOW = 0x06,
-					BLACK = 0x07,
-					WHITE = 0x08,
-					ORANGE = 0x09,
-					//RED = 0x0A,
-					//RED = 0x0B
-				}*/
 				
-				public Team(int teamNumber) : base()
+				public Team(int teamNumber) : this()
 				{
 					TeamNumber = teamNumber;
-					Enabled = false;
 					Color = TeamColor[teamNumber - 1];
 				}
 
@@ -218,8 +263,7 @@ namespace NoxShared
 				{
 					Team team = new Team();
 					BinaryReader rdr = new BinaryReader(new MemoryStream(data));
-					team.Name = Encoding.Unicode.GetString(rdr.ReadBytes(TEAM_NAME_LENGTH), 0, TEAM_NAME_LENGTH);
-					team.Name = team.Name.Substring(0, team.Name.IndexOf('\0'));//handle nulls appropriately
+					team.Name = Encoding.Unicode.GetString(rdr.ReadBytes(TEAM_NAME_LENGTH), 0, TEAM_NAME_LENGTH).Split('\0')[0];
 					
 					team.unknownAddress = rdr.ReadInt32();//some kind of address
 					team.MemberCount = rdr.ReadInt32();
@@ -257,15 +301,10 @@ namespace NoxShared
 				public override bool Equals(object obj)
 				{
 					Team rhs = obj as Team;
-					return rhs != null && TeamNumber == rhs.TeamNumber && Name == rhs.Name;
+					return rhs != null && TeamNumber == rhs.TeamNumber && Name == rhs.Name && Color == rhs.Color;
 				}
 
-				//just to suppress that warning, HACK
-				public override int GetHashCode()
-				{
-					return base.GetHashCode ();
-				}
-
+				public override int GetHashCode() {return base.GetHashCode ();}
 			}
 		}
 
@@ -291,30 +330,68 @@ namespace NoxShared
 			//anything higher goes back to GRAY
 		}
 
-		public Color[] ConsoleColors = {
-										   Color.Black,
-										   Color.LightGray,
-										   Color.Gray,
-										   Color.DarkGray,
-			Color.White,
-		};
+		static readonly IntPtr FUNC_PRINT_TO_CONSOLE = (IntPtr) 0x450B90;
+		static readonly IntPtr FUNC_KICK_PLAYER = (IntPtr) 0x4DEAB0;
+		static readonly IntPtr FUNC_ADD_TO_BAN_LIST = (IntPtr) 0x416770;
+		static readonly IntPtr FUNC_CONSOLE_COMMAND = (IntPtr) 0x443C80;
 
 		public static void PrintToConsole(string text, ConsoleColor color)
 		{
-			process.CallFunction((IntPtr) 0x450b90, (byte) color, text);
+			Process.CallFunction(FUNC_PRINT_TO_CONSOLE, (byte) color, text);
 		}
 
+		/*/doesnt work (useless anyway)
+		static readonly IntPtr FUNC_PRINT_TO_SCREEN = (IntPtr) 0x565CA3;
 		public static void PrintToScreen(string text1, string text2)
 		{
-			process.CallFunction((IntPtr) 0x565ca3, text1, text2);
+			Process.CallFunction(FUNC_PRINT_TO_SCREEN, text1, text2);
 		}
+		//*/
 		
-		/*public static void KickPlayer(string name)
+		//TODO: find out where function is that says "<name> was kicked" -- this happens when the name is typed into the console,
+		// but not when a player is kicked from the admin menu
+		public static void KickPlayer(int playerId)
 		{
-			process.CallFunction((IntPtr) 0x4432B0, 1, */
+			//Process.CallFunction((IntPtr) 0x4432B0, playerId);//wrong
+			Process.CallFunction(FUNC_KICK_PLAYER, playerId, 4);//4 is needed to send "You have been kicked" message
+		}
+
+		public static void BanPlayer(int playerId)
+		{
+			Player player = (Player) Instance.Players.PlayerList[playerId];
+			KickPlayer(player.Number);
+			Process.CallFunction(FUNC_ADD_TO_BAN_LIST, 0, player.Login, player.Serial.ToCharArray());
+		}
+
 		public static void ConsoleCommand(string commandLine)
 		{
-			process.CallFunction((IntPtr) 0x443c80, commandLine );
+			Process.CallFunction(FUNC_CONSOLE_COMMAND, commandLine);
+		}
+
+		public class Fixes
+		{
+			public static bool ScreenshotNumbering;// = true;
+			public static void ApplyFixes()
+			{
+				//FIXME/TODO: rename the file to the current date instead of "nox", prefix string is at 0x6dcbc8
+				if (ScreenshotNumbering)
+				{
+					Microsoft.Win32.RegistryKey noxReg = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("SOFTWARE\\Westwood\\Nox");
+					if (noxReg != null)
+					{
+						string[] files = Directory.GetFiles(((string) noxReg.GetValue("InstallPath")).Replace("Nox.EXE", ""), "nox*.bmp");
+						Regex exp = new Regex(".*nox(?<num>[0-9]+)\\..*");
+						int highest = 0;
+						foreach (string file in files)
+						{
+							int num = Convert.ToInt32(exp.Match(file).Groups["num"].Value);
+							if (num > highest)
+								highest = num;
+						}
+						//Process.Write(0x6DCBC4, );
+					}
+				}
+			}
 		}
 	}
 }

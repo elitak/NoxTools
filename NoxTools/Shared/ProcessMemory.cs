@@ -4,27 +4,30 @@ using System.Diagnostics;
 using System.Collections;
 using System.Threading;
 using System.IO;
+using System.Text;
 
 public class ProcessMemoryApi
 {
 	// constants information can be found in <winnt.h>
 	public const int PROCESS_VM_READ = 0x0010;
 	public const int PROCESS_ALL_ACCESS = 0x1F0FFF;
+	public const int MEM_COMMIT = 0x1000;
+	public const int MEM_DECOMMIT = 0x4000;
+	public const int PAGE_READWRITE = 0x0004;
 	[DllImport("user32.dll")] public static extern int FindWindowA(string lpClassName, string lpWindowName);
 	[DllImport("user32.dll")] public static extern IntPtr GetWindowThreadProcessId(int hwnd, out int lpdwProcessId);
 	[DllImport("kernel32.dll")] public static extern IntPtr OpenProcess(int dwDesiredAccess,  int bInheritHandle,  int dwProcessId);
 	[DllImport("kernel32.dll")] public static extern int CloseHandle(IntPtr hObject);
-	[DllImport("kernel32.dll")]	public static extern int ReadProcessMemory(IntPtr hProcess,	IntPtr lpBaseAddress, byte[] buffer, uint size, out IntPtr lpNumberOfBytesRead);
-	[DllImport("kernel32.dll")] public static extern int WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer,  uint nSize, out uint lpNumberOfBytesWritten);
-	[DllImport("madRmt.dll")] public static extern IntPtr AllocMemEx(uint size, IntPtr processHandle);
-	[DllImport("madRmt.dll")] public static extern bool FreeMemEx(IntPtr mem, IntPtr processHandle);
-	[DllImport("madRmt.dll")] public static extern IntPtr CreateRemoteThreadEx(IntPtr processHandle, int threadAttr, uint stackSize, IntPtr startAddr, IntPtr args, int creationFlags, out uint threadId);
-	[DllImport("kernel32.dll")] public static extern bool GetExitCodeThread(IntPtr hThread, out uint returnVal);
-	[DllImport("kernel32.dll")] public static extern bool TerminateThread(IntPtr hThread, out uint returnVal);
-	//[DllImport("madRmt.dll")] public static extern bool RemoteExecute(IntPtr processHandle, int func, out uint funcResult, object args, uint size);
+	[DllImport("kernel32.dll")]	public static extern int ReadProcessMemory(IntPtr hProcess,	IntPtr lpBaseAddress, byte[] buffer, int size, out IntPtr lpNumberOfBytesRead);
+	[DllImport("kernel32.dll")] public static extern int WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer,  int nSize, out int lpNumberOfBytesWritten);
+	[DllImport("kernel32.dll")] public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, int dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, int dwCreationFlags, out int lpThreadId);
+	[DllImport("kernel32.dll")] public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, int flAllocationType, int flProtect);
+	[DllImport("kernel32.dll")] public static extern bool VirtualFreeEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, int dwFreeType);
+	[DllImport("kernel32.dll")] public static extern bool GetExitCodeThread(IntPtr hThread, out int returnVal);
+	[DllImport("kernel32.dll")] public static extern bool TerminateThread(IntPtr hThread, out int returnVal);
 }
 
-	//TODO: extend Stream
+//TODO: extend Stream
 public class ProcessMemory// : Stream
 {
 	protected IntPtr processHandle;
@@ -37,7 +40,7 @@ public class ProcessMemory// : Stream
 		}
 	}
 
-	//TODO: add error checking
+	//TODO: add error checking?
 	protected ProcessMemory(IntPtr processHandle)
 	{
 		this.processHandle = processHandle;
@@ -57,7 +60,11 @@ public class ProcessMemory// : Stream
 		if (procs.Length != 1)
 			throw new ApplicationException("Process not found.");
 
-		return new ProcessMemory(ProcessMemoryApi.OpenProcess(ProcessMemoryApi.PROCESS_ALL_ACCESS, 0, procs[0].Id));
+		IntPtr hnd = ProcessMemoryApi.OpenProcess(ProcessMemoryApi.PROCESS_ALL_ACCESS, 0, procs[0].Id);
+		if (hnd == IntPtr.Zero)
+			throw new ApplicationException("Could not open process.");
+
+		return new ProcessMemory(hnd);
 	}
 
 	public static ProcessMemory OpenProcessByWindowName(string className, string windowName)
@@ -77,20 +84,23 @@ public class ProcessMemory// : Stream
 		ProcessMemoryApi.CloseHandle(processHandle);
 	}
 
-	public byte[] Read(uint offset, uint size)
+	public byte[] Read(int offset, int size)
 	{
 		byte[] buffer = new byte[size];
 		IntPtr numRead;
 
+		//TODO: check to see if process handle is still valid (process still active)
 		ProcessMemoryApi.ReadProcessMemory(processHandle, (IntPtr) offset, buffer, size, out numRead);
 
 		return buffer;
 	}
 
-	public void Write(uint offset, byte[] data)
+	public void Write(int offset, byte[] data)
 	{
-		uint numWritten;
-		ProcessMemoryApi.WriteProcessMemory(processHandle, (IntPtr) offset, data, (uint) data.Length, out numWritten);
+		int numWritten;
+		//FIXME? check for PROCESS_VM_WRITE and PROCESS_VM_OPERATION?
+		//TODO: check to see if process handle is still valid (process still active)
+		ProcessMemoryApi.WriteProcessMemory(processHandle, (IntPtr) offset, data, data.Length, out numWritten);
 		Debug.Assert(numWritten == data.Length, "Wrong number of bytes written.");
 	}
 		
@@ -106,36 +116,32 @@ public class ProcessMemory// : Stream
 
 	public void AddData(string key, byte[] data)
 	{
-		uint numWritten;
-		IntPtr bufferAddress = ProcessMemoryApi.AllocMemEx((uint) data.Length, processHandle);
-		ProcessMemoryApi.WriteProcessMemory(processHandle, bufferAddress, data, (uint) data.Length, out numWritten);
+		int numWritten;
+		IntPtr bufferAddress = ProcessMemoryApi.VirtualAllocEx(processHandle, IntPtr.Zero, data.Length, ProcessMemoryApi.MEM_COMMIT, ProcessMemoryApi.PAGE_READWRITE);
+		Debug.Assert(bufferAddress != IntPtr.Zero, "Could not allocate memory in target process.");
+		ProcessMemoryApi.WriteProcessMemory(processHandle, bufferAddress, data, data.Length, out numWritten);
 		Debug.Assert(numWritten == data.Length, "Bad write length returned from WriteProcessMemory()");
 		dataEntries.Add(key, bufferAddress);
 	}
 
 	public void RemoveData(string key)
 	{
-		ProcessMemoryApi.FreeMemEx((IntPtr) dataEntries[key], processHandle);
+		bool freed = ProcessMemoryApi.VirtualFreeEx(processHandle, (IntPtr) dataEntries[key], 0, ProcessMemoryApi.MEM_DECOMMIT);
+		Debug.Assert(freed, "Unable to free allocated memory in process.");
 		dataEntries.Remove(key);
 	}
 
-	protected uint CallFunction(IntPtr startAddress, params uint[] args)
+	protected int CallFunction(IntPtr startAddress, params int[] args)
 	{
-		ArrayList delegatorParams = new ArrayList(new uint[] {(uint) startAddress, (uint) args.Length});
+		ArrayList delegatorParams = new ArrayList(new int[] {(int) startAddress, args.Length});
 		delegatorParams.AddRange(args);
 
-		DateTime time1 = DateTime.Now;
-		Console.WriteLine("setting up thread at {0}.{1}s", time1.Second, time1.Millisecond);
 		Executor exec = new Executor(this, delegatorParams);
 
 		Thread execThread = new Thread(new ThreadStart(exec.Start));
 		execThread.Start();
 
 		execThread.Join();//MAX_WAIT);
-		DateTime time2 = DateTime.Now;
-		Console.WriteLine("thread finished at {0}.{1}s", time2.Second, time2.Millisecond);
-		time2.Subtract(time1);
-		Console.WriteLine("total time was {0}.{1}s\n", time2.Second, time2.Millisecond);
 
 		//if (execThread.IsAlive)
 		//	execThread.Abort();
@@ -143,29 +149,36 @@ public class ProcessMemory// : Stream
 		return exec.result;
 	}
 
-	public uint CallFunction(IntPtr startAddress, params object[] args)
-		//public uint CallFunction(IntPtr startAddress, string args)
+	public int CallFunction(IntPtr startAddress, params object[] args)
+		//public int CallFunction(IntPtr startAddress, string args)
 	{
-		ArrayList uintArgs = new ArrayList();
+		ArrayList intArgs = new ArrayList();
 		ArrayList outstandingData = new ArrayList();
 
 		foreach (object obj in args)
 		{
 			if (obj.GetType() == typeof(int))
-				uintArgs.Add((uint) (int) obj);
+				intArgs.Add((int) obj);
 			else if (obj.GetType() == typeof(byte))
-				uintArgs.Add((uint) (byte)  obj);
+				intArgs.Add((int) (byte)  obj);
 			else if (obj.GetType() == typeof(uint))
-				uintArgs.Add((uint) obj);
-			else if (obj.GetType() == typeof(string))
+				intArgs.Add((int) (uint) obj);
+			else if (obj.GetType() == typeof(char[]))//if char[], treat as ascii
 			{
-				AddData(obj as string, System.Text.Encoding.Unicode.GetBytes(obj as string));//key it to itself
+				string str = new string((char[]) obj);
+				AddData(str, Encoding.ASCII.GetBytes(str));
+				outstandingData.Add(str);
+				intArgs.Add((int) (IntPtr) DataAddress[str]);
+			}
+			else if (obj.GetType() == typeof(string))//if string, treat as unicode
+			{
+				AddData((string) obj, Encoding.Unicode.GetBytes((string) obj));//key it to itself
 				outstandingData.Add(obj);
-				uintArgs.Add((uint) (IntPtr) DataAddress[obj]);
+				intArgs.Add((int) (IntPtr) DataAddress[obj]);
 			}
 		}
 
-		uint result = CallFunction(startAddress, (uint[]) uintArgs.ToArray(typeof(uint)));
+		int result = CallFunction(startAddress, (int[]) intArgs.ToArray(typeof(int)));
 			
 		foreach (string key in outstandingData)
 			RemoveData(key);
@@ -180,7 +193,7 @@ public class ProcessMemory// : Stream
 
 		protected IntPtr delegatorAddress;
 		protected ArrayList delegatorParams;
-		public uint result;
+		public int result;
 		protected ProcessMemory procMem;
 
 		public Executor(ProcessMemory procMem, ArrayList delegatorParams)
@@ -192,47 +205,35 @@ public class ProcessMemory// : Stream
 		public void Start()
 		{
 			IntPtr handle = IntPtr.Zero;
-			uint threadId;
+			int threadId;
 
 			try
 			{
-				DateTime time = DateTime.Now;
-				Console.WriteLine("begin waiting to write params {0}.{1}s", time.Second, time.Millisecond);
 				while (procMem.DataAddress["__delegatorParams"] != null)
-					Thread.SpinWait(1);
-				time = DateTime.Now;
-				Console.WriteLine("done waiting to write params {0}.{1}s", time.Second, time.Millisecond);
+					Thread.Sleep(0);
 				procMem.AddData("__delegatorFunction", delegatorFunction);
 				BinaryWriter wtr = new BinaryWriter(new MemoryStream());
-				foreach (uint element in delegatorParams)
+				foreach (int element in delegatorParams)
 					wtr.Write(element);
 				procMem.AddData("__delegatorParams", ((MemoryStream)wtr.BaseStream).ToArray());
-				time = DateTime.Now;
-				Console.WriteLine("wrote params and function {0}.{1}s", time.Second, time.Millisecond);
 
-				handle = ProcessMemoryApi.CreateRemoteThreadEx(procMem.Handle, 0, 0, (IntPtr) procMem.DataAddress["__delegatorFunction"], (IntPtr) procMem.DataAddress["__delegatorParams"], 0, out threadId);
+				handle = ProcessMemoryApi.CreateRemoteThread(procMem.Handle, IntPtr.Zero, 0, (IntPtr) procMem.DataAddress["__delegatorFunction"], (IntPtr) procMem.DataAddress["__delegatorParams"], 0, out threadId);
 				while (true)
 				{
 					ProcessMemoryApi.GetExitCodeThread(handle, out result);
 					if (result != STILL_ACTIVE)
 						break;
-					Thread.SpinWait(1);
+					Thread.Sleep(100);
 				}
-				time = DateTime.Now;
-				Console.WriteLine("done try block {0}.{1}s", time.Second, time.Millisecond);
 			}
 			catch (ThreadAbortException)
 			{
-				DateTime time = DateTime.Now;
-				Console.WriteLine("aborting {0}.{1}s", time.Second, time.Millisecond);
 				ProcessMemoryApi.TerminateThread(handle, out result);
 			}
 			finally
 			{
 				procMem.RemoveData("__delegatorFunction");
 				procMem.RemoveData("__delegatorParams");
-				DateTime time = DateTime.Now;
-				Console.WriteLine("thread done. (finally block) {0}.{1}s", time.Second, time.Millisecond);
 			}
 		}
 	}
