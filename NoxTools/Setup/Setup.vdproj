@@ -13,6 +13,66 @@
 "SccProvider" = "8:"
     "Hierarchy"
     {
+        "Entry"
+        {
+        "MsmKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_837A69340CB54E329F43C4249C2C0F77"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_A626C755388F41B099697DF9656CE253"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "OwnerKey" = "8:_A626C755388F41B099697DF9656CE253"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "OwnerKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "OwnerKey" = "8:_837A69340CB54E329F43C4249C2C0F77"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "OwnerKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "OwnerKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
+        "MsmSig" = "8:_UNDEFINED"
+        }
     }
     "Configurations"
     {
@@ -21,7 +81,7 @@
         "DisplayName" = "8:Debug"
         "IsDebugOnly" = "11:TRUE"
         "IsReleaseOnly" = "11:FALSE"
-        "OutputFilename" = "8:Debug\\Setup.msi"
+        "OutputFilename" = "8:Debug\\NoxTools.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -37,7 +97,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\Setup.msi"
+        "OutputFilename" = "8:Release\\NoxTools.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -64,6 +124,13 @@
         {
             "LaunchCondition"
             {
+                "{2522A265-4974-4402-83C5-3B575A2E935A}:_F487DEED304E47CF8A517199BABCD4EF"
+                {
+                "Name" = "8:.NET Framework"
+                "Message" = "8:[VSDNETMSG]"
+                "SupportedRuntimes" = "8:1.1.4322"
+                "InstallUrl" = "8:http://go.microsoft.com/fwlink/?LinkId=9832"
+                }
             }
         }
         "Feature"
@@ -92,12 +159,23 @@
             "{78BAF5CE-F2E5-45BE-83BC-DB6AF387E941}:_4C8424B1524B4C73B42169DB18D445B2"
             {
             "Name" = "8:#1919"
-            "AlwaysCreate" = "11:FALSE"
+            "AlwaysCreate" = "11:TRUE"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Property" = "8:ProgramMenuFolder"
                 "Folders"
                 {
+                    "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_1A018C76374B4490A1F5EE84C48F4D7A"
+                    {
+                    "Name" = "8:NoxTools"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_F63BE759D5E44766BD0E741314B2249F"
+                        "Folders"
+                        {
+                        }
+                    }
                 }
             }
             "{78BAF5CE-F2E5-45BE-83BC-DB6AF387E941}:_A0F22285E4B24ADAB6006047683A70B7"
@@ -126,14 +204,14 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:NoxTools"
-        "ProductCode" = "8:{D35FEC47-04B3-4F1F-A7A6-06E5719F6280}"
-        "PackageCode" = "8:{BC347420-EB6C-4ABF-B3C0-2EF63946207C}"
+        "ProductCode" = "8:{449BF7A5-B161-4D9D-946F-86C8EFDFB64B}"
+        "PackageCode" = "8:{D606B29D-74E5-4293-BC7B-631DA2B06375}"
         "UpgradeCode" = "8:{91450AEE-501C-4CB0-9DA4-5546DBA97C05}"
         "RestartWWWService" = "11:FALSE"
-        "RemovePreviousVersions" = "11:FALSE"
+        "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
-        "ProductVersion" = "8:Alpha 4"
-        "Manufacturer" = "8:"
+        "ProductVersion" = "8:0.0.5"
+        "Manufacturer" = "8:Nox Hackers United"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
         "Title" = "8:NoxTools Setup"
@@ -241,6 +319,76 @@
         }
         "Shortcut"
         {
+            "{478F747B-8505-45D1-9AAE-8C3B645C26E3}:_180FB4CD76B646BBB6A7212B6B81BA78"
+            {
+            "Name" = "8:Bag Tool"
+            "Arguments" = "8:"
+            "Description" = "8:"
+            "ShowCmd" = "3:1"
+            "IconIndex" = "3:0"
+            "Transitive" = "11:FALSE"
+            "Target" = "8:_1BC65CB91D364DE885DBA158583C570A"
+            "Folder" = "8:_1A018C76374B4490A1F5EE84C48F4D7A"
+            "WorkingFolder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Icon" = "8:"
+            "Feature" = "8:"
+            }
+            "{478F747B-8505-45D1-9AAE-8C3B645C26E3}:_18D4F808295A43869AAE6263FD1DF01A"
+            {
+            "Name" = "8:String Editor"
+            "Arguments" = "8:"
+            "Description" = "8:"
+            "ShowCmd" = "3:1"
+            "IconIndex" = "3:0"
+            "Transitive" = "11:FALSE"
+            "Target" = "8:_837A69340CB54E329F43C4249C2C0F77"
+            "Folder" = "8:_1A018C76374B4490A1F5EE84C48F4D7A"
+            "WorkingFolder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Icon" = "8:"
+            "Feature" = "8:"
+            }
+            "{478F747B-8505-45D1-9AAE-8C3B645C26E3}:_7B4A854967174D278239AE71E688249C"
+            {
+            "Name" = "8:Player Editor"
+            "Arguments" = "8:"
+            "Description" = "8:"
+            "ShowCmd" = "3:1"
+            "IconIndex" = "3:0"
+            "Transitive" = "11:FALSE"
+            "Target" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
+            "Folder" = "8:_1A018C76374B4490A1F5EE84C48F4D7A"
+            "WorkingFolder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Icon" = "8:"
+            "Feature" = "8:"
+            }
+            "{478F747B-8505-45D1-9AAE-8C3B645C26E3}:_D9E41FEB8C1A40D4B61C9A9609D72C43"
+            {
+            "Name" = "8:Map Editor"
+            "Arguments" = "8:"
+            "Description" = "8:"
+            "ShowCmd" = "3:1"
+            "IconIndex" = "3:0"
+            "Transitive" = "11:FALSE"
+            "Target" = "8:_A626C755388F41B099697DF9656CE253"
+            "Folder" = "8:_1A018C76374B4490A1F5EE84C48F4D7A"
+            "WorkingFolder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Icon" = "8:"
+            "Feature" = "8:"
+            }
+            "{478F747B-8505-45D1-9AAE-8C3B645C26E3}:_EDCE41B3FA1747FB898D14180ADDE8D9"
+            {
+            "Name" = "8:Trainer"
+            "Arguments" = "8:"
+            "Description" = "8:"
+            "ShowCmd" = "3:1"
+            "IconIndex" = "3:0"
+            "Transitive" = "11:FALSE"
+            "Target" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
+            "Folder" = "8:_1A018C76374B4490A1F5EE84C48F4D7A"
+            "WorkingFolder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Icon" = "8:"
+            "Feature" = "8:"
+            }
         }
         "UserInterface"
         {
@@ -624,9 +772,163 @@
         }
         "MergeModule"
         {
+            "{35A69C6E-5BA4-440D-803D-762B59A45393}:_C199C72E31C44B1BAE176CB972283FB1"
+            {
+            "UseDynamicProperties" = "11:TRUE"
+            "IsDependency" = "11:TRUE"
+            "SourcePath" = "8:dotnetfxredist_x86.msm"
+                "Properties"
+                {
+                }
+            "LanguageId" = "3:1033"
+            "Exclude" = "11:TRUE"
+            "Folder" = "8:"
+            "Feature" = "8:"
+            "IsolateTo" = "8:"
+            }
         }
         "ProjectOutput"
         {
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_1BC65CB91D364DE885DBA158583C570A"
+            {
+            "SourcePath" = "8:..\\BagTool\\obj\\Debug\\NoxBagTool.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{DC2C210E-5C0D-4837-A887-3AC68402D0F5}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_3D4ECED458B946B39CEA64FAE08CD5BD"
+            {
+            "SourcePath" = "8:..\\Trainer\\obj\\Debug\\NoxTrainer.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{C53FBBFA-B3A0-4FFF-8E08-59FFF0ADF5B3}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_5A4CAF13008E47CFB7C9E502FD4EA133"
+            {
+            "SourcePath" = "8:..\\PlrEditor\\obj\\Debug\\PlrEditor.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{56AA53AC-998D-4B36-9BF1-FB14BE89AA37}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_837A69340CB54E329F43C4249C2C0F77"
+            {
+            "SourcePath" = "8:..\\StringEditor\\obj\\Debug\\NoxStringEditor.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{2CB6363D-6ABF-4F9F-9BD6-F301C0A18DEE}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_A626C755388F41B099697DF9656CE253"
+            {
+            "SourcePath" = "8:..\\MapEditor\\obj\\Debug\\NoxMapEditor.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{9B0F4317-A6AC-4F6E-8ECB-E711175CFB90}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
         }
         "VJSharpPlugin"
         {
