@@ -32,7 +32,7 @@ namespace NoxShared
 
 		public class PolygonList : ArrayList
 		{
-			protected short termCount;//seems to control amount of useless data at the end???
+			public short TermCount;//seems to control amount of useless data at the end???
 			public ArrayList Points = new ArrayList();
 
 			public PolygonList() {}
@@ -46,7 +46,7 @@ namespace NoxShared
 				BinaryReader rdr = new BinaryReader(stream);
 				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
 
-				termCount = rdr.ReadInt16();
+				TermCount = rdr.ReadInt16();
 				
 				int numPoints = rdr.ReadInt32();
 				while (numPoints-- > 0)
@@ -59,11 +59,6 @@ namespace NoxShared
 				while (numPolygons-- > 0)
 					Add(new Polygon(rdr.BaseStream, this));
 
-				//TODO: figure this out?? really weird...
-				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
-				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
-				if (termCount == 0x0003) stream.Seek(-4, SeekOrigin.Current);
-
 				Debug.Assert(rdr.BaseStream.Position == finish, "(Map, Polygons) Bad read length.");
 			}
 
@@ -75,7 +70,7 @@ namespace NoxShared
 				wtr.Write((long) 0);//dummy length value
 				long startPos = wtr.BaseStream.Position;
 				
-				wtr.Write((short) termCount);
+				wtr.Write((short) TermCount);
 
 				//rebuild point list
 				Points.Clear();
@@ -96,11 +91,6 @@ namespace NoxShared
 				wtr.Write((int) this.Count);
 				foreach (Polygon poly in this)
 					poly.Write(wtr.BaseStream);
-
-				//TODO: figure this out?? really weird...
-				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
-				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
-				if (termCount == 0x0003) stream.Seek(-4, SeekOrigin.Current);
 
 				//rewrite the length now that we can find it
 				long length = wtr.BaseStream.Position - startPos;
@@ -135,7 +125,16 @@ namespace NoxShared
 				while (ptCount-- > 0)
 					Points.Add(list.Points[rdr.ReadInt32()-1]);
 
-				endbuf = rdr.ReadBytes(0x18);//always "01 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00"?
+				//TODO: figure this out?? really weird...
+				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
+				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
+				//always "01 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00" or 4 shorter?
+				if (list.TermCount == 0x0003)
+					endbuf = rdr.ReadBytes(0x14);
+				else if (list.TermCount == 0x0004)
+					endbuf = rdr.ReadBytes(0x18);
+				else
+					Debug.Assert(false, "(Map, Polygons) Unhandled terminal count.");
 			}
 
 			public void Write(Stream stream)
