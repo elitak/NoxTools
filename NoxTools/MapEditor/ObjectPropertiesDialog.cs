@@ -4,6 +4,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
+using System.IO;
 
 using NoxShared;
 
@@ -24,20 +25,19 @@ namespace NoxMapEditor
 				nameBox.Text = obj.Name;
 				xBox.Text = obj.Location.X.ToString();
 				yBox.Text = obj.Location.Y.ToString();
+				propertiesBox.SelectedItem = obj.Properties;
 				extentBox.Text = obj.Extent.ToString();
 				teamBox.Text = obj.Team.ToString();
 				scrNameBox.Text = obj.Scr_Name;
 				scrNameBox.Enabled = false;
 				teamBox.Enabled = false;
 				xtraBox.Checked = (obj.Terminator > 0);
+
 				//print out the bytes in hex
-				boxMod.Text = "";
-				if (obj.modbuf != null)
-				{
-					System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
-					while (rdr.BaseStream.Position < rdr.BaseStream.Length)
-						boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
-				}
+				boxMod.Clear();
+				foreach (byte b in obj.modbuf)
+					boxMod.Text += String.Format("{0:x2} ", b);
+
 				if(((ThingDb.Thing)ThingDb.Things[obj.Name]).Init=="ModifierInit")
 					enchantButton.Enabled = true;
 				else if((((ThingDb.Thing)ThingDb.Things[obj.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
@@ -64,12 +64,16 @@ namespace NoxMapEditor
 		private System.Windows.Forms.TextBox scrNameBox;
 		private System.Windows.Forms.CheckBox xtraBox;
 		private System.Windows.Forms.Button invenButton;
+		private System.Windows.Forms.ComboBox propertiesBox;
+		private System.Windows.Forms.Label label7;
 		private System.Windows.Forms.TextBox boxMod;
 
 		public ObjectPropertiesDialog()
 		{
 			InitializeComponent();
 			nameBox.Items.AddRange(new ArrayList(ThingDb.Things.Keys).ToArray());
+			foreach (Map.Object.Property prop in Enum.GetValues(typeof(Map.Object.Property)))
+				propertiesBox.Items.Add(prop);
 		}
 
 		#region Windows Form Designer generated code
@@ -98,6 +102,8 @@ namespace NoxMapEditor
 			this.scrNameBox = new System.Windows.Forms.TextBox();
 			this.xtraBox = new System.Windows.Forms.CheckBox();
 			this.invenButton = new System.Windows.Forms.Button();
+			this.propertiesBox = new System.Windows.Forms.ComboBox();
+			this.label7 = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -111,7 +117,9 @@ namespace NoxMapEditor
 			// 
 			// buttonOK
 			// 
-			this.buttonOK.Location = new System.Drawing.Point(12, 216);
+			this.buttonOK.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+			this.buttonOK.DialogResult = System.Windows.Forms.DialogResult.OK;
+			this.buttonOK.Location = new System.Drawing.Point(56, 216);
 			this.buttonOK.Name = "buttonOK";
 			this.buttonOK.TabIndex = 2;
 			this.buttonOK.Text = "OK";
@@ -119,8 +127,9 @@ namespace NoxMapEditor
 			// 
 			// buttonCancel
 			// 
+			this.buttonCancel.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
 			this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.buttonCancel.Location = new System.Drawing.Point(100, 216);
+			this.buttonCancel.Location = new System.Drawing.Point(144, 216);
 			this.buttonCancel.Name = "buttonCancel";
 			this.buttonCancel.TabIndex = 3;
 			this.buttonCancel.Text = "Cancel";
@@ -265,20 +274,38 @@ namespace NoxMapEditor
 			this.invenButton.Text = "Inventory";
 			this.invenButton.Click += new System.EventHandler(this.invenButton_Click);
 			// 
+			// propertiesBox
+			// 
+			this.propertiesBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.propertiesBox.Location = new System.Drawing.Point(192, 168);
+			this.propertiesBox.Name = "propertiesBox";
+			this.propertiesBox.Size = new System.Drawing.Size(72, 21);
+			this.propertiesBox.TabIndex = 22;
+			// 
+			// label7
+			// 
+			this.label7.Location = new System.Drawing.Point(192, 152);
+			this.label7.Name = "label7";
+			this.label7.Size = new System.Drawing.Size(56, 16);
+			this.label7.TabIndex = 23;
+			this.label7.Text = "Properties";
+			// 
 			// ObjectPropertiesDialog
 			// 
 			this.AcceptButton = this.buttonOK;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
 			this.ClientSize = new System.Drawing.Size(274, 247);
-			this.Controls.Add(this.invenButton);
-			this.Controls.Add(this.xtraBox);
+			this.Controls.Add(this.label7);
+			this.Controls.Add(this.propertiesBox);
 			this.Controls.Add(this.scrNameBox);
 			this.Controls.Add(this.teamBox);
 			this.Controls.Add(this.boxMod);
 			this.Controls.Add(this.extentBox);
 			this.Controls.Add(this.yBox);
 			this.Controls.Add(this.xBox);
+			this.Controls.Add(this.invenButton);
+			this.Controls.Add(this.xtraBox);
 			this.Controls.Add(this.label6);
 			this.Controls.Add(this.label5);
 			this.Controls.Add(this.lockButton);
@@ -294,6 +321,8 @@ namespace NoxMapEditor
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
 			this.Name = "ObjectPropertiesDialog";
+			this.ShowInTaskbar = false;
+			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
 			this.Text = "Object Properites";
 			this.ResumeLayout(false);
 
@@ -312,6 +341,7 @@ namespace NoxMapEditor
 			obj.Name = nameBox.Text;
 			obj.Location.X = Single.Parse(xBox.Text);
 			obj.Location.Y = Single.Parse(yBox.Text);
+			obj.Properties = (Map.Object.Property) propertiesBox.SelectedItem;
 			obj.Extent = Int32.Parse(extentBox.Text);
 			obj.Terminator = (byte)(xtraBox.Checked==true? 0xFF : 0x00);
 			
@@ -323,15 +353,15 @@ namespace NoxMapEditor
 			//get the contents of the box and parse it to turn it into a byte[] and use it as the modbuf
 			if (boxMod.Text.Length > 0)
 			{
-				System.IO.MemoryStream stream = new System.IO.MemoryStream();
-				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
+				MemoryStream stream = new MemoryStream();
+				BinaryWriter wtr = new BinaryWriter(stream);
 				Regex bytes = new Regex("[0-9|a-f|A-F]{2}");
 				foreach (Match match in bytes.Matches(boxMod.Text))
 					wtr.Write(Convert.ToByte(match.Value, 16));
 				obj.modbuf = stream.ToArray();
 			}
 			else
-				obj.modbuf = null;
+				obj.modbuf = new byte[0];
 			this.Visible = false;
 		}
 
@@ -339,13 +369,11 @@ namespace NoxMapEditor
 		{
 			ObjectEnchantDialog enchantDlg = new ObjectEnchantDialog();
 			enchantDlg.Object = obj;
-			enchantDlg.ShowDialog();
-			boxMod.Clear();
-			if (obj.modbuf != null)
+			if (enchantDlg.ShowDialog() == DialogResult.OK)
 			{
-				System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
-				while (rdr.BaseStream.Position < rdr.BaseStream.Length)
-					boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
+				boxMod.Clear();
+				foreach (byte b in obj.modbuf)
+					boxMod.Text += String.Format("{0:x2} ", b);
 			}
 		}
 
@@ -355,12 +383,8 @@ namespace NoxMapEditor
 			doorDlg.Object = obj;
 			doorDlg.ShowDialog();
 			boxMod.Clear();
-			if (obj.modbuf != null)
-			{
-				System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
-				while (rdr.BaseStream.Position < rdr.BaseStream.Length)
-					boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
-			}
+			foreach (byte b in obj.modbuf)
+				boxMod.Text += String.Format("{0:x2} ", b);
 		}
 
 		private void nameBox_SelectedIndexChanged(object sender, System.EventArgs e)
