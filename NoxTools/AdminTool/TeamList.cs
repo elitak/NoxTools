@@ -9,13 +9,8 @@ using NoxShared;
 
 namespace NoxTrainer
 {
-	/// <summary>
-	/// Summary description for UserControl1.
-	/// </summary>
-	public class TeamList : System.Windows.Forms.UserControl
+	public class TeamList : UserControl
 	{
-		private System.Windows.Forms.Button buttonWrite;
-		private System.Windows.Forms.Button buttonRead;
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.ComboBox comboBox1;
@@ -43,81 +38,41 @@ namespace NoxTrainer
 		private System.Windows.Forms.ComboBox comboBox8;
 		private System.Windows.Forms.CheckBox checkBox8;
 		private System.Windows.Forms.TextBox textBox8;
-		/// <summary> 
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.Container components = null;
 
 		private ArrayList names;
 		private ArrayList colors;
+		private System.Windows.Forms.CheckBox teamDamage;
+		private System.Windows.Forms.CheckBox useTeams;
+		private System.Windows.Forms.CheckBox autoAssign;
 		private ArrayList enabled;
 
 		public TeamList()
 		{
-
 			InitializeComponent();
 
-			names = new ArrayList();
-			names.Add(textBox1);
-			names.Add(textBox2);
-			names.Add(textBox3);
-			names.Add(textBox4);
-			names.Add(textBox5);
-			names.Add(textBox6);
-			names.Add(textBox7);
-			names.Add(textBox8);
-
+			names = new ArrayList(new object[] {textBox1, textBox2, textBox3, textBox4, textBox5, textBox6, textBox7, textBox8});
 			foreach (TextBox box in names)
-			{
 				box.TextChanged += new EventHandler(nameBox_TextChanged);
-			}
 
-			colors = new ArrayList();
-			colors.Add(comboBox1);
-			colors.Add(comboBox2);
-			colors.Add(comboBox3);
-			colors.Add(comboBox4);
-			colors.Add(comboBox5);
-			colors.Add(comboBox6);
-			colors.Add(comboBox7);
-			colors.Add(comboBox8);
-
+			colors = new ArrayList(new object[] {comboBox1, comboBox2, comboBox3, comboBox4, comboBox5, comboBox6, comboBox7, comboBox8});
 			foreach (ComboBox box in colors)
-			{
 				box.SelectedIndexChanged  +=new EventHandler(box_SelectedIndexChanged);
-			}
 
-			enabled = new ArrayList();
-			enabled.Add(checkBox1);
-			enabled.Add(checkBox2);
-			enabled.Add(checkBox3);
-			enabled.Add(checkBox4);
-			enabled.Add(checkBox5);
-			enabled.Add(checkBox6);
-			enabled.Add(checkBox7);
-			enabled.Add(checkBox8);
-
+			enabled = new ArrayList(new object[] {checkBox1, checkBox2, checkBox3, checkBox4, checkBox5, checkBox6, checkBox7, checkBox8});
 			foreach (CheckBox box in enabled)
-			{
 				box.CheckedChanged += new EventHandler(box_CheckedChanged);
-			}
 
-			SetEnabledAllFields(false);
+			RefreshList();//necessary for initial refresh
+			NoxMemoryHack.Instance.Teams.TeamChanged += new NoxShared.NoxMemoryHack.TeamMemory.TeamEvent(TeamChanged);
 		}
 
-		/// <summary> 
-		/// Clean up any resources being used.
-		/// </summary>
-		protected override void Dispose( bool disposing )
+		public void RefreshList()
 		{
-			if( disposing )
-			{
-				if(components != null)
-				{
-					components.Dispose();
-				}
-			}
-			base.Dispose( disposing );
+			for (int ndx = 0; ndx < names.Count; ndx++)
+				RefreshTeam(ndx);
+			useTeams.Checked = NoxMemoryHack.Instance.Teams.UseTeams;
+			autoAssign.Checked = NoxMemoryHack.Instance.Teams.AutoAssign;
+			teamDamage.Checked = NoxMemoryHack.Instance.Teams.TeamDamage;
 		}
 
 		#region Component Designer generated code
@@ -127,8 +82,6 @@ namespace NoxTrainer
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.buttonWrite = new System.Windows.Forms.Button();
-			this.buttonRead = new System.Windows.Forms.Button();
 			this.label2 = new System.Windows.Forms.Label();
 			this.label1 = new System.Windows.Forms.Label();
 			this.comboBox1 = new System.Windows.Forms.ComboBox();
@@ -156,25 +109,10 @@ namespace NoxTrainer
 			this.comboBox8 = new System.Windows.Forms.ComboBox();
 			this.checkBox8 = new System.Windows.Forms.CheckBox();
 			this.textBox8 = new System.Windows.Forms.TextBox();
+			this.teamDamage = new System.Windows.Forms.CheckBox();
+			this.useTeams = new System.Windows.Forms.CheckBox();
+			this.autoAssign = new System.Windows.Forms.CheckBox();
 			this.SuspendLayout();
-			// 
-			// buttonWrite
-			// 
-			this.buttonWrite.Location = new System.Drawing.Point(152, 256);
-			this.buttonWrite.Name = "buttonWrite";
-			this.buttonWrite.Size = new System.Drawing.Size(72, 24);
-			this.buttonWrite.TabIndex = 15;
-			this.buttonWrite.Text = "Save";
-			this.buttonWrite.Click += new System.EventHandler(this.buttonWrite_Click);
-			// 
-			// buttonRead
-			// 
-			this.buttonRead.Location = new System.Drawing.Point(64, 256);
-			this.buttonRead.Name = "buttonRead";
-			this.buttonRead.Size = new System.Drawing.Size(72, 24);
-			this.buttonRead.TabIndex = 14;
-			this.buttonRead.Text = "Update";
-			this.buttonRead.Click += new System.EventHandler(this.buttonRead_Click);
 			// 
 			// label2
 			// 
@@ -472,8 +410,37 @@ namespace NoxTrainer
 			this.textBox8.TabIndex = 34;
 			this.textBox8.Text = "";
 			// 
+			// teamDamage
+			// 
+			this.teamDamage.Location = new System.Drawing.Point(184, 232);
+			this.teamDamage.Name = "teamDamage";
+			this.teamDamage.TabIndex = 37;
+			this.teamDamage.Text = "Team Damage";
+			this.teamDamage.CheckedChanged += new System.EventHandler(this.teamDamage_CheckedChanged);
+			// 
+			// useTeams
+			// 
+			this.useTeams.Location = new System.Drawing.Point(8, 232);
+			this.useTeams.Name = "useTeams";
+			this.useTeams.Size = new System.Drawing.Size(88, 24);
+			this.useTeams.TabIndex = 38;
+			this.useTeams.Text = "Use Teams";
+			this.useTeams.CheckedChanged += new System.EventHandler(this.useTeams_CheckedChanged);
+			// 
+			// autoAssign
+			// 
+			this.autoAssign.Location = new System.Drawing.Point(96, 232);
+			this.autoAssign.Name = "autoAssign";
+			this.autoAssign.Size = new System.Drawing.Size(88, 24);
+			this.autoAssign.TabIndex = 39;
+			this.autoAssign.Text = "Auto Assign";
+			this.autoAssign.CheckedChanged += new System.EventHandler(this.autoAssign_CheckedChanged);
+			// 
 			// TeamList
 			// 
+			this.Controls.Add(this.autoAssign);
+			this.Controls.Add(this.useTeams);
+			this.Controls.Add(this.teamDamage);
 			this.Controls.Add(this.comboBox8);
 			this.Controls.Add(this.checkBox8);
 			this.Controls.Add(this.textBox8);
@@ -495,8 +462,6 @@ namespace NoxTrainer
 			this.Controls.Add(this.comboBox2);
 			this.Controls.Add(this.checkBox2);
 			this.Controls.Add(this.textBox2);
-			this.Controls.Add(this.buttonWrite);
-			this.Controls.Add(this.buttonRead);
 			this.Controls.Add(this.label2);
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.comboBox1);
@@ -504,90 +469,61 @@ namespace NoxTrainer
 			this.Controls.Add(this.labelTeam1);
 			this.Controls.Add(this.textBox1);
 			this.Name = "TeamList";
-			this.Size = new System.Drawing.Size(280, 296);
+			this.Size = new System.Drawing.Size(280, 264);
 			this.ResumeLayout(false);
 
 		}
 		#endregion
 
-		
-		private void buttonRead_Click(object sender, System.EventArgs e)
-		{
-			try
-			{
-				NoxMemoryHack.Teams.Refresh();
-			}
-			catch (InvalidOperationException)
-			{
-				MessageBox.Show("Could not access Nox's memory.", "Error");
-			}
-
-			for (int ndx = 0; ndx < NoxMemoryHack.Teams.TeamList.Count && ndx < names.Count; ndx++)//assumes that number of names = colors = enabled
-			{
-				NoxMemoryHack.Teams.Team team = (NoxMemoryHack.Teams.Team) NoxMemoryHack.Teams.TeamList[ndx];
-				((TextBox) names[ndx]).Text = team.Name;
-				((TextBox) names[ndx]).Enabled = true;
-				((ComboBox) colors[ndx]).SelectedIndex = new ArrayList(NoxMemoryHack.Teams.Team.TeamColor).IndexOf(team.Color);
-				((ComboBox) colors[ndx]).Enabled = true;
-				((CheckBox) enabled[ndx]).Checked = team.Enabled;
-			}
-
-			foreach (CheckBox box in enabled)
-				box.Enabled = true;
-		}
-
 		private void nameBox_TextChanged(object sender, EventArgs e)
 		{
 			TextBox box = (TextBox) sender;
-			int ndx = names.IndexOf(box);
-			((NoxMemoryHack.Teams.Team) NoxMemoryHack.Teams.TeamList[ndx]).Name = box.Text;
+			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[names.IndexOf(box)]).Name = box.Text;
 		}
 
 		private void box_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			ComboBox box = (ComboBox) sender;
-			((NoxMemoryHack.Teams.Team) NoxMemoryHack.Teams.TeamList[colors.IndexOf(box)]).Color = NoxMemoryHack.Teams.Team.TeamColor[box.SelectedIndex];
+			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[colors.IndexOf(box)]).Color = NoxMemoryHack.TeamMemory.Team.TeamColor[box.SelectedIndex];
 		}
 
 		private void box_CheckedChanged(object sender, EventArgs e)
 		{
 			CheckBox box = (CheckBox) sender;
 			int ndx = enabled.IndexOf(box);
-			if (ndx > NoxMemoryHack.Teams.TeamList.Count - 1)
-				NoxMemoryHack.Teams.AddTeam();
-			((NoxMemoryHack.Teams.Team) NoxMemoryHack.Teams.TeamList[ndx]).Enabled = box.Checked;
-			((TextBox) names[ndx]).Enabled = box.Checked;
-			((ComboBox) colors[ndx]).Enabled = box.Checked;
+			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[ndx]).Enabled = box.Checked;
 		}
 
-		private void buttonWrite_Click(object sender, System.EventArgs e)
+		private void TeamChanged(object sender, NoxShared.NoxMemoryHack.TeamMemory.TeamEventArgs e)
 		{
-			for (int ndx = 0; ndx < NoxMemoryHack.Teams.TeamList.Count && ndx < names.Count; ndx++)
-			{
-				NoxMemoryHack.Teams.Team team = (NoxMemoryHack.Teams.Team) NoxMemoryHack.Teams.TeamList[ndx];
-				((TextBox) names[ndx]).Text = team.Name;
-
-				((ComboBox) colors[ndx]).SelectedIndex = new ArrayList(NoxMemoryHack.Teams.Team.TeamColor).IndexOf(team.Color);
-
-				((CheckBox) enabled[ndx]).Checked = team.Enabled;
-			}
-			NoxMemoryHack.Teams.Write();
+			RefreshTeam(e.Team.TeamNumber - 1);
 		}
 
-		private void SetEnabledAllFields(bool enable)
+		private void RefreshTeam(int ndx)
 		{
-			foreach (TextBox box in names)
-			{
-				box.Enabled = enable;
-			}
-			foreach (ComboBox box in colors)
-			{
-				box.Enabled = enable;
-			}
-			foreach (CheckBox box in enabled)
-			{
-				box.Enabled = enable;
-			}
+			if (ndx >= NoxMemoryHack.Instance.Teams.TeamList.Count)
+				return;
+			NoxMemoryHack.TeamMemory.Team team = (NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[ndx];
+			int oldSel = ((TextBox) names[ndx]).SelectionStart;
+			((TextBox) names[ndx]).Text = team.Name;
+			((TextBox) names[ndx]).SelectionStart = oldSel >= 0 ? oldSel : 0;
+			((ComboBox) colors[ndx]).SelectedIndex = new ArrayList(NoxMemoryHack.TeamMemory.Team.TeamColor).IndexOf(team.Color);
+			((CheckBox) enabled[ndx]).Checked = team.Enabled;
+		}
+
+		private void teamDamage_CheckedChanged(object sender, System.EventArgs e)
+		{
+			NoxMemoryHack.Instance.Teams.TeamDamage = ((CheckBox) sender).Checked;
+		}
+
+		private void autoAssign_CheckedChanged(object sender, System.EventArgs e)
+		{
+			NoxMemoryHack.Instance.Teams.AutoAssign = ((CheckBox) sender).Checked;
+		}
+
+		private void useTeams_CheckedChanged(object sender, System.EventArgs e)
+		{
+			NoxMemoryHack.Instance.Teams.UseTeams = ((CheckBox) sender).Checked;
 		}
 	}
 }

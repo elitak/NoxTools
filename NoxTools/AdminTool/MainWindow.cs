@@ -9,15 +9,11 @@ using NoxShared;
 
 namespace NoxTrainer
 {
-	/// <summary>
-	/// Summary description for MainWindow.
-	/// </summary>
 	public class MainWindow : System.Windows.Forms.Form
 	{
 		private System.Windows.Forms.MainMenu mainMenu1;
 		private System.Windows.Forms.TabControl tabControl1;
 		private System.Windows.Forms.TabPage tabTeams;
-		private NoxTrainer.TeamList teamList1;
 		private System.Windows.Forms.MenuItem menuItem1;
 		private System.Windows.Forms.MenuItem menuItem2;
 		private System.Windows.Forms.TabPage tabFuncs;
@@ -37,33 +33,20 @@ namespace NoxTrainer
 		private System.Windows.Forms.TextBox arg4;
 		private System.Windows.Forms.TextBox arg5;
 		private System.Windows.Forms.Button buttonExecute;
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.Container components = null;
 		private System.Windows.Forms.Label label7;
 		private System.Windows.Forms.Label label8;
+		private System.Windows.Forms.TabPage tabPlayers;
+		private System.Windows.Forms.TextBox console;
+		private System.Windows.Forms.TextBox consoleInput;
+		private NoxTrainer.PlayerList playerList2;
+		private NoxTrainer.TeamList teamList2;
 
 		protected ArrayList argBoxes;
 		public MainWindow()
 		{
 			InitializeComponent();
 			argBoxes = new ArrayList(new TextBox[] {arg1, arg2, arg3, arg4, arg5});
-		}
-
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		protected override void Dispose( bool disposing )
-		{
-			if( disposing )
-			{
-				if (components != null) 
-				{
-					components.Dispose();
-				}
-			}
-			base.Dispose( disposing );
+			NoxShared.Console.LineWritten += new NoxShared.Console.ConsoleEvent(Console_LineWritten);
 		}
 
 		#region Windows Form Designer generated code
@@ -77,8 +60,10 @@ namespace NoxTrainer
 			this.menuItem1 = new System.Windows.Forms.MenuItem();
 			this.menuItem2 = new System.Windows.Forms.MenuItem();
 			this.tabControl1 = new System.Windows.Forms.TabControl();
+			this.tabPlayers = new System.Windows.Forms.TabPage();
+			this.playerList2 = new NoxTrainer.PlayerList();
 			this.tabTeams = new System.Windows.Forms.TabPage();
-			this.teamList1 = new NoxTrainer.TeamList();
+			this.teamList2 = new NoxTrainer.TeamList();
 			this.tabFuncs = new System.Windows.Forms.TabPage();
 			this.label8 = new System.Windows.Forms.Label();
 			this.label7 = new System.Windows.Forms.Label();
@@ -92,13 +77,16 @@ namespace NoxTrainer
 			this.buttonExecute = new System.Windows.Forms.Button();
 			this.label4 = new System.Windows.Forms.Label();
 			this.boxAddress = new System.Windows.Forms.TextBox();
-			this.label3 = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
 			this.label1 = new System.Windows.Forms.Label();
 			this.buttonConsoleText = new System.Windows.Forms.Button();
 			this.boxConsoleColor = new System.Windows.Forms.TextBox();
 			this.boxConsoleText = new System.Windows.Forms.TextBox();
+			this.label3 = new System.Windows.Forms.Label();
+			this.console = new System.Windows.Forms.TextBox();
+			this.consoleInput = new System.Windows.Forms.TextBox();
 			this.tabControl1.SuspendLayout();
+			this.tabPlayers.SuspendLayout();
 			this.tabTeams.SuspendLayout();
 			this.tabFuncs.SuspendLayout();
 			this.SuspendLayout();
@@ -123,31 +111,48 @@ namespace NoxTrainer
 			// 
 			// tabControl1
 			// 
+			this.tabControl1.Controls.Add(this.tabPlayers);
 			this.tabControl1.Controls.Add(this.tabTeams);
 			this.tabControl1.Controls.Add(this.tabFuncs);
-			this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.tabControl1.Location = new System.Drawing.Point(0, 0);
 			this.tabControl1.Name = "tabControl1";
 			this.tabControl1.SelectedIndex = 0;
-			this.tabControl1.Size = new System.Drawing.Size(304, 323);
+			this.tabControl1.Size = new System.Drawing.Size(304, 360);
 			this.tabControl1.TabIndex = 0;
+			// 
+			// tabPlayers
+			// 
+			this.tabPlayers.Controls.Add(this.playerList2);
+			this.tabPlayers.Location = new System.Drawing.Point(4, 22);
+			this.tabPlayers.Name = "tabPlayers";
+			this.tabPlayers.Size = new System.Drawing.Size(296, 334);
+			this.tabPlayers.TabIndex = 2;
+			this.tabPlayers.Text = "Players";
+			// 
+			// playerList2
+			// 
+			this.playerList2.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.playerList2.Location = new System.Drawing.Point(0, 0);
+			this.playerList2.Name = "playerList2";
+			this.playerList2.Size = new System.Drawing.Size(296, 334);
+			this.playerList2.TabIndex = 0;
 			// 
 			// tabTeams
 			// 
-			this.tabTeams.Controls.Add(this.teamList1);
+			this.tabTeams.Controls.Add(this.teamList2);
 			this.tabTeams.Location = new System.Drawing.Point(4, 22);
 			this.tabTeams.Name = "tabTeams";
-			this.tabTeams.Size = new System.Drawing.Size(296, 297);
+			this.tabTeams.Size = new System.Drawing.Size(296, 334);
 			this.tabTeams.TabIndex = 0;
 			this.tabTeams.Text = "Teams";
 			// 
-			// teamList1
+			// teamList2
 			// 
-			this.teamList1.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.teamList1.Location = new System.Drawing.Point(0, 0);
-			this.teamList1.Name = "teamList1";
-			this.teamList1.Size = new System.Drawing.Size(296, 297);
-			this.teamList1.TabIndex = 0;
+			this.teamList2.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.teamList2.Location = new System.Drawing.Point(0, 0);
+			this.teamList2.Name = "teamList2";
+			this.teamList2.Size = new System.Drawing.Size(296, 334);
+			this.teamList2.TabIndex = 0;
 			// 
 			// tabFuncs
 			// 
@@ -171,7 +176,7 @@ namespace NoxTrainer
 			this.tabFuncs.Controls.Add(this.label3);
 			this.tabFuncs.Location = new System.Drawing.Point(4, 22);
 			this.tabFuncs.Name = "tabFuncs";
-			this.tabFuncs.Size = new System.Drawing.Size(296, 297);
+			this.tabFuncs.Size = new System.Drawing.Size(296, 334);
 			this.tabFuncs.TabIndex = 1;
 			this.tabFuncs.Text = "Functions";
 			// 
@@ -181,7 +186,7 @@ namespace NoxTrainer
 			this.label8.Name = "label8";
 			this.label8.Size = new System.Drawing.Size(256, 16);
 			this.label8.TabIndex = 17;
-			this.label8.Text = "Note: Color should be a hex number from 0 to 16. ";
+			this.label8.Text = "Note: Color should be a decimal number from 0 to 16. ";
 			// 
 			// label7
 			// 
@@ -273,14 +278,6 @@ namespace NoxTrainer
 			this.boxAddress.TabIndex = 6;
 			this.boxAddress.Text = "";
 			// 
-			// label3
-			// 
-			this.label3.Location = new System.Drawing.Point(104, 8);
-			this.label3.Name = "label3";
-			this.label3.Size = new System.Drawing.Size(88, 24);
-			this.label3.TabIndex = 5;
-			this.label3.Text = "Print to Console";
-			// 
 			// label2
 			// 
 			this.label2.Location = new System.Drawing.Point(16, 64);
@@ -322,17 +319,46 @@ namespace NoxTrainer
 			this.boxConsoleText.TabIndex = 0;
 			this.boxConsoleText.Text = "";
 			// 
+			// label3
+			// 
+			this.label3.Location = new System.Drawing.Point(104, 8);
+			this.label3.Name = "label3";
+			this.label3.Size = new System.Drawing.Size(88, 24);
+			this.label3.TabIndex = 5;
+			this.label3.Text = "Print to Console";
+			// 
+			// console
+			// 
+			this.console.Location = new System.Drawing.Point(0, 360);
+			this.console.Multiline = true;
+			this.console.Name = "console";
+			this.console.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+			this.console.Size = new System.Drawing.Size(304, 88);
+			this.console.TabIndex = 1;
+			this.console.Text = "";
+			// 
+			// consoleInput
+			// 
+			this.consoleInput.Location = new System.Drawing.Point(0, 448);
+			this.consoleInput.Name = "consoleInput";
+			this.consoleInput.Size = new System.Drawing.Size(304, 20);
+			this.consoleInput.TabIndex = 2;
+			this.consoleInput.Text = "";
+			// 
 			// MainWindow
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.ClientSize = new System.Drawing.Size(304, 323);
+			this.ClientSize = new System.Drawing.Size(304, 467);
+			this.Controls.Add(this.consoleInput);
+			this.Controls.Add(this.console);
 			this.Controls.Add(this.tabControl1);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.MaximizeBox = false;
 			this.Menu = this.mainMenu1;
 			this.Name = "MainWindow";
-			this.Text = "Nox Trainer";
+			this.Text = "Nox Admin Tool";
 			this.tabControl1.ResumeLayout(false);
+			this.tabPlayers.ResumeLayout(false);
 			this.tabTeams.ResumeLayout(false);
 			this.tabFuncs.ResumeLayout(false);
 			this.ResumeLayout(false);
@@ -340,18 +366,28 @@ namespace NoxTrainer
 		}
 		#endregion
 
-		/// <summary>
-		/// The main entry point for the application.
-		/// </summary>
 		[STAThread]
 		static void Main() 
 		{
-			Application.Run(new MainWindow());
+			try
+			{
+				Application.Run(new MainWindow());
+			}
+			catch (Exception ex)
+			{
+				new ExceptionDialog(ex).ShowDialog();
+				Environment.Exit(1);
+			}
 		}
 
 		private void menuItem2_Click(object sender, System.EventArgs e)
 		{
-			Dispose();//does this call finalize on everything? does Exit()?
+			Environment.Exit(0);
+		}
+
+		protected override void OnClosed(EventArgs e)
+		{
+			base.OnClosed(e);
 			Environment.Exit(0);
 		}
 
@@ -377,6 +413,13 @@ namespace NoxTrainer
 					}
 			}
 			NoxMemoryHack.Process.CallFunction((IntPtr) Convert.ToUInt32(boxAddress.Text, 16), args.ToArray());
+		}
+
+		private void Console_LineWritten(object sender, NoxShared.Console.ConsoleEventArgs e)
+		{
+			console.AppendText((console.Text.EndsWith("\r\n") ? "" : "\r\n") + e.Line);
+			//console.Select(
+			console.ScrollToCaret();
 		}
 	}
 }

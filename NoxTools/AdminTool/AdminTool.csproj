@@ -9,7 +9,7 @@
             <Settings
                 ApplicationIcon = ""
                 AssemblyKeyContainerName = ""
-                AssemblyName = "NoxTrainer"
+                AssemblyName = "AdminTool"
                 AssemblyOriginatorKeyFile = ""
                 DefaultClientScript = "JScript"
                 DefaultHTMLPageLayout = "Grid"
@@ -18,7 +18,7 @@
                 OutputType = "WinExe"
                 PreBuildEvent = ""
                 PostBuildEvent = ""
-                RootNamespace = "NoxTrainer"
+                RootNamespace = "AdminTool"
                 RunPostBuildEvent = "OnBuildSuccess"
                 StartupObject = ""
             >
@@ -75,19 +75,24 @@
                     HintPath = "..\..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Data.dll"
                 />
                 <Reference
-                    Name = "System.Drawing"
-                    AssemblyName = "System.Drawing"
-                    HintPath = "..\..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Drawing.dll"
-                />
-                <Reference
                     Name = "System.Windows.Forms"
                     AssemblyName = "System.Windows.Forms"
                     HintPath = "..\..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Windows.Forms.dll"
                 />
                 <Reference
+                    Name = "NoxShared"
+                    Project = "{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}"
+                    Package = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"
+                />
+                <Reference
+                    Name = "System.Drawing"
+                    AssemblyName = "System.Drawing"
+                    HintPath = "..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Drawing.dll"
+                />
+                <Reference
                     Name = "System.XML"
-                    AssemblyName = "System.Xml"
-                    HintPath = "..\..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.XML.dll"
+                    AssemblyName = "System.XML"
+                    HintPath = "..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.XML.dll"
                 />
             </References>
         </Build>
@@ -109,16 +114,14 @@
                     BuildAction = "EmbeddedResource"
                 />
                 <File
-                    RelPath = "MemoryHack.cs"
-                    Link = "..\shared\MemoryHack.cs"
-                    SubType = "Code"
+                    RelPath = "PlayerList.cs"
+                    SubType = "UserControl"
                     BuildAction = "Compile"
                 />
                 <File
-                    RelPath = "ProcessMemory.cs"
-                    Link = "..\shared\ProcessMemory.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
+                    RelPath = "PlayerList.resx"
+                    DependentUpon = "PlayerList.cs"
+                    BuildAction = "EmbeddedResource"
                 />
                 <File
                     RelPath = "TeamList.cs"
