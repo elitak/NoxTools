@@ -61,6 +61,8 @@ namespace NoxMapEditor
 		private System.Windows.Forms.MenuItem menuItemAbout;
 		private System.Windows.Forms.MenuItem menuItemNew;
 		private System.Windows.Forms.MenuItem menuItemSaveAs;
+		private System.Windows.Forms.MenuItem menuItem2;
+		private System.Windows.Forms.MenuItem viewObjects;
 		private System.Windows.Forms.TextBox mapCopyright;
 
 		public MainWindow()
@@ -71,8 +73,17 @@ namespace NoxMapEditor
 			Map.MapInfo.MapTypeNames.Values.CopyTo(names, 0);
 			mapType.Items.AddRange(names);
 			mapType.SelectedIndex = 3;//arena by default FIXME?
-
 			map = new Map();
+
+			/* This init code never seems to stay after in InitComp after you edit it with VS.NET */
+			mapView1 = new MapView();
+			largeMap.Controls.Add(mapView1);
+			mapView1.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.mapView1.Location = new System.Drawing.Point(0, 0);
+			this.mapView1.Name = "mapView1";
+			this.mapView1.Size = new System.Drawing.Size(1008, 695);
+			this.mapView1.TabIndex = 0;
+			/* End of code */
 		}
 
 		/// <summary>
@@ -107,13 +118,13 @@ namespace NoxMapEditor
 			this.menuItemNew = new System.Windows.Forms.MenuItem();
 			this.menuItemOpen = new System.Windows.Forms.MenuItem();
 			this.menuItemSave = new System.Windows.Forms.MenuItem();
+			this.menuItemSaveAs = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
 			this.menuItemExit = new System.Windows.Forms.MenuItem();
 			this.itemSave = new System.Windows.Forms.MenuItem();
 			this.menuItemAbout = new System.Windows.Forms.MenuItem();
 			this.tabControl1 = new System.Windows.Forms.TabControl();
 			this.largeMap = new System.Windows.Forms.TabPage();
-			this.mapView1 = new NoxMapEditor.MapView();
 			this.WallViewer = new System.Windows.Forms.TabPage();
 			this.MinimapPanel = new System.Windows.Forms.Panel();
 			this.tabPage1 = new System.Windows.Forms.TabPage();
@@ -143,9 +154,9 @@ namespace NoxMapEditor
 			this.label2 = new System.Windows.Forms.Label();
 			this.label1 = new System.Windows.Forms.Label();
 			this.mapSummary = new System.Windows.Forms.TextBox();
-			this.menuItemSaveAs = new System.Windows.Forms.MenuItem();
+			this.menuItem2 = new System.Windows.Forms.MenuItem();
+			this.viewObjects = new System.Windows.Forms.MenuItem();
 			this.tabControl1.SuspendLayout();
-			this.largeMap.SuspendLayout();
 			this.WallViewer.SuspendLayout();
 			this.tabPage1.SuspendLayout();
 			this.groupBox1.SuspendLayout();
@@ -155,6 +166,7 @@ namespace NoxMapEditor
 			// 
 			this.mainMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					  this.menuItem1,
+																					  this.menuItem2,
 																					  this.itemSave});
 			// 
 			// menuItem1
@@ -187,6 +199,12 @@ namespace NoxMapEditor
 			this.menuItemSave.Text = "Save";
 			this.menuItemSave.Click += new System.EventHandler(this.menuItemSave_Click);
 			// 
+			// menuItemSaveAs
+			// 
+			this.menuItemSaveAs.Index = 3;
+			this.menuItemSaveAs.Text = "Save As...";
+			this.menuItemSaveAs.Click += new System.EventHandler(this.menuItemSaveAs_Click);
+			// 
 			// menuItem3
 			// 
 			this.menuItem3.Index = 4;
@@ -200,9 +218,9 @@ namespace NoxMapEditor
 			// 
 			// itemSave
 			// 
-			this.itemSave.Index = 1;
+			this.itemSave.Index = 2;
 			this.itemSave.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
-																					  this.menuItemAbout});
+																					 this.menuItemAbout});
 			this.itemSave.Text = "Help";
 			// 
 			// menuItemAbout
@@ -225,20 +243,11 @@ namespace NoxMapEditor
 			// 
 			// largeMap
 			// 
-			this.largeMap.Controls.Add(this.mapView1);
 			this.largeMap.Location = new System.Drawing.Point(4, 22);
 			this.largeMap.Name = "largeMap";
 			this.largeMap.Size = new System.Drawing.Size(1008, 695);
 			this.largeMap.TabIndex = 0;
 			this.largeMap.Text = "Large Map";
-			// 
-			// mapView1
-			// 
-			this.mapView1.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.mapView1.Location = new System.Drawing.Point(0, 0);
-			this.mapView1.Name = "mapView1";
-			this.mapView1.Size = new System.Drawing.Size(1008, 695);
-			this.mapView1.TabIndex = 0;
 			// 
 			// WallViewer
 			// 
@@ -515,11 +524,18 @@ namespace NoxMapEditor
 			this.mapSummary.TabIndex = 1;
 			this.mapSummary.Text = "";
 			// 
-			// menuItemSaveAs
+			// menuItem2
 			// 
-			this.menuItemSaveAs.Index = 3;
-			this.menuItemSaveAs.Text = "Save As...";
-			this.menuItemSaveAs.Click += new System.EventHandler(this.menuItemSaveAs_Click);
+			this.menuItem2.Index = 1;
+			this.menuItem2.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+																					  this.viewObjects});
+			this.menuItem2.Text = "Map";
+			// 
+			// viewObjects
+			// 
+			this.viewObjects.Index = 0;
+			this.viewObjects.Text = "List Objects";
+			this.viewObjects.Click += new System.EventHandler(this.viewObjects_Click);
 			// 
 			// MainWindow
 			// 
@@ -531,7 +547,6 @@ namespace NoxMapEditor
 			this.Name = "MainWindow";
 			this.Text = "Nox Map Editor";
 			this.tabControl1.ResumeLayout(false);
-			this.largeMap.ResumeLayout(false);
 			this.WallViewer.ResumeLayout(false);
 			this.tabPage1.ResumeLayout(false);
 			this.groupBox1.ResumeLayout(false);
@@ -667,6 +682,14 @@ namespace NoxMapEditor
 				map.FileName = fd.FileName;
 				this.menuItemSave_Click(sender, e);//FIXME HOWTO? fire the event instead
 			}
+		}
+
+		private void viewObjects_Click(object sender, System.EventArgs e)
+		{
+			ObjectListDialog objLd = new ObjectListDialog();
+			objLd.objTable = map.Objects;
+			objLd.Show();
+			objLd.Owner = this;
 		}
 	}
 }
