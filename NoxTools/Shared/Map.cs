@@ -670,6 +670,7 @@ namespace NoxShared
 			public byte Terminator;//usually 0x00, sometimes 0xFF (e.g., Flag objects)
 			//TODO//public ArrayList Modifiers = new ArrayList();//modifiers this object has (elements are of type 'class Modifier')
 			public byte[] modbuf;
+			public ArrayList enchants;
 
 			public Object()
 			{
