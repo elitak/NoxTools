@@ -31,7 +31,7 @@ namespace NoxMapEditor
 			SELECT,			MAKE_WINDOW,			MAKE_DESTRUCTABLE,			MAKE_FLOOR
 		};
 		public Mode CurrentMode;
-		private System.Windows.Forms.Panel panel1;
+		private FlickerFreePanel mapPanel;
 		private System.Windows.Forms.StatusBar statusBar1;
 		private System.Windows.Forms.VScrollBar vScrollBar1;
 		private System.Windows.Forms.HScrollBar hScrollBar1;
@@ -75,12 +75,12 @@ namespace NoxMapEditor
 			CurrentMode = Mode.SELECT;
 		}
 
-		private void panel1_Paint(object sender, System.Windows.Forms.PaintEventArgs e)
+		private void mapPanel_Paint(object sender, PaintEventArgs e)
 		{
 			if (Map == null)
 				return;
 
-			Size size = panel1.Size;
+			Size size = mapPanel.Size;
 			e.Graphics.FillRectangle(new SolidBrush(Color.Black), new Rectangle(new Point(0, 0), size));			if (CurrentMode == Mode.MAKE_FLOOR)//only draw the floor when editing it
 			{
 				foreach (Map.TilePair tilePair in Map.FloorMap.Values)				{					Point pt = tilePair.Location;					Pen pen = new Pen(Color.Yellow, 1);					PointF nwCorner, neCorner, seCorner, swCorner, center = new PointF(0, 0);					int x = pt.X * squareSize * 2 - hScrollBar1.Value;					int y = pt.Y * squareSize * 2 - vScrollBar1.Value;					if (x >= 0 && x < size.Width && y >= 0 && y < size.Height)						{						center = new PointF(x + squareSize/2f, y + (3/2f)*squareSize);						nwCorner = new PointF(x - squareSize/2f, y + (3/2f)*squareSize);						neCorner = new PointF(nwCorner.X + 2*squareSize, nwCorner.Y - 2*squareSize);						if(tilePair.OneTileOnly)						{							if (tilePair.Left != null)							{								neCorner.X += -squareSize;								neCorner.Y += squareSize;							}							else							{								center.X += squareSize;								center.Y += -squareSize;								nwCorner.X += squareSize;								nwCorner.Y += -squareSize;							}							}						swCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y + squareSize);						seCorner = new PointF(neCorner.X + squareSize, neCorner.Y + squareSize);						e.Graphics.DrawPolygon(pen, new PointF[] {nwCorner, neCorner, seCorner, swCorner});						e.Graphics.DrawEllipse(pen, center.X, center.Y, 2, 2);					}				}			}
@@ -101,10 +101,10 @@ namespace NoxMapEditor
 					e.Graphics.DrawEllipse(pen, new RectangleF(topLeft, new Size(2*objectSelectionRadius, 2*objectSelectionRadius)));					e.Graphics.DrawString(oe.Extent.ToString(),new Font("Arial", 10), new SolidBrush(Color.Purple), topLeft);				}			}		} 
 		private void ScrollBarChanged(object sender, System.EventArgs e)
 		{
-			panel1.Invalidate();
+			mapPanel.Invalidate();
 		}
 
-		private void panel1_MouseDown(object sender, MouseEventArgs e)
+		private void mapPanel_MouseDown(object sender, MouseEventArgs e)
 		{
 			Point pointClicked = new Point(hScrollBar1.Value + e.X, vScrollBar1.Value + e.Y);
 			if (e.Button.Equals(MouseButtons.Left) && e.Clicks == 1)//if single left click
@@ -181,11 +181,11 @@ namespace NoxMapEditor
 						Map.FloorMap.Remove(pt);
 					}
 				}
-				panel1.Invalidate();
+				mapPanel.Invalidate();
 			}
 		}
 
-		private void panel1_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
+		private void mapPanel_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
 		{
 			Map.Wall wall = (Map.Wall)Map.WallMap[new Point((e.X+hScrollBar1.Value)/23,(e.Y+vScrollBar1.Value)/23)];
 			Map.TilePair tilePair = (Map.TilePair)Map.FloorMap[new Point((e.X+hScrollBar1.Value)/(squareSize*2),(e.Y+vScrollBar1.Value)/(squareSize*2))];
@@ -239,13 +239,98 @@ namespace NoxMapEditor
 			}
 			base.Dispose( disposing );
 		}
+		private void selectButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.SELECT;//set new mode
+			currentButton = (Button) sender;//update current button
+			mapPanel.Invalidate();
+		}
+		private void newObjectButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_OBJECT;//set new mode
+			currentButton = (Button) sender;//update current button
+			mapPanel.Invalidate();
+		}
+
+		private void destructableButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_DESTRUCTABLE;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
+		private void windowsButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_WINDOW;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
+		private void floorButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_FLOOR;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
+		private void contextMenuDelete_Click(object sender, System.EventArgs e)
+		{
+			if(SelectedObject != null)
+			{
+				Map.Objects.Remove(SelectedObject);
+				mapPanel.Invalidate();
+			}
+		}
+		protected ObjectPropertiesDialog propDlg = new ObjectPropertiesDialog();
+		private void contextMenuProperties_Click(object sender, EventArgs e)
+		{
+			propDlg.Object = SelectedObject;
+			propDlg.ShowDialog();
+		}
+
+		private bool dragging;
+		private void mapPanel_MouseUp(object sender, MouseEventArgs e)
+		{
+			Point pointClicked = new Point(hScrollBar1.Value+e.X, vScrollBar1.Value+e.Y);
+			if (dragging && SelectedObject != null)
+			{
+				SelectedObject.Location = pointClicked;
+				dragging = false;
+				
+				/*if (SelectedObject != null)
+					SelectedObject = null;*/
+			}
+			mapPanel.Invalidate();
+			
+		}
+
+		public Map.Object SelectObject(Point pt)
+		{
+			double closestDistance = Double.MaxValue;
+			Map.Object closest = null;
+
+			foreach (Map.Object obj in Map.Objects)
+			{
+				double distance = Math.Sqrt(Math.Pow(pt.X - obj.Location.X, 2) + Math.Pow(pt.Y - obj.Location.Y, 2));
+
+				if (distance < (double) objectSelectionRadius && distance < closestDistance)
+				{
+					closestDistance = distance;
+					closest = obj;
+				}
+			}
+
+			return closest;
+		}
+
+		
 		#region Component Designer generated code
 		/// <summary> 
 		/// Required method for Designer support - do not modify 
 		/// the contents of this method with the code editor.
 		/// </summary>
 		private void InitializeComponent()
-		{			this.panel1 = new System.Windows.Forms.Panel();
+		{			this.mapPanel = new FlickerFreePanel();
 			this.contextMenu1 = new System.Windows.Forms.ContextMenu();
 			this.contextMenuDelete = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
@@ -269,18 +354,18 @@ namespace NoxMapEditor
 			this.panel2.SuspendLayout();
 			this.SuspendLayout();
 			// 
-			// panel1
+			// mapPanel
 			// 
-			this.panel1.ContextMenu = this.contextMenu1;
-			this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.panel1.Location = new System.Drawing.Point(0, 0);
-			this.panel1.Name = "panel1";
-			this.panel1.Size = new System.Drawing.Size(1024, 768);
-			this.panel1.TabIndex = 0;
-			this.panel1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.panel1_MouseUp);
-			this.panel1.Paint += new System.Windows.Forms.PaintEventHandler(this.panel1_Paint);
-			this.panel1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.panel1_MouseMove);
-			this.panel1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.panel1_MouseDown);
+			this.mapPanel.ContextMenu = this.contextMenu1;
+			this.mapPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.mapPanel.Location = new System.Drawing.Point(0, 0);
+			this.mapPanel.Name = "mapPanel";
+			this.mapPanel.Size = new System.Drawing.Size(1024, 768);
+			this.mapPanel.TabIndex = 0;
+			this.mapPanel.MouseUp += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseUp);
+			this.mapPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.mapPanel_Paint);
+			this.mapPanel.MouseMove += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseMove);
+			this.mapPanel.MouseDown += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseDown);
 			// 
 			// contextMenu1
 			// 
@@ -461,7 +546,7 @@ namespace NoxMapEditor
 			this.Controls.Add(this.vScrollBar1);
 			this.Controls.Add(this.groupBox1);
 			this.Controls.Add(this.statusBar1);
-			this.Controls.Add(this.panel1);
+			this.Controls.Add(this.mapPanel);
 			this.Name = "MapView";
 			this.Size = new System.Drawing.Size(1024, 768);
 			this.groupBox1.ResumeLayout(false);
@@ -470,88 +555,6 @@ namespace NoxMapEditor
 
 		}
 		#endregion
-		private void selectButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.SELECT;//set new mode
-			currentButton = (Button) sender;//update current button
-			panel1.Invalidate();
-		}
-		private void newObjectButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_OBJECT;//set new mode
-			currentButton = (Button) sender;//update current button
-			panel1.Invalidate();
-		}
 
-		private void destructableButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_DESTRUCTABLE;//set new mode
-			currentButton = (Button) sender;//update current button	
-			panel1.Invalidate();
-		}
-
-		private void windowsButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_WINDOW;//set new mode
-			currentButton = (Button) sender;//update current button	
-			panel1.Invalidate();
-		}
-
-		private void floorButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_FLOOR;//set new mode
-			currentButton = (Button) sender;//update current button	
-			panel1.Invalidate();
-		}
-
-		private void contextMenuDelete_Click(object sender, System.EventArgs e)
-		{
-			if(SelectedObject != null)
-			{
-				Map.Objects.Remove(SelectedObject);
-				panel1.Invalidate();
-			}
-		}
-		protected ObjectPropertiesDialog propDlg = new ObjectPropertiesDialog();
-		private void contextMenuProperties_Click(object sender, EventArgs e)
-		{
-			propDlg.Object = SelectedObject;
-			propDlg.ShowDialog();
-		}
-
-		private bool dragging;
-		private void panel1_MouseUp(object sender, MouseEventArgs e)
-		{
-			Point pointClicked = new Point(hScrollBar1.Value+e.X, vScrollBar1.Value+e.Y);
-			if (dragging && SelectedObject != null)
-			{
-				SelectedObject.Location = pointClicked;
-				dragging = false;
-				
-				/*if (SelectedObject != null)
-					SelectedObject = null;*/
-			}
-			panel1.Invalidate();
-			
-		}
-
-		public Map.Object SelectObject(Point pt)
-		{
-			double closestDistance = Double.MaxValue;
-			Map.Object closest = null;
-
-			foreach (Map.Object obj in Map.Objects)
-			{
-				double distance = Math.Sqrt(Math.Pow(pt.X - obj.Location.X, 2) + Math.Pow(pt.Y - obj.Location.Y, 2));
-
-				if (distance < (double) objectSelectionRadius && distance < closestDistance)
-				{
-					closestDistance = distance;
-					closest = obj;
-				}
-			}
-
-			return closest;
-		}
 	}
 }
