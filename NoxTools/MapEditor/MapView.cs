@@ -14,9 +14,6 @@ namespace NoxMapEditor
 	/// </summary>
 	public class MapView : System.Windows.Forms.UserControl
 	{
-		/// <summary> 
-		/// Required designer variable.
-		/// </summary>
 		private System.ComponentModel.Container components = null;
 
 		protected static int squareSize = 23;
@@ -31,7 +28,16 @@ namespace NoxMapEditor
 			SELECT,			MAKE_WINDOW,			MAKE_DESTRUCTABLE,			MAKE_FLOOR
 		};
 		public Mode CurrentMode;
+
+		protected class FlickerFreePanel : Panel
+		{
+			public FlickerFreePanel() : base()
+			{
+				SetStyle(ControlStyles.DoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+			}
+		}
 		private FlickerFreePanel mapPanel;
+
 		private System.Windows.Forms.StatusBar statusBar1;
 		private System.Windows.Forms.VScrollBar vScrollBar1;
 		private System.Windows.Forms.HScrollBar hScrollBar1;
@@ -223,6 +229,9 @@ namespace NoxMapEditor
 					}
 				}
 			}
+
+			if (SelectedObject != null)
+				statusBar1.Text += String.Format(" SelectedObject={0}", SelectedObject.Name);
 		}
 
 		/// <summary> 

@@ -115,12 +115,6 @@
                     BuildAction = "Compile"
                 />
                 <File
-                    RelPath = "FlickerFreePanel.cs"
-                    Link = "..\shared\FlickerFreePanel.cs"
-                    SubType = "Component"
-                    BuildAction = "Compile"
-                />
-                <File
                     RelPath = "MainWindow.cs"
                     SubType = "Form"
                     BuildAction = "Compile"
