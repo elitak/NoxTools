@@ -18,7 +18,7 @@ namespace NoxShared
 		public delegate void ConsoleEvent(object sender, ConsoleEventArgs e);
 		public static event ConsoleEvent LineWritten;
 
-		private static Stack stack = new Stack();
+		//private static Stack stack = new Stack();
 		private static StreamWriter log = new StreamWriter("ConsoleLog.txt", true, Encoding.UTF8);
 
 		public static bool TimeStamp = true;
@@ -28,13 +28,13 @@ namespace NoxShared
 		{
 			string timestamp = String.Format("[{0:yyyy-MM-dd HH:mm:ss}] ", DateTime.Now);
 			string line = (TimeStamp ? timestamp : "") + String.Format(format, args);
-			stack.Push(line);
+			//stack.Push(line);
 			log.WriteLine(line);
 			log.Flush();
 			if (Echo) System.Console.WriteLine(line);
 			if (LineWritten != null) LineWritten(null, new ConsoleEventArgs(line));
 		}
-
+/*
 		/// <summary>
 		/// returns the last N lines
 		/// </summary>
@@ -71,5 +71,6 @@ namespace NoxShared
 				return stack.Count;
 			}
 		}
+*/
 	}
 }
