@@ -89,6 +89,11 @@
                     AssemblyName = "System.Xml"
                     HintPath = "..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.XML.dll"
                 />
+                <Reference
+                    Name = "System.Web"
+                    AssemblyName = "System.Web"
+                    HintPath = "..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.Web.dll"
+                />
             </References>
         </Build>
         <Files>
@@ -113,6 +118,32 @@
                     Link = "..\shared\BinaryIO.cs"
                     SubType = "Code"
                     BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "BlendDialog.cs"
+                    SubType = "Form"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "BlendDialog.resx"
+                    DependentUpon = "BlendDialog.cs"
+                    BuildAction = "EmbeddedResource"
+                />
+                <File
+                    RelPath = "DnsLite.cs"
+                    Link = "..\shared\DnsLite.cs"
+                    SubType = "Code"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "DoorProperties.cs"
+                    SubType = "Form"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "DoorProperties.resx"
+                    DependentUpon = "DoorProperties.cs"
+                    BuildAction = "EmbeddedResource"
                 />
                 <File
                     RelPath = "ExceptionDialog.cs"
