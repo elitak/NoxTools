@@ -25,7 +25,8 @@ namespace NoxMapEditor
 				xBox.Text = obj.Location.X.ToString();
 				yBox.Text = obj.Location.Y.ToString();
 				extentBox.Text = obj.Extent.ToString();
-				terminatorText.Text = String.Format("{0:x2} ", obj.Terminator);
+				teamBox.Text = obj.Team.ToString();
+				scrNameBox.Text = obj.Scr_Name;
 				//print out the bytes in hex
 				boxMod.Text = "";
 				if (obj.modbuf != null)
@@ -52,7 +53,10 @@ namespace NoxMapEditor
 		private System.Windows.Forms.ComboBox nameBox;
 		private System.Windows.Forms.Button enchantButton;
 		private System.Windows.Forms.Button lockButton;
-		private System.Windows.Forms.Label terminatorText;
+		private System.Windows.Forms.Label label5;
+		private System.Windows.Forms.TextBox teamBox;
+		private System.Windows.Forms.Label label6;
+		private System.Windows.Forms.TextBox scrNameBox;
 		private System.Windows.Forms.TextBox boxMod;
 
 		public ObjectPropertiesDialog()
@@ -81,7 +85,10 @@ namespace NoxMapEditor
 			this.boxMod = new System.Windows.Forms.TextBox();
 			this.enchantButton = new System.Windows.Forms.Button();
 			this.lockButton = new System.Windows.Forms.Button();
-			this.terminatorText = new System.Windows.Forms.Label();
+			this.label5 = new System.Windows.Forms.Label();
+			this.teamBox = new System.Windows.Forms.TextBox();
+			this.label6 = new System.Windows.Forms.Label();
+			this.scrNameBox = new System.Windows.Forms.TextBox();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -95,7 +102,7 @@ namespace NoxMapEditor
 			// 
 			// buttonOK
 			// 
-			this.buttonOK.Location = new System.Drawing.Point(12, 192);
+			this.buttonOK.Location = new System.Drawing.Point(12, 216);
 			this.buttonOK.Name = "buttonOK";
 			this.buttonOK.TabIndex = 2;
 			this.buttonOK.Text = "OK";
@@ -104,7 +111,7 @@ namespace NoxMapEditor
 			// buttonCancel
 			// 
 			this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.buttonCancel.Location = new System.Drawing.Point(100, 192);
+			this.buttonCancel.Location = new System.Drawing.Point(100, 216);
 			this.buttonCancel.Name = "buttonCancel";
 			this.buttonCancel.TabIndex = 3;
 			this.buttonCancel.Text = "Cancel";
@@ -112,7 +119,7 @@ namespace NoxMapEditor
 			// label2
 			// 
 			this.label2.ImageAlign = System.Drawing.ContentAlignment.TopLeft;
-			this.label2.Location = new System.Drawing.Point(40, 40);
+			this.label2.Location = new System.Drawing.Point(40, 64);
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(16, 20);
 			this.label2.TabIndex = 4;
@@ -121,7 +128,7 @@ namespace NoxMapEditor
 			// label3
 			// 
 			this.label3.ImageAlign = System.Drawing.ContentAlignment.TopLeft;
-			this.label3.Location = new System.Drawing.Point(104, 40);
+			this.label3.Location = new System.Drawing.Point(104, 64);
 			this.label3.Name = "label3";
 			this.label3.Size = new System.Drawing.Size(16, 20);
 			this.label3.TabIndex = 5;
@@ -129,7 +136,7 @@ namespace NoxMapEditor
 			// 
 			// xBox
 			// 
-			this.xBox.Location = new System.Drawing.Point(56, 40);
+			this.xBox.Location = new System.Drawing.Point(56, 64);
 			this.xBox.Name = "xBox";
 			this.xBox.Size = new System.Drawing.Size(40, 20);
 			this.xBox.TabIndex = 6;
@@ -137,7 +144,7 @@ namespace NoxMapEditor
 			// 
 			// yBox
 			// 
-			this.yBox.Location = new System.Drawing.Point(120, 40);
+			this.yBox.Location = new System.Drawing.Point(120, 64);
 			this.yBox.Name = "yBox";
 			this.yBox.Size = new System.Drawing.Size(40, 20);
 			this.yBox.TabIndex = 7;
@@ -146,7 +153,7 @@ namespace NoxMapEditor
 			// label4
 			// 
 			this.label4.ImageAlign = System.Drawing.ContentAlignment.TopLeft;
-			this.label4.Location = new System.Drawing.Point(16, 64);
+			this.label4.Location = new System.Drawing.Point(16, 88);
 			this.label4.Name = "label4";
 			this.label4.Size = new System.Drawing.Size(40, 20);
 			this.label4.TabIndex = 8;
@@ -154,7 +161,7 @@ namespace NoxMapEditor
 			// 
 			// extentBox
 			// 
-			this.extentBox.Location = new System.Drawing.Point(56, 64);
+			this.extentBox.Location = new System.Drawing.Point(56, 88);
 			this.extentBox.Name = "extentBox";
 			this.extentBox.Size = new System.Drawing.Size(40, 20);
 			this.extentBox.TabIndex = 9;
@@ -172,7 +179,7 @@ namespace NoxMapEditor
 			// 
 			// boxMod
 			// 
-			this.boxMod.Location = new System.Drawing.Point(16, 88);
+			this.boxMod.Location = new System.Drawing.Point(16, 112);
 			this.boxMod.Multiline = true;
 			this.boxMod.Name = "boxMod";
 			this.boxMod.Size = new System.Drawing.Size(160, 88);
@@ -197,20 +204,50 @@ namespace NoxMapEditor
 			this.lockButton.Text = "Doors";
 			this.lockButton.Click += new System.EventHandler(this.lockButton_Click);
 			// 
-			// terminatorText
+			// label5
 			// 
-			this.terminatorText.Location = new System.Drawing.Point(112, 64);
-			this.terminatorText.Name = "terminatorText";
-			this.terminatorText.Size = new System.Drawing.Size(64, 16);
-			this.terminatorText.TabIndex = 15;
+			this.label5.Location = new System.Drawing.Point(104, 88);
+			this.label5.Name = "label5";
+			this.label5.Size = new System.Drawing.Size(35, 16);
+			this.label5.TabIndex = 17;
+			this.label5.Text = "Team";
+			this.label5.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+			// 
+			// teamBox
+			// 
+			this.teamBox.Location = new System.Drawing.Point(144, 88);
+			this.teamBox.MaxLength = 1;
+			this.teamBox.Name = "teamBox";
+			this.teamBox.Size = new System.Drawing.Size(24, 20);
+			this.teamBox.TabIndex = 16;
+			this.teamBox.Text = "";
+			// 
+			// label6
+			// 
+			this.label6.Location = new System.Drawing.Point(16, 40);
+			this.label6.Name = "label6";
+			this.label6.Size = new System.Drawing.Size(72, 16);
+			this.label6.TabIndex = 18;
+			this.label6.Text = "Script Name";
+			// 
+			// scrNameBox
+			// 
+			this.scrNameBox.Location = new System.Drawing.Point(88, 40);
+			this.scrNameBox.Name = "scrNameBox";
+			this.scrNameBox.Size = new System.Drawing.Size(88, 20);
+			this.scrNameBox.TabIndex = 19;
+			this.scrNameBox.Text = "";
 			// 
 			// ObjectPropertiesDialog
 			// 
 			this.AcceptButton = this.buttonOK;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
-			this.ClientSize = new System.Drawing.Size(274, 223);
-			this.Controls.Add(this.terminatorText);
+			this.ClientSize = new System.Drawing.Size(274, 247);
+			this.Controls.Add(this.scrNameBox);
+			this.Controls.Add(this.label6);
+			this.Controls.Add(this.label5);
+			this.Controls.Add(this.teamBox);
 			this.Controls.Add(this.lockButton);
 			this.Controls.Add(this.enchantButton);
 			this.Controls.Add(this.boxMod);
@@ -247,6 +284,11 @@ namespace NoxMapEditor
 			obj.Location.X = Single.Parse(xBox.Text);
 			obj.Location.Y = Single.Parse(yBox.Text);
 			obj.Extent = Int32.Parse(extentBox.Text);
+			if(teamBox.Text != "")
+			{
+				obj.Team = Byte.Parse(teamBox.Text);
+				obj.Terminator = 0xFF;
+			}
 			//get the contents of the box and parse it to turn it into a byte[] and use it as the modbuf
 			if (boxMod.Text.Length > 0)
 			{

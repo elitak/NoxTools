@@ -927,6 +927,9 @@ namespace NoxShared
 			public byte[] modbuf;
 			public ArrayList enchants;
 			public byte Team;//Specified in the extra stuff that comes with 0xFF Terminator
+			public string Scr_Name;//Name used in Script Section
+			public byte[] temp1;//Temporary buffers for FF term. stuff, unknowns 
+			public byte[] temp2;//Temporary buffers for FF term. stuff, unknowns 
 
 			public Object()
 			{
@@ -958,9 +961,16 @@ namespace NoxShared
 				Type = rdr.ReadInt32();
 				Extent = rdr.ReadInt32();
 				Unknown = rdr.ReadInt32();//always null?
+				Unknown = 0;
 				Location = new PointF(rdr.ReadSingle(), rdr.ReadSingle());//x then y
 				Terminator = rdr.ReadByte();
-				//while (rdr.BaseStream.Position < endOfData)
+				if(Terminator == 0xFF)
+				{
+					temp1 = rdr.ReadBytes(4);
+					Scr_Name = rdr.ReadString();
+					Team = rdr.ReadByte();
+					temp2 = rdr.ReadBytes(17);
+				}
 				if (rdr.BaseStream.Position < endOfData)
 				{
 					/*
@@ -1012,6 +1022,17 @@ namespace NoxShared
 				wtr.Write((float) Location.X);
 				wtr.Write((float) Location.Y);
 				wtr.Write((byte) Terminator);
+				if(Terminator == 0xFF)
+				{
+					if(temp1 == null)
+						temp1 = new Byte[] {0, 0, 0, 1, 0};
+					if(temp2 == null)
+						temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00};
+					wtr.Write(temp1);
+					wtr.Write(Scr_Name);
+					wtr.Write(Team);
+					wtr.Write(temp2);
+				}
 				if(modbuf != null)
 					wtr.Write(modbuf);
 			}
@@ -1036,6 +1057,17 @@ namespace NoxShared
 				}
 				obj.enchants = enchants;
 				obj.Team = obj.Team;
+				obj.Scr_Name = String.Copy(Scr_Name);
+				if(temp1 != null && temp1.Length > 0)
+				{
+					obj.temp1 = new byte[temp1.Length];
+					temp1.CopyTo(obj.temp1,0);
+				}
+				if(temp2 != null && temp2.Length > 0)
+				{
+					obj.temp2 = new byte[temp2.Length];
+					temp2.CopyTo(obj.temp2,0);
+				}
 			}
 		}
 		
