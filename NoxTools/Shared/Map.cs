@@ -25,12 +25,64 @@ namespace NoxShared
 		public ObjectTable Objects;//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
 
 		// ----PROTECTED MEMBERS----
+		protected MapHeader Header;
 		public string FileName;
 		protected Hashtable Headers;//contains the headers for each section or the complete section
 
 		#region Inner Classes and Enumerations
+
+		protected class MapHeader
+		{
+			const uint LENGTH = 0x18;
+			const uint FILE_ID = 0xFADEFACE;
+			public uint CheckSum;//checksum for rest of file. determines whether download is necessary.
+			public uint u1;//UNKNOWN
+			public uint u2;//UNKNOWN
+
+			public MapHeader(Stream stream)
+			{
+				Read(stream);
+			}
+
+			public void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				uint id = rdr.ReadUInt32();//first int is always FADEFACE
+				Debug.Assert(id == FILE_ID);
+
+				rdr.ReadInt32();//always null?
+				CheckSum = rdr.ReadUInt32();
+				rdr.ReadInt32();//always null?
+				u1 = rdr.ReadUInt32();
+				u2 = rdr.ReadUInt32();
+			}
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write(FILE_ID);
+				wtr.Write((uint) 0);
+				wtr.Write((uint) CheckSum);
+				wtr.Write((uint) 0);
+				wtr.Write((uint) u1);
+				wtr.Write((uint) u2);
+			}
+
+			//lousy checksum algorithm, TODO: replace with crc32 or something similar
+			public void GenerateChecksum(byte[] data)
+			{
+				BinaryReader rdr = new BinaryReader(new MemoryStream(data));
+
+				CheckSum = 0;
+				while (rdr.BaseStream.Position < rdr.BaseStream.Length)
+					CheckSum += 29 * rdr.ReadUInt32();
+			}
+		}
+
 		public class MapInfo
 		{
+			public short unknown;//usually 2 or 3, but changing it causes the map not to load sometimes?
 			public string Summary;//the map's brief name
 			public string Description;//the map's long description
 			public string Author;
@@ -43,7 +95,6 @@ namespace NoxShared
 			public MapType Type;
 			public byte RecommendedMin;
 			public byte RecommendedMax;
-			public short unknown;
 
 			public MapInfo()
 			{
@@ -657,12 +708,12 @@ namespace NoxShared
 				BinaryWriter wtr = new BinaryWriter(stream);
 				wtr.Write((short) toc[Name]);
 				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
-				if (Name == "WizardRobe" || Name == "LeatherBoots") modbuf = new byte[] {0,0,0,0,0x00,0x00};//HACK for testing
+				//if (Name == "WizardRobe" || Name == "LeatherBoots") modbuf = new byte[] {0,0,0,0,0x00,0x00};//HACK for testing
 				//TODO:
 				//   read from thing.bin? -> if type SIMPLE and not IMMOBILE, then add six nulls to the end of the entry?
 				//   modifier support, read from modifier.bin?
 				//   new object, move object, delete object
-				long dataLength = 4*5 + 1 + (modbuf==null? 0 : modbuf.Length);
+				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length);
 				wtr.Write((long) dataLength);
 				wtr.Write((int) Type);
 				wtr.Write((int) Extent);
@@ -727,7 +778,7 @@ namespace NoxShared
 			}
 			rdr.BaseStream.Seek(0, SeekOrigin.Begin);//reset to start
 
-			ReadHeader(rdr);
+			Header = new MapHeader(rdr.BaseStream);
 			
 			while (rdr.BaseStream.Position < rdr.BaseStream.Length)
 			{
@@ -824,18 +875,6 @@ namespace NoxShared
 			wtr.BaseStream.Seek(0, SeekOrigin.Begin);
 			if (tocStream != null)
 				Objects = new ObjectTable(tocStream, dataStream);
-		}
-
-		protected void ReadHeader(NoxBinaryReader rdr)
-		{
-			//rdr.ReadInt32();//first int is always FADEFACE
-			//rdr.ReadInt32();//always null?
-			//rdr.ReadInt32();//UNKNOWN
-			//rdr.ReadInt32();//always null?
-			//rdr.ReadInt32();//UNKNOWN
-			//rdr.ReadInt32();//UNKNOWN
-			SectHeader hed = new SectHeader("FileHeader",24,rdr.ReadBytes(24));
-			Headers.Add(hed.name,hed);
 		}
 
 		protected void ReadWallMap(NoxBinaryReader rdr)
@@ -955,15 +994,10 @@ namespace NoxShared
 
 		public void WriteFile()
 		{
-			FileStream fStr = File.Open(FileName, FileMode.Create);
-			NoxBinaryWriter wtr;
-				
-			if (Encrypted)
-				wtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.MAP);
-			else
-				wtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.NONE);
+			MemoryStream mapData = new MemoryStream();
+			NoxBinaryWriter wtr = new NoxBinaryWriter(mapData, NoxType.NoxCryptFormat.NONE);//encrypt later
 
-			WriteFileHeader(wtr);
+			Header.Write(wtr.BaseStream);
 			Info.Write(wtr.BaseStream);
 			WriteWallMap(wtr);
 			WriteFloorMap(wtr);
@@ -979,8 +1013,28 @@ namespace NoxShared
 			SkipSection(wtr,"MapIntro");
 			SkipSection(wtr,"ScriptData");
 			Objects.Write(wtr.BaseStream);
-			wtr.SkipToNextBoundary();
+
+			//write null bytes to next boundary -- this is needed only because
+			// no more data is going to be written,
+			// so the null bytes are not written implicitly by 'Seek()'ing
+			wtr.Write(new byte[(8 - wtr.BaseStream.Position % 8) % 8]);
+			
+			//go back and write header again, with a proper checksum
+			Header.GenerateChecksum(mapData.ToArray());
+			wtr.BaseStream.Seek(0, SeekOrigin.Begin);
+			Header.Write(wtr.BaseStream);
+			wtr.BaseStream.Seek(0, SeekOrigin.End);
+
 			wtr.Close();
+
+			FileStream fStr = File.Open(FileName, FileMode.Create);
+			NoxBinaryWriter fileWtr;
+			if (Encrypted)
+				fileWtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.MAP);
+			else
+				fileWtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.NONE);
+			fileWtr.Write(mapData.ToArray());
+			fileWtr.Close();
 		}
 
 		protected void WriteFloorMap(NoxBinaryWriter wtr)
@@ -995,17 +1049,18 @@ namespace NoxShared
 			wtr.Write(length);
 			wtr.Write(hed.header);
 		
+			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
+			//   seems to be based on x, y. figure it out and then enforce it here.
 			foreach (TilePair tilePair in FloorMap.Values)
 				tilePair.Write(wtr.BaseStream);
 
-			wtr.Write((byte)0xFF);
-			wtr.Write((byte)0xFF);
+			wtr.Write((ushort) 0xFFFF);//terminating x and y
 						
 			//rewrite the length now that we can find it
-			length = wtr.BaseStream.Position - (pos+8);
-			wtr.Seek((int)pos,SeekOrigin.Begin);
+			length = wtr.BaseStream.Position - (pos + 8);
+			wtr.Seek((int) pos, SeekOrigin.Begin);
 			wtr.Write(length);
-			wtr.Seek(0,SeekOrigin.End);
+			wtr.Seek(0, SeekOrigin.End);
 		}
 
 		private void WriteWindowWalls(NoxBinaryWriter wtr)
@@ -1019,28 +1074,27 @@ namespace NoxShared
 			pos = wtr.BaseStream.Position;
 			wtr.Write(length);
 			wtr.Write(hed.header);
-	//		wtr.Write((Int16)num_Windows); If map file was wrong we need to make correct
-			wtr.Write((Int16)0);
+			wtr.Write((short) 0);//placeholder for count
 
-			Int16 count = 0;
-			foreach (DictionaryEntry de in WallMap)
-			{
-				Wall wall = (Map.Wall)de.Value;
+			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
+			//   seems to be based on x, y. figure it out and then enforce it here.
+			short count = 0;
+			foreach (Wall wall in WallMap.Values)
 				if(wall.Window)
 				{
-					wtr.Write((int)wall.Location.X);
-					wtr.Write((int)wall.Location.Y);
+					wtr.Write((uint) wall.Location.X);
+					wtr.Write((uint) wall.Location.Y);
 					count++;
 				}
-			}
 		
 			//rewrite the length
-			length = wtr.BaseStream.Position - (pos+8);
-			wtr.Seek((int)pos,SeekOrigin.Begin);
+			length = wtr.BaseStream.Position - (pos + 8);
+			wtr.Seek((int) pos, SeekOrigin.Begin);
 			wtr.Write(length);
-			wtr.Seek((int)hed.length,SeekOrigin.Current);
-			wtr.Write((Int16)count);
-			wtr.Seek(0,SeekOrigin.End);
+			wtr.Seek((int) hed.length, SeekOrigin.Current);
+			//rewrite the windowwall count
+			wtr.Write((short) count);
+			wtr.Seek(0, SeekOrigin.End);
 		}
 
 		private void WriteDestructableWalls(NoxBinaryWriter wtr)
@@ -1054,20 +1108,18 @@ namespace NoxShared
 			pos = wtr.BaseStream.Position;
 			wtr.Write(length);
 			wtr.Write(hed.header);
-			//wtr.Write((Int16)num_Destructable);
 			wtr.Write((Int16)0);
 
+			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
+			//   seems to be based on x, y. figure it out and then enforce it here.
 			Int16 count = 0;
-			foreach (DictionaryEntry de in WallMap)
-			{
-				Wall wall = (Map.Wall)de.Value;
+			foreach (Wall wall in WallMap.Values)
 				if(wall.Destructable)
 				{
-					wtr.Write((int)wall.Location.X);
-					wtr.Write((int)wall.Location.Y);
+					wtr.Write((uint) wall.Location.X);
+					wtr.Write((uint) wall.Location.Y);
 					count++;
 				}
-			}
 
 			//rewrite the length
 			length = wtr.BaseStream.Position - (pos+8);
@@ -1090,21 +1142,17 @@ namespace NoxShared
 			wtr.Write(length);
 			wtr.Write(hed.header);
 
+			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
+			//   seems to be based on x, y. figure it out and then enforce it here.
 			foreach (Wall wall in WallMap.Values)
 				wall.Write(wtr.BaseStream);
-			wtr.Write((byte)0xFF);//wallmap terminates with this byte
+			wtr.Write((byte) 0xFF);//wallmap terminates with this byte
 
 			//rewrite the length
-			length = wtr.BaseStream.Position - (pos+8);
-			wtr.Seek((int)pos,SeekOrigin.Begin);
+			length = wtr.BaseStream.Position - (pos + 8);
+			wtr.Seek((int) pos, SeekOrigin.Begin);
 			wtr.Write(length);
-			wtr.Seek(0,SeekOrigin.End);
-		}
-
-		private void WriteFileHeader(NoxBinaryWriter wtr)
-		{
-			SectHeader hed = (SectHeader) Headers["FileHeader"];
-			wtr.Write(hed.header);
+			wtr.Seek(0, SeekOrigin.End);
 		}
 		#endregion
 	}
