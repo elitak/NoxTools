@@ -15,7 +15,7 @@ namespace PlrEditor
 	/// </summary>
 	public class MainWindow : System.Windows.Forms.Form, IObserver
 	{
-		protected Player player;
+		protected PlayerFile player;
 
 		private System.Windows.Forms.MenuItem menuItemOpen;
 		private System.Windows.Forms.MenuItem menuItemExit;
@@ -94,7 +94,7 @@ namespace PlrEditor
 
 		public MainWindow()
 		{
-			player = new Player();
+			player = new PlayerFile();
 			player.AddObserver(this);
 			InitializeComponent();
 			MyInitializeComponent();
@@ -943,7 +943,7 @@ namespace PlrEditor
 
 		public void Update(IObservable sender, object arg)
 		{
-			Player plr = (Player) sender;
+			PlayerFile plr = (PlayerFile) sender;
 
 			nameBox.Text = plr.Name;
 
@@ -973,7 +973,7 @@ namespace PlrEditor
 
 			if (System.IO.File.Exists(fd.FileName))
 			{
-				player = new Player();
+				player = new PlayerFile();
 				player.AddObserver(this);
 				player.Load(fd.FileName);
 			}
@@ -1005,7 +1005,7 @@ namespace PlrEditor
 			player.ShoesTrimColor = (UserColor) colorBoxShoesTrim.BackColor;
 
 			player.Name = nameBox.Text;
-			player.Class = (Player.CharacterClass) classBox.SelectedIndex;
+			player.Class = (PlayerFile.CharacterClass) classBox.SelectedIndex;
 
 			player.WriteFile();
 		}
