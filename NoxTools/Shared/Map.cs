@@ -90,7 +90,7 @@ namespace NoxShared
 
 				wtr.Write((int) this.Count);
 				foreach (Polygon poly in this)
-					poly.Write(wtr.BaseStream);
+					poly.Write(wtr.BaseStream, this);
 
 				//rewrite the length now that we can find it
 				long length = wtr.BaseStream.Position - startPos;
@@ -103,25 +103,35 @@ namespace NoxShared
 		public class Polygon
 		{
 			public string Name;
-			public int u1;
-			public ArrayList Points = new ArrayList();
+			public Color AmbientLightColor;//the area's ambient light color
+			public byte MinimapGroup;//the visible wall group when in this area
+			public ArrayList Points = new ArrayList();//the unindexed points that define the polygon
 			protected byte[] endbuf;
-			protected PolygonList list;
-			public string s1;
-			public string s2;
+
+			public Polygon(string name, Color ambient, byte mmGroup, IList points)
+			{
+				Name = name;
+				AmbientLightColor = ambient;
+				MinimapGroup = mmGroup;
+				Points = new ArrayList(points);
+				//N.B. that endbuf is left null here
+			}
 
 			public Polygon(Stream stream, PolygonList list)
 			{
-				this.list = list;
-				Read(stream);
+				Read(stream, list);
 			}
 
-			protected void Read(Stream stream)
+			//FIXME, TODO: figure out what the "termCount" is about
+			// and remove dependency on
+			// the parent polygon list for reading and writing
+			protected void Read(Stream stream, PolygonList list)
 			{
 				BinaryReader rdr = new BinaryReader(stream);
 
 				Name = rdr.ReadString();
-				u1 = rdr.ReadInt32(); //maybe a float?
+				AmbientLightColor = Color.FromArgb(rdr.ReadByte(), rdr.ReadByte(), rdr.ReadByte());
+				MinimapGroup = rdr.ReadByte();
 
 				short ptCount = rdr.ReadInt16();
 				while (ptCount-- > 0)
@@ -134,10 +144,11 @@ namespace NoxShared
 				System.IO.MemoryStream nStream = new System.IO.MemoryStream();
 				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(nStream);
 				
-				string temp;
 
+				//some maps (solo) have strings in this area?
+				//please document/comment this, Andrew
 				wtr.Write(rdr.ReadInt16());
-				temp = new string(rdr.ReadChars(rdr.ReadInt32()));
+				string temp = new string(rdr.ReadChars(rdr.ReadInt32()));
 				wtr.Write((int)temp.Length);
 				wtr.Write(temp.ToCharArray());
 				wtr.Write(rdr.ReadInt32());
@@ -147,23 +158,36 @@ namespace NoxShared
 				wtr.Write(temp.ToCharArray());
 
 				if (list.TermCount == 0x0003)
-					wtr.Write(rdr.ReadBytes(0x4));
+					wtr.Write(rdr.ReadBytes(4));
 				else if (list.TermCount == 0x0004)
-					wtr.Write(rdr.ReadBytes(0x8));
+					wtr.Write(rdr.ReadBytes(8));
 				else
 					Debug.Assert(false, "(Map, Polygons) Unhandled terminal count.");
 				endbuf = nStream.ToArray();
 			}
 
-			public void Write(Stream stream)
+			public void Write(Stream stream, PolygonList list)
 			{
 				BinaryWriter wtr = new BinaryWriter(stream);
 				wtr.Write(Name);
-				wtr.Write((int) u1);
+				wtr.Write((byte) AmbientLightColor.R);
+				wtr.Write((byte) AmbientLightColor.G);
+				wtr.Write((byte) AmbientLightColor.B);
+				wtr.Write((byte) MinimapGroup);
 				wtr.Write((short) Points.Count);
 				foreach (PointF pt in Points)
 					wtr.Write((int) (list.Points.IndexOf(pt)+1));
-				wtr.Write(endbuf);
+				if (endbuf != null)
+					wtr.Write(endbuf);
+				else
+				{
+					if (list.TermCount == 0x0003)
+						wtr.Write(new byte[] {01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00});
+					else if (list.TermCount == 0x0004)
+						wtr.Write(new byte[] {01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00});
+					else
+						Debug.Assert(false, "(Map, Polygons) Unhandled terminal count.");
+				}
 			}
 		}
 
