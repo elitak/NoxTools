@@ -159,6 +159,16 @@
                     BuildAction = "Compile"
                 />
                 <File
+                    RelPath = "ObjectEnchantDialog.cs"
+                    SubType = "Form"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "ObjectEnchantDialog.resx"
+                    DependentUpon = "ObjectEnchantDialog.cs"
+                    BuildAction = "EmbeddedResource"
+                />
+                <File
                     RelPath = "ObjectPropertiesDialog.cs"
                     SubType = "Form"
                     BuildAction = "Compile"

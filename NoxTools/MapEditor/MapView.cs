@@ -48,7 +48,6 @@ namespace NoxMapEditor
 				SetStyle(ControlStyles.DoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
 			}
 		}
-		private FlickerFreePanel mapPanel;
 
 		private System.Windows.Forms.StatusBar statusBar1;
 		private System.Windows.Forms.VScrollBar vScrollBar1;
@@ -70,13 +69,16 @@ namespace NoxMapEditor
 		private System.Windows.Forms.TextBox lTileVar;
 		private System.Windows.Forms.CheckBox checkboxGrid;
 		private System.Windows.Forms.Button buttonSecret;
+		private NoxMapEditor.MapView.FlickerFreePanel mapPanel;
+		private System.Windows.Forms.MenuItem enchantItem;
 		private System.Windows.Forms.TextBox rTileVar;
 
 		public MapView()
 		{
 			InitializeComponent();
 			//SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-			//SetStyle(ControlStyles.DoubleBuffer, true);
+			//SetStyle(ControlStyles.DoubleBuffer, true);			wallSelector1 = new WallSelector();
+			this.panel2.Controls.Add(wallSelector1);
 			wallSelector1.Parent = this;
 
 			hScrollBar1.Value = (hScrollBar1.Maximum - hScrollBar1.Minimum) / 2;
@@ -297,9 +299,9 @@ namespace NoxMapEditor
 				mapPanel.Invalidate();
 			}
 		}
-		protected ObjectPropertiesDialog propDlg = new ObjectPropertiesDialog();
+		protected ObjectPropertiesDialog propDlg;		protected ObjectEnchantDialog enchantDlg;
 		private void contextMenuProperties_Click(object sender, EventArgs e)
-		{
+		{			propDlg = new ObjectPropertiesDialog();
 			propDlg.Object = SelectedObject;
 			propDlg.ShowDialog();
 			mapPanel.Invalidate();
@@ -353,6 +355,7 @@ namespace NoxMapEditor
 			this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
 			this.vScrollBar1 = new System.Windows.Forms.VScrollBar();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
+			this.buttonSecret = new System.Windows.Forms.Button();
 			this.rTileVar = new System.Windows.Forms.TextBox();
 			this.lTileVar = new System.Windows.Forms.TextBox();
 			this.rTileGraphic = new System.Windows.Forms.ComboBox();
@@ -363,11 +366,9 @@ namespace NoxMapEditor
 			this.selectButton = new System.Windows.Forms.Button();
 			this.newObjectButton = new System.Windows.Forms.Button();
 			this.panel2 = new System.Windows.Forms.Panel();
-			this.wallSelector1 = new NoxMapEditor.WallSelector();
 			this.checkboxGrid = new System.Windows.Forms.CheckBox();
-			this.buttonSecret = new System.Windows.Forms.Button();
+			this.enchantItem = new System.Windows.Forms.MenuItem();
 			this.groupBox1.SuspendLayout();
-			this.panel2.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// mapPanel
@@ -388,7 +389,8 @@ namespace NoxMapEditor
 			this.contextMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																						 this.contextMenuDelete,
 																						 this.menuItem3,
-																						 this.contextMenuProperties});
+																						 this.contextMenuProperties,
+																						 this.enchantItem});
 			// 
 			// contextMenuDelete
 			// 
@@ -461,6 +463,15 @@ namespace NoxMapEditor
 			this.groupBox1.TabIndex = 4;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Tools";
+			// 
+			// buttonSecret
+			// 
+			this.buttonSecret.Location = new System.Drawing.Point(8, 344);
+			this.buttonSecret.Name = "buttonSecret";
+			this.buttonSecret.Size = new System.Drawing.Size(72, 23);
+			this.buttonSecret.TabIndex = 18;
+			this.buttonSecret.Text = "Secret";
+			this.buttonSecret.Click += new System.EventHandler(this.buttonSecret_Click);
 			// 
 			// rTileVar
 			// 
@@ -543,20 +554,11 @@ namespace NoxMapEditor
 			// 
 			// panel2
 			// 
-			this.panel2.Controls.Add(this.wallSelector1);
 			this.panel2.Dock = System.Windows.Forms.DockStyle.Top;
 			this.panel2.Location = new System.Drawing.Point(3, 16);
 			this.panel2.Name = "panel2";
 			this.panel2.Size = new System.Drawing.Size(82, 192);
 			this.panel2.TabIndex = 5;
-			// 
-			// wallSelector1
-			// 
-			this.wallSelector1.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.wallSelector1.Location = new System.Drawing.Point(0, 0);
-			this.wallSelector1.Name = "wallSelector1";
-			this.wallSelector1.Size = new System.Drawing.Size(82, 192);
-			this.wallSelector1.TabIndex = 0;
 			// 
 			// checkboxGrid
 			// 
@@ -567,14 +569,11 @@ namespace NoxMapEditor
 			this.checkboxGrid.Text = "Grid";
 			this.checkboxGrid.CheckedChanged += new System.EventHandler(this.checkboxGrid_CheckedChanged);
 			// 
-			// buttonSecret
+			// enchantItem
 			// 
-			this.buttonSecret.Location = new System.Drawing.Point(8, 344);
-			this.buttonSecret.Name = "buttonSecret";
-			this.buttonSecret.Size = new System.Drawing.Size(72, 23);
-			this.buttonSecret.TabIndex = 18;
-			this.buttonSecret.Text = "Secret";
-			this.buttonSecret.Click += new System.EventHandler(this.buttonSecret_Click);
+			this.enchantItem.Index = 3;
+			this.enchantItem.Text = "Enchants";
+			this.enchantItem.Click += new System.EventHandler(this.enchantItem_Click);
 			// 
 			// MapView
 			// 
@@ -586,7 +585,6 @@ namespace NoxMapEditor
 			this.Name = "MapView";
 			this.Size = new System.Drawing.Size(1024, 768);
 			this.groupBox1.ResumeLayout(false);
-			this.panel2.ResumeLayout(false);
 			this.ResumeLayout(false);
 
 		}
@@ -594,6 +592,20 @@ namespace NoxMapEditor
 
 		private void checkboxGrid_CheckedChanged(object sender, System.EventArgs e)
 		{
+			mapPanel.Invalidate();
+		}
+
+		private void enchantItem_Click(object sender, System.EventArgs e)
+		{
+			if(((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Init=="ModifierInit")
+			{
+				enchantDlg = new ObjectEnchantDialog();
+				enchantDlg.Object = SelectedObject;
+				enchantDlg.ShowDialog();
+			}
+			else
+				System.Windows.Forms.MessageBox.Show("This object does not accept enchants.","Not compatible");
+			
 			mapPanel.Invalidate();
 		}
 	}
