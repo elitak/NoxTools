@@ -25,7 +25,7 @@ namespace NoxShared
 		public ObjectTable Objects;//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
 
 		// ----PROTECTED MEMBERS----
-		protected string filename;
+		public string FileName;
 		protected Hashtable Headers;//contains the headers for each section or the complete section
 
 		#region Inner Classes and Enumerations
@@ -43,6 +43,12 @@ namespace NoxShared
 			public MapType Type;
 			public byte RecommendedMin;
 			public byte RecommendedMax;
+			public short unknown;
+
+			public MapInfo()
+			{
+				Type = MapType.ARENA;
+			}
 
 			public enum MapType : uint
 			{
@@ -68,7 +74,7 @@ namespace NoxShared
 				MapTypeNames.Add(MapType.FLAGBALL, "Flagball");
 			}
 
-			public enum SectionLength
+			protected enum SectionLength
 			{
 				PREFIX = 0x02,
 				TITLE = 0x40,
@@ -83,6 +89,77 @@ namespace NoxShared
 				MINMAX = 0x02,
 				TOTAL = PREFIX + TITLE + DESCRIPTION + VERSION + 2*(AUTHOR + EMAIL) + EMPTY + COPYRIGHT + DATE + TYPE + MINMAX
 			};
+
+			public void Read(Stream stream)
+			{
+				NoxBinaryReader rdr = new NoxBinaryReader(stream);
+				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;//order matters!
+
+				unknown = rdr.ReadInt16();//dont know what this is for
+				//Summary = new string(rdr.ReadChars((int) SectionLength.TITLE));
+				//Summary = Summary.Substring(0, Summary.IndexOf('\0'));
+				Summary = rdr.ReadString((int) SectionLength.TITLE);
+				Description = rdr.ReadString((int) SectionLength.DESCRIPTION);
+				Version = rdr.ReadString((int) SectionLength.VERSION);
+				Author = rdr.ReadString((int) SectionLength.AUTHOR);
+				Email = rdr.ReadString((int) SectionLength.EMAIL);
+				Author2 = rdr.ReadString((int) SectionLength.AUTHOR);
+				Email2 = rdr.ReadString((int) SectionLength.EMAIL);
+				rdr.ReadBytes((int) SectionLength.EMPTY);
+				Copyright = rdr.ReadString((int) SectionLength.COPYRIGHT);
+				Date = rdr.ReadString((int) SectionLength.DATE);
+				Type = (MapType) rdr.ReadUInt32();//TODO: quest maps have an extra section after this part and no min/max recommended players
+				RecommendedMin = rdr.ReadByte();
+				RecommendedMax = rdr.ReadByte();
+				Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (MapInfo) WARNING: section length is incorrect");
+			}
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+				wtr.Write("MapInfo\0");
+				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
+				wtr.Write((long) SectionLength.TOTAL);
+
+				long finish = wtr.BaseStream.Position + (long) SectionLength.TOTAL;
+
+				wtr.Write((short) unknown);
+
+				wtr.Write(Summary.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.TITLE - Summary.Length, SeekOrigin.Current);
+
+				wtr.Write(Description.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.DESCRIPTION - Description.Length, SeekOrigin.Current);
+
+				wtr.Write(Version.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.VERSION - Version.Length, SeekOrigin.Current);
+
+				wtr.Write(Author.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.AUTHOR - Author.Length, SeekOrigin.Current);
+
+				wtr.Write(Email.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.EMAIL - Email.Length, SeekOrigin.Current);
+
+				wtr.Write(Author2.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.AUTHOR - Author2.Length, SeekOrigin.Current);
+
+				wtr.Write(Email2.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.EMAIL - Email2.Length, SeekOrigin.Current);
+
+				wtr.BaseStream.Seek((int) SectionLength.EMPTY, SeekOrigin.Current);
+
+				wtr.Write(Copyright.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.COPYRIGHT - Copyright.Length, SeekOrigin.Current);
+
+				wtr.Write(Date.ToCharArray());
+				wtr.BaseStream.Seek((int) SectionLength.DATE - Date.Length, SeekOrigin.Current);
+
+				wtr.Write((int) Type);
+				wtr.Write((byte) RecommendedMin);
+				wtr.Write((byte) RecommendedMax);
+
+				Debug.Assert(wtr.BaseStream.Position == finish, "NoxMap (MapInfo) ERROR: wrote wrong length");
+			}
 		}
 
 		public class SectHeader
@@ -610,6 +687,7 @@ namespace NoxShared
 			//MULTI = 0x??
 			//QUEST = 0x??
 		};
+		#endregion
 
 		// ----CONSTRUCTORS----
 		public Map()
@@ -624,7 +702,6 @@ namespace NoxShared
 			//  OR we find upon loading that the file was originally unencrypted
 			Encrypted = true;
 		}
-		#endregion
 
 		public Map(string filename) : this()
 		{
@@ -633,19 +710,19 @@ namespace NoxShared
 
 		public void Load(string filename)
 		{
-			this.filename = filename;
+			this.FileName = filename;
       		ReadFile();
 		}
 
 		#region Reading Methods
 		public void ReadFile()
 		{
-			NoxBinaryReader rdr	= new NoxBinaryReader(File.Open(filename, FileMode.Open), NoxCryptFormat.MAP);
+			NoxBinaryReader rdr	= new NoxBinaryReader(File.Open(FileName, FileMode.Open), NoxCryptFormat.MAP);
 
 			//check to see if the file is not encrypted
 			if (rdr.ReadUInt32() != 0xFADEFACE)//all unencrypted maps start with this
 			{
-				rdr = new NoxBinaryReader(File.Open(filename, FileMode.Open), NoxCryptFormat.NONE);
+				rdr = new NoxBinaryReader(File.Open(FileName, FileMode.Open), NoxCryptFormat.NONE);
 				Encrypted = false;
 			}
 			rdr.BaseStream.Seek(0, SeekOrigin.Begin);//reset to start
@@ -660,7 +737,7 @@ namespace NoxShared
 				switch (section)
 				{
 					case "MapInfo":
-						ReadMapInfo(rdr);
+						Info.Read(rdr.BaseStream);
 						break;
 					case "WallMap":
 						ReadWallMap(rdr);
@@ -761,29 +838,6 @@ namespace NoxShared
 			Headers.Add(hed.name,hed);
 		}
 
-		protected void ReadMapInfo(NoxBinaryReader rdr)
-		{
-			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;//order matters!
-
-			//rdr.ReadInt16();//dont know what this is for
-			SectHeader hed = new SectHeader("MapInfo",2,rdr.ReadBytes(2));
-			Headers.Add(hed.name,hed);
-			Info.Summary = rdr.ReadString((int) MapInfo.SectionLength.TITLE);
-			Info.Description = rdr.ReadString((int) MapInfo.SectionLength.DESCRIPTION);
-			Info.Version = rdr.ReadString((int) MapInfo.SectionLength.VERSION);
-			Info.Author = rdr.ReadString((int) MapInfo.SectionLength.AUTHOR);
-			Info.Email = rdr.ReadString((int) MapInfo.SectionLength.EMAIL);
-			Info.Author2 = rdr.ReadString((int) MapInfo.SectionLength.AUTHOR);
-			Info.Email2 = rdr.ReadString((int) MapInfo.SectionLength.EMAIL);
-			rdr.ReadBytes((int) MapInfo.SectionLength.EMPTY);
-			Info.Copyright = rdr.ReadString((int) MapInfo.SectionLength.COPYRIGHT);
-			Info.Date = rdr.ReadString((int) MapInfo.SectionLength.DATE);
-			Info.Type = (MapInfo.MapType) rdr.ReadUInt32();//TODO: quest maps have an extra section after this part and no min/max recommended players
-			Info.RecommendedMin = rdr.ReadByte();
-			Info.RecommendedMax = rdr.ReadByte();
-			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (MapInfo) WARNING: section length is incorrect");
-		}
-
 		protected void ReadWallMap(NoxBinaryReader rdr)
 		{
 			byte x, y;
@@ -878,7 +932,7 @@ namespace NoxShared
 		}
 
 		//Just a utility method to skip sections, remove this when all sections are being read properly.
-		private void SkipSection(NoxBinaryReader rdr,String name)
+		private void SkipSection(NoxBinaryReader rdr, string name)
 		{
 			int len = (int) rdr.ReadInt64();
 			SectHeader hed = new SectHeader(name,len,rdr.ReadBytes(len));
@@ -888,7 +942,7 @@ namespace NoxShared
 		#endregion
 
 		#region Writing Methods
-		private void SkipSection(NoxBinaryWriter wtr,string str)
+		private void SkipSection(NoxBinaryWriter wtr, string str)
 		{
 			wtr.Write(str + "\0");//write the section name
 
@@ -901,7 +955,7 @@ namespace NoxShared
 
 		public void WriteFile()
 		{
-			FileStream fStr = File.Open(filename, FileMode.Create);
+			FileStream fStr = File.Open(FileName, FileMode.Create);
 			NoxBinaryWriter wtr;
 				
 			if (Encrypted)
@@ -910,7 +964,7 @@ namespace NoxShared
 				wtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.NONE);
 
 			WriteFileHeader(wtr);
-			WriteMapInfo(wtr);
+			Info.Write(wtr.BaseStream);
 			WriteWallMap(wtr);
 			WriteFloorMap(wtr);
 			SkipSection(wtr,"SecretWalls");
@@ -1051,52 +1105,6 @@ namespace NoxShared
 		{
 			SectHeader hed = (SectHeader) Headers["FileHeader"];
 			wtr.Write(hed.header);
-		}
-
-		private void WriteMapInfo(NoxBinaryWriter wtr)
-		{
-			string name = "MapInfo";
-			wtr.Write(name + "\0");
-			wtr.SkipToNextBoundary();
-			wtr.Write((long) MapInfo.SectionLength.TOTAL);
-
-			long finish = wtr.BaseStream.Position + (long) MapInfo.SectionLength.TOTAL;
-			int size;
-			wtr.Write(((SectHeader) Headers[name]).header);
-			size = ((int) MapInfo.SectionLength.TITLE) - Info.Summary.Length;
-			wtr.Write(Info.Summary.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.DESCRIPTION) - Info.Description.Length;
-			wtr.Write(Info.Description.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.VERSION) - Info.Version.Length;
-			wtr.Write(Info.Version.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.AUTHOR) - Info.Author.Length;
-			wtr.Write(Info.Author.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.EMAIL) - Info.Email.Length;
-			wtr.Write(Info.Email.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.AUTHOR) - Info.Author2.Length;
-			wtr.Write(Info.Author2.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.EMAIL) - Info.Email2.Length;
-			wtr.Write(Info.Email2.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.EMPTY);
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.COPYRIGHT) - Info.Copyright.Length;
-			wtr.Write(Info.Copyright.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			size = ((int) MapInfo.SectionLength.DATE) - Info.Date.Length;
-			wtr.Write(Info.Date.ToCharArray());
-			wtr.BaseStream.Seek(size,SeekOrigin.Current);
-			wtr.Write((int) Info.Type);
-			wtr.Write((byte) Info.RecommendedMin);
-			wtr.Write((byte) Info.RecommendedMax);
-
-			Debug.Assert(wtr.BaseStream.Position == finish, "NoxMap (MapInfo) ERROR: wrote wrong length");
 		}
 		#endregion
 	}
