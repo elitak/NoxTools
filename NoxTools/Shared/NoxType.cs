@@ -122,24 +122,5 @@ namespace NoxShared
 				return colors[color.colorCode - 1];
 			}
 		}
-
-		public enum NoxCryptFormat
-		{
-			//these need to be explicit since the dll uses them
-			PLR = 0,
-			MAP = 1,
-			THING = 2,
-			MODIFIER = 3,
-			GAMEDATA = 4,
-			MONSTER = 5,
-			SOUNDSET = 6,
-			NONE
-		}
-
-		public enum NoxCryptMode
-		{
-			DECRYPT,
-			ENCRYPT
-		}
 	}
 }
