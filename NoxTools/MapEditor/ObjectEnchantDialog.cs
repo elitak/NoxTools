@@ -336,7 +336,7 @@ namespace NoxMapEditor
 			this.Controls.Add(this.extentText);
 			this.Controls.Add(this.nameText);
 			this.Name = "ObjectEnchantDialog";
-			this.Text = "ObjectEnchantDialog";
+			this.Text = "Object Enchants";
 			this.ResumeLayout(false);
 
 		}
