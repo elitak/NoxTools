@@ -21,6 +21,10 @@ namespace NoxShared
 		{
 		}
 
+		public NoxBinaryReader(Stream stream) : this(stream, NoxCryptFormat.NONE)
+		{
+		}
+
 		protected static Stream DecryptStream(Stream stream, NoxCryptFormat format)
 		{
 			//return original stream if no encryption
