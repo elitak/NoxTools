@@ -164,6 +164,16 @@
                     BuildAction = "EmbeddedResource"
                 />
                 <File
+                    RelPath = "ObjectInventoryDialog.cs"
+                    SubType = "Form"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "ObjectInventoryDialog.resx"
+                    DependentUpon = "ObjectInventoryDialog.cs"
+                    BuildAction = "EmbeddedResource"
+                />
+                <File
                     RelPath = "ObjectListDialog.cs"
                     SubType = "Form"
                     BuildAction = "Compile"
