@@ -14,29 +14,12 @@ namespace NoxShared
 	public class NoxBinaryReader : BinaryReader
 	{
 
-		public NoxBinaryReader(Stream stream, CryptApi.NoxCryptFormat format) : base(DecryptStream(stream, format))
+		public NoxBinaryReader(Stream stream, CryptApi.NoxCryptFormat format) : base(CryptApi.DecryptStream(stream, format))
 		{
 		}
 
 		public NoxBinaryReader(Stream stream) : this(stream, CryptApi.NoxCryptFormat.NONE)
 		{
-		}
-
-		protected static Stream DecryptStream(Stream stream, CryptApi.NoxCryptFormat format)
-		{
-			//return original stream if no encryption
-			if (format == CryptApi.NoxCryptFormat.NONE)
-				return stream;
-
-			int length = (int) stream.Length;
-			byte[] buffer = new byte[length];
-
-			stream.Read(buffer, 0, length);
-			stream.Close();
-
-			buffer = CryptApi.NoxDecrypt(buffer, format);
-
-			return new MemoryStream(buffer);
 		}
 
 		//Nox usually stores string lengths as bytes, not ints, so override this method
