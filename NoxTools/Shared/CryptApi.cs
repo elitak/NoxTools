@@ -1952,6 +1952,23 @@ namespace NoxShared
 			return NoxCrypt(data, format, NoxCryptMode.DECRYPT);
 		}
 
+		public static Stream DecryptStream(Stream stream, CryptApi.NoxCryptFormat format)
+		{
+			//return original stream if no encryption
+			if (format == CryptApi.NoxCryptFormat.NONE)
+				return stream;
+
+			int length = (int) stream.Length;
+			byte[] buffer = new byte[length];
+
+			stream.Read(buffer, 0, length);
+			stream.Close();
+
+			buffer = CryptApi.NoxDecrypt(buffer, format);
+
+			return new MemoryStream(buffer);
+		}
+
 		private static uint EndianSwap(uint val)
 		{
 			return ((val << 24)&0xFF000000) | ((val << 8)&0x00FF0000)
