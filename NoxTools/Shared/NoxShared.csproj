@@ -154,6 +154,16 @@
                     BuildAction = "Compile"
                 />
                 <File
+                    RelPath = "ModifierDb.cs"
+                    SubType = "Code"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "NoxDb.cs"
+                    SubType = "Code"
+                    BuildAction = "Compile"
+                />
+                <File
                     RelPath = "NoxType.cs"
                     SubType = "Code"
                     BuildAction = "Compile"
