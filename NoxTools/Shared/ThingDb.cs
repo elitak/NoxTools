@@ -10,7 +10,7 @@ using System.Windows.Forms;//for messageboxes only
 
 namespace NoxShared
 {
-	public class ThingDb
+	public class ThingDb : NoxDb
 	{
 		public enum ThingToken : uint
 		{
@@ -959,31 +959,12 @@ namespace NoxShared
 
 		static ThingDb()
 		{
-			RegistryKey installPathKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Westwood\\Nox");
-			if (installPathKey == null)
-			{
-				MessageBox.Show("Could not find Nox's install path in the registry. Reinstall Nox to fix this.", "Error");
-				return;
-			}
-			string noxPath = (string) installPathKey.GetValue("InstallPath");
-			string filePath = noxPath.Substring(0, noxPath.LastIndexOf("\\")+1) + "thing.bin";
-			NoxBinaryReader rdr = null;
-			try
-			{
-				rdr = new NoxBinaryReader(File.OpenRead(filePath), CryptApi.NoxCryptFormat.THING);
-			}
-			catch (FileNotFoundException)
-			{
-				MessageBox.Show("Could not access thing.bin in the Nox game directory.", "Error");
-				return;
-			}
+			dbFile = "thing.bin";
+			NoxBinaryReader rdr = new NoxBinaryReader(GetStream(), CryptApi.NoxCryptFormat.THING);
 
-			object obj;
-			ThingToken token;
 			uint floorId = 0, edgeId = 0, wallId = 0;
-			while((obj=NextToken(rdr)) != null)
+			for (ThingToken token = NextToken(rdr); Enum.IsDefined(typeof(ThingToken), token); token = NextToken(rdr))
 			{
-				token = (ThingToken) obj;
 				if (token == ThingToken.FLOR)
 				{
 					Tile tile = new Tile(rdr.BaseStream);
@@ -1022,8 +1003,10 @@ namespace NoxShared
 						Things.Add(thing.Name, thing);
 				}
 				else
-					throw new ApplicationException("Encountered unkown token while reading thing.bin");
+					Debug.Fail("Encountered unkown token while reading thing.bin");
 			}
+
+			Debug.Assert(rdr.BaseStream.Length - rdr.BaseStream.Position < 8, "Error reading thing.bin",  "Could not parse entire file");
 		}
 
 		protected static void ReadEntries(BinaryReader rdr)
@@ -1059,25 +1042,21 @@ namespace NoxShared
 			Debug.Assert(numEntries == 0, "Wrong number of entries read.");
 		}
 
-		private static object NextToken(NoxBinaryReader rdr)
+		private static ThingToken NextToken(NoxBinaryReader rdr)
 		{
-			while (rdr.BaseStream.Position < rdr.BaseStream.Length)
+			try
 			{
-				string token;
-				try
+				if (rdr.BaseStream.Position < rdr.BaseStream.Length)
 				{
 					char[] tokenChars = rdr.ReadChars(4);
 					Array.Reverse(tokenChars);
-					token = new string(tokenChars);
+					string token = new string(tokenChars);
 					rdr.BaseStream.Seek(-4, SeekOrigin.Current);
-					return Enum.Parse(typeof(ThingToken), token);
-				}
-				catch (ArgumentException)
-				{
-					return null;
+					return (ThingToken) Enum.Parse(typeof(ThingToken), token);
 				}
 			}
-			return null;
+			catch (ArgumentException) {}
+			return (ThingToken) 0xFFFFFFFF;
 		}
 
 		public static Thing GetThing(string name)
