@@ -14,7 +14,7 @@ namespace NoxShared
 	/// </summary>
 	public class NoxBinaryReader : BinaryReader
 	{
-		[System.Runtime.InteropServices.DllImportAttribute("noxcrypt.dll")]
+		[DllImport("noxcrypt.dll")]
 		protected static extern int NoxCrypt_crypt(byte[] data, int length, int format, int mode);
 
 		public NoxBinaryReader(Stream stream, NoxCryptFormat format) : base(DecryptStream(stream, format))
