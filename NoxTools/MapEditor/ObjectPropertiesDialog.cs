@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
+using System.Text.RegularExpressions;
 
 using NoxShared;
 
@@ -27,6 +28,14 @@ namespace NoxMapEditor
 				xBox.Text = obj.Location.X.ToString();
 				yBox.Text = obj.Location.Y.ToString();
 				extentBox.Text = obj.Extent.ToString();
+				//print out the bytes in hex
+				boxMod.Text = "";
+				if (obj.modbuf != null)
+				{
+					System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
+					while (rdr.BaseStream.Position < rdr.BaseStream.Length)
+						boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
+				}
 			}
 		}
 		private System.Windows.Forms.Label label1;
@@ -38,8 +47,8 @@ namespace NoxMapEditor
 		private System.Windows.Forms.TextBox yBox;
 		private System.Windows.Forms.Label label4;
 		private System.Windows.Forms.TextBox extentBox;
-		private System.Windows.Forms.Label label5;
 		private System.Windows.Forms.ComboBox nameBox;
+		private System.Windows.Forms.TextBox boxMod;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -82,8 +91,8 @@ namespace NoxMapEditor
 			this.yBox = new System.Windows.Forms.TextBox();
 			this.label4 = new System.Windows.Forms.Label();
 			this.extentBox = new System.Windows.Forms.TextBox();
-			this.label5 = new System.Windows.Forms.Label();
 			this.nameBox = new System.Windows.Forms.ComboBox();
+			this.boxMod = new System.Windows.Forms.TextBox();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -162,16 +171,6 @@ namespace NoxMapEditor
 			this.extentBox.TabIndex = 9;
 			this.extentBox.Text = "";
 			// 
-			// label5
-			// 
-			this.label5.Location = new System.Drawing.Point(8, 96);
-			this.label5.Name = "label5";
-			this.label5.Size = new System.Drawing.Size(168, 80);
-			this.label5.TabIndex = 10;
-			this.label5.Text = "Note: Only enter names of objects that are IMMOBILE. Moveable/pickupable objects " +
-				"are not yet supported. The map will not load if you create any objects of these " +
-				"types.";
-			// 
 			// nameBox
 			// 
 			this.nameBox.DropDownWidth = 200;
@@ -181,14 +180,23 @@ namespace NoxMapEditor
 			this.nameBox.Size = new System.Drawing.Size(120, 21);
 			this.nameBox.TabIndex = 11;
 			// 
+			// boxMod
+			// 
+			this.boxMod.Location = new System.Drawing.Point(16, 88);
+			this.boxMod.Multiline = true;
+			this.boxMod.Name = "boxMod";
+			this.boxMod.Size = new System.Drawing.Size(160, 88);
+			this.boxMod.TabIndex = 12;
+			this.boxMod.Text = "";
+			// 
 			// ObjectPropertiesDialog
 			// 
 			this.AcceptButton = this.buttonOK;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
 			this.ClientSize = new System.Drawing.Size(186, 223);
+			this.Controls.Add(this.boxMod);
 			this.Controls.Add(this.nameBox);
-			this.Controls.Add(this.label5);
 			this.Controls.Add(this.extentBox);
 			this.Controls.Add(this.yBox);
 			this.Controls.Add(this.xBox);
@@ -221,6 +229,16 @@ namespace NoxMapEditor
 			obj.Location.X = Single.Parse(xBox.Text);
 			obj.Location.Y = Single.Parse(yBox.Text);
 			obj.Extent = Int32.Parse(extentBox.Text);
+			//get the contents of the box and parse it to turn it into a byte[] and use it as the modbuf
+			if (boxMod.Text.Length > 0)
+			{
+				System.IO.MemoryStream stream = new System.IO.MemoryStream();
+				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
+				Regex bytes = new Regex("[0-9|a-f|A-F]{2}");
+				foreach (Match match in bytes.Matches(boxMod.Text))
+					wtr.Write(Convert.ToByte(match.Value, 16));
+				obj.modbuf = stream.ToArray();
+			}
 			this.Visible = false;
 		}
 	}
