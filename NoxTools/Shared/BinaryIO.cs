@@ -147,14 +147,14 @@ namespace NoxShared
 
 		public void WriteColor(Color color)
 		{
-			Write((short) color.R);
-			Write((short) color.G);
-			Write((short) color.B);
+			Write((byte) color.R);
+			Write((byte) color.G);
+			Write((byte) color.B);
 		}
 
 		public void WriteUserColor(UserColor color)
 		{
-			Write(color.Code - 1);
+			Write((byte) (color.Code - 1));
 		}
 	}
 }
