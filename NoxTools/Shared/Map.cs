@@ -885,8 +885,14 @@ namespace NoxShared
 				toc = new SortedList();
 				short id = 1;
 				foreach (Object obj in this)
+				{
 					if (toc[obj.Name] == null)
 						toc.Add(obj.Name, id++);
+					if (obj.inven > 0) //If object has an inventory
+						foreach (Object o in obj.childObjects)
+							if (toc[o.Name] == null) //What if there are embedded inventories? That needs fixed.
+								toc.Add(o.Name, id++);
+				}
 
 				//--write the ObjectTOC--
 				wtr.Write("ObjectTOC\0");
@@ -945,6 +951,8 @@ namespace NoxShared
 			public ArrayList enchants;
 			public byte Team;//Specified in the extra stuff that comes with 0xFF Terminator
 			public string Scr_Name;//Name used in Script Section
+			public byte inven; //Number of objects in inventory, important for object ordering
+			public ArrayList childObjects; //Objects in its inventory
 			public byte[] temp1;//Temporary buffers for FF term. stuff, unknowns 
 			public byte[] temp2;//Temporary buffers for FF term. stuff, unknowns 
 
@@ -988,7 +996,8 @@ namespace NoxShared
 					temp1 = rdr.ReadBytes(4);
 					Scr_Name = rdr.ReadString();
 					Team = rdr.ReadByte();
-					temp2 = rdr.ReadBytes(21);
+					inven = rdr.ReadByte();
+					temp2 = rdr.ReadBytes(20);
 				}
 				if (rdr.BaseStream.Position < endOfData)
 				{
@@ -1016,7 +1025,12 @@ namespace NoxShared
 
 				//check that this entry's length matches
 				Debug.Assert(rdr.BaseStream.Position == endOfData, "NoxMap (ObjectData) ERROR: bad entry length");
-
+				if(inven > 0)
+				{
+					childObjects = new ArrayList(inven);
+					for(int i = inven; i > 0; i--)
+						childObjects.Add(new Object(stream,toc));
+				}
 			}
 			/// <summary>
 			/// 
@@ -1034,8 +1048,8 @@ namespace NoxShared
 					if(temp1 == null)
 						temp1 = new Byte[] {0, 0, 0, 1};
 					if(temp2 == null)
-						temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00,00,00,00,00};
-					xtraLength = temp1.Length + temp2.Length + 2 + Scr_Name.Length;
+						temp2 = new Byte[] {00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00,00,00,00,00};
+					xtraLength = temp1.Length + temp2.Length + 3 + Scr_Name.Length;
 				}
 				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length) + xtraLength;//0x15 is the minumum length of an entry
 				//long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length);//0x15 is the minumum length of an entry
@@ -1051,10 +1065,14 @@ namespace NoxShared
 					wtr.Write(temp1);
 					wtr.Write(Scr_Name);
 					wtr.Write(Team);
+					wtr.Write(inven);
 					wtr.Write(temp2);
 				}
 				if (modbuf != null)
 					wtr.Write(modbuf);
+				if(inven > 0)
+					foreach(Object o in childObjects)
+						o.Write(stream,toc);
 			}
 
 			public int CompareTo(object obj)
@@ -1565,25 +1583,30 @@ namespace NoxShared
 			long length = 0;
 			long pos;
 			wtr.SkipToNextBoundary();
+			// placeholder for whole section length
 			pos = wtr.BaseStream.Position;
 			wtr.Write(length);
 			wtr.Write(hed.header);
+			// placeholder for subsection length
 			int sectlen = 0;
 			long secpos;
 			secpos = wtr.BaseStream.Position;
 			wtr.Write(sectlen);
+			// if there is a strings section
 			if(Scripts.SctStr != null && Scripts.SctStr.Count > 0)
 			{
-				wtr.Write("SCRIPT03STRG".ToCharArray());
-				wtr.Write(Scripts.SctStr.Count);
-				foreach(String s in Scripts.SctStr.Values)
+				wtr.Write("SCRIPT03STRG".ToCharArray()); // tokens used to distiguish sections of the section
+				wtr.Write(Scripts.SctStr.Count); // write number of strings
+				foreach(String s in Scripts.SctStr.Values) // write each string
 				{
 					wtr.Write(s.Length);
 					wtr.Write(s.ToCharArray());
 				}
 			}
+			// if there was anything after the strings section
 			if(Scripts.rest != null)
-				wtr.Write(Scripts.rest);
+				wtr.Write(Scripts.rest); // write rest of the section
+			// rewrite section length
 			sectlen = (int)(wtr.BaseStream.Position - (secpos + 4));
 			wtr.Seek((int)secpos,SeekOrigin.Begin);
 			wtr.Write(sectlen);

@@ -42,6 +42,8 @@ namespace NoxMapEditor
 					enchantButton.Enabled = true;
 				else if((((ThingDb.Thing)ThingDb.Things[obj.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
 					lockButton.Enabled = true;
+				if(xtraBox.Checked)
+					invenButton.Enabled = true;
 			}
 		}
 		private System.Windows.Forms.Label label1;
@@ -61,6 +63,7 @@ namespace NoxMapEditor
 		private System.Windows.Forms.Label label6;
 		private System.Windows.Forms.TextBox scrNameBox;
 		private System.Windows.Forms.CheckBox xtraBox;
+		private System.Windows.Forms.Button invenButton;
 		private System.Windows.Forms.TextBox boxMod;
 
 		public ObjectPropertiesDialog()
@@ -94,6 +97,7 @@ namespace NoxMapEditor
 			this.label6 = new System.Windows.Forms.Label();
 			this.scrNameBox = new System.Windows.Forms.TextBox();
 			this.xtraBox = new System.Windows.Forms.CheckBox();
+			this.invenButton = new System.Windows.Forms.Button();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -245,12 +249,21 @@ namespace NoxMapEditor
 			// 
 			// xtraBox
 			// 
-			this.xtraBox.Location = new System.Drawing.Point(184, 80);
+			this.xtraBox.Location = new System.Drawing.Point(192, 112);
 			this.xtraBox.Name = "xtraBox";
 			this.xtraBox.Size = new System.Drawing.Size(80, 16);
 			this.xtraBox.TabIndex = 20;
 			this.xtraBox.Text = "Xtra Bytes";
 			this.xtraBox.CheckedChanged += new System.EventHandler(this.xtraBox_CheckedChanged);
+			// 
+			// invenButton
+			// 
+			this.invenButton.Enabled = false;
+			this.invenButton.Location = new System.Drawing.Point(192, 80);
+			this.invenButton.Name = "invenButton";
+			this.invenButton.TabIndex = 21;
+			this.invenButton.Text = "Inventory";
+			this.invenButton.Click += new System.EventHandler(this.invenButton_Click);
 			// 
 			// ObjectPropertiesDialog
 			// 
@@ -258,6 +271,7 @@ namespace NoxMapEditor
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
 			this.ClientSize = new System.Drawing.Size(274, 247);
+			this.Controls.Add(this.invenButton);
 			this.Controls.Add(this.xtraBox);
 			this.Controls.Add(this.scrNameBox);
 			this.Controls.Add(this.teamBox);
@@ -363,12 +377,21 @@ namespace NoxMapEditor
 			{
 				scrNameBox.Enabled = true;
 				teamBox.Enabled = true;
+				invenButton.Enabled = true;
 			}
 			else
 			{
 				scrNameBox.Enabled = false;
 				teamBox.Enabled = false;
+				invenButton.Enabled = false;
 			}	
+		}
+
+		private void invenButton_Click(object sender, System.EventArgs e)
+		{
+			ObjectInventoryDialog invenDlg = new ObjectInventoryDialog();
+			invenDlg.Object = obj;
+			invenDlg.ShowDialog();
 		}
 	}
 }
