@@ -91,7 +91,7 @@
                 />
                 <Reference
                     Name = "System.XML"
-                    AssemblyName = "System.XML"
+                    AssemblyName = "System.Xml"
                     HintPath = "..\..\..\..\WINNT\Microsoft.NET\Framework\v1.1.4322\System.XML.dll"
                 />
             </References>
@@ -191,6 +191,16 @@
                 <File
                     RelPath = "PolygonDialog.resx"
                     DependentUpon = "PolygonDialog.cs"
+                    BuildAction = "EmbeddedResource"
+                />
+                <File
+                    RelPath = "ScriptStringsDialog.cs"
+                    SubType = "Form"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "ScriptStringsDialog.resx"
+                    DependentUpon = "ScriptStringsDialog.cs"
                     BuildAction = "EmbeddedResource"
                 />
                 <File

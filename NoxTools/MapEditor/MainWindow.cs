@@ -58,6 +58,7 @@ namespace NoxMapEditor
 		private System.Windows.Forms.MenuItem menuItem4;
 		private System.Windows.Forms.MenuItem menuItemGrid;
 		private System.Windows.Forms.MenuItem menuItemNxz;
+		private System.Windows.Forms.MenuItem menuItemStrings;
 
 		protected Map map = new Map();
 
@@ -134,6 +135,7 @@ namespace NoxMapEditor
 			this.label2 = new System.Windows.Forms.Label();
 			this.label1 = new System.Windows.Forms.Label();
 			this.mapSummary = new System.Windows.Forms.TextBox();
+			this.menuItemStrings = new System.Windows.Forms.MenuItem();
 			this.tabControl1.SuspendLayout();
 			this.WallViewer.SuspendLayout();
 			this.tabPage1.SuspendLayout();
@@ -199,7 +201,8 @@ namespace NoxMapEditor
 			// 
 			this.menuItem2.Index = 1;
 			this.menuItem2.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
-																					  this.viewObjects});
+																					  this.viewObjects,
+																					  this.menuItemStrings});
 			this.menuItem2.Text = "Map";
 			// 
 			// viewObjects
@@ -267,7 +270,7 @@ namespace NoxMapEditor
 			this.WallViewer.Controls.Add(this.MinimapPanel);
 			this.WallViewer.Location = new System.Drawing.Point(4, 22);
 			this.WallViewer.Name = "WallViewer";
-			this.WallViewer.Size = new System.Drawing.Size(1208, 845);
+			this.WallViewer.Size = new System.Drawing.Size(1264, 887);
 			this.WallViewer.TabIndex = 0;
 			this.WallViewer.Text = "Mini Map";
 			// 
@@ -276,7 +279,7 @@ namespace NoxMapEditor
 			this.MinimapPanel.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.MinimapPanel.Location = new System.Drawing.Point(0, 0);
 			this.MinimapPanel.Name = "MinimapPanel";
-			this.MinimapPanel.Size = new System.Drawing.Size(1208, 845);
+			this.MinimapPanel.Size = new System.Drawing.Size(1264, 887);
 			this.MinimapPanel.TabIndex = 0;
 			this.MinimapPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.MinimapPanel_Paint);
 			// 
@@ -285,7 +288,7 @@ namespace NoxMapEditor
 			this.tabPage1.Controls.Add(this.groupBox1);
 			this.tabPage1.Location = new System.Drawing.Point(4, 22);
 			this.tabPage1.Name = "tabPage1";
-			this.tabPage1.Size = new System.Drawing.Size(1208, 845);
+			this.tabPage1.Size = new System.Drawing.Size(1264, 887);
 			this.tabPage1.TabIndex = 0;
 			this.tabPage1.Text = "Map Info";
 			// 
@@ -319,7 +322,7 @@ namespace NoxMapEditor
 			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
 			this.groupBox1.Location = new System.Drawing.Point(0, 0);
 			this.groupBox1.Name = "groupBox1";
-			this.groupBox1.Size = new System.Drawing.Size(1208, 560);
+			this.groupBox1.Size = new System.Drawing.Size(1264, 560);
 			this.groupBox1.TabIndex = 2;
 			this.groupBox1.TabStop = false;
 			// 
@@ -537,6 +540,12 @@ namespace NoxMapEditor
 			this.mapSummary.TabIndex = 1;
 			this.mapSummary.Text = "";
 			// 
+			// menuItemStrings
+			// 
+			this.menuItemStrings.Index = 1;
+			this.menuItemStrings.Text = "Script Strings";
+			this.menuItemStrings.Click += new System.EventHandler(this.menuItemStrings_Click);
+			// 
 			// MainWindow
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
@@ -695,6 +704,14 @@ namespace NoxMapEditor
 		private void menuItemNxz_Click(object sender, System.EventArgs e)
 		{
 			menuItemNxz.Checked = !menuItemNxz.Checked;
+		}
+
+		private void menuItemStrings_Click(object sender, System.EventArgs e)
+		{
+			ScriptStringsDialog strSd = new ScriptStringsDialog();
+			strSd.Scripts = map.Scripts;
+			strSd.ShowDialog(this);
+			map.Scripts = strSd.Scripts;
 		}
 	}
 }
