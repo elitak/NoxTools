@@ -27,19 +27,8 @@ namespace NoxTrainer
 		//use a sorted list since we are keying of one value, the serial
 		public SortedList BannedPlayers = new SortedList();
 
-		/*class ThreadSafeDataGrid : DataGrid
-		{
-			protected override void OnPaint(PaintEventArgs e)
-			{
-				if (DataSource != null) Monitor.Enter(DataSource);
-				base.OnPaint (e);
-				if (DataSource != null) Monitor.Exit(DataSource);
-			}
-		}*/
-
 		//TODO:
 		// separate model from view
-		// add save/load ban list menu or buttons
 
 		public PlayerList()
 		{
@@ -53,7 +42,7 @@ namespace NoxTrainer
 			dataGrid1.DataSource = dataTable;
 			dataGrid1.ReadOnly = true;
 
-			RefreshList();//initial refresh
+			//RefreshList();//initial refresh
 
 			NoxMemoryHack.Instance.Players.PlayerJoined += new NoxMemoryHack.PlayerMemory.PlayerEvent(PlayerJoined);
 			NoxMemoryHack.Instance.Players.PlayerLeft += new NoxMemoryHack.PlayerMemory.PlayerEvent(PlayerLeft);
@@ -63,6 +52,7 @@ namespace NoxTrainer
 
 		public void RefreshList()
 		{
+			if (!Created) return;
 			dataTable.Rows.Clear();
 			foreach (Player player in NoxMemoryHack.Instance.Players.PlayerList)
 				if (player.Connected)
@@ -168,35 +158,37 @@ namespace NoxTrainer
 		public bool AutoKickBanned = true;
 		public bool AutoKickUnkickables = true;
 
-		private delegate void PlayerEventDelegate(object sender, NoxShared.NoxMemoryHack.PlayerMemory.PlayerEventArgs e);
-
 		private void PlayerJoined(object sender, NoxShared.NoxMemoryHack.PlayerMemory.PlayerEventArgs e)
 		{
 			//this is necessary for thread safety, since background thread will call this
 			if (InvokeRequired)
 			{
-				Invoke(new PlayerEventDelegate(PlayerJoined),new object[] {sender, e});
+				Invoke(new NoxMemoryHack.PlayerMemory.PlayerEvent(PlayerJoined),new object[] {sender, e});
 				return;
 			}
+
 			NoxShared.Console.WriteLine("{0} has joined the game.", e.Player.Name);
+			if (e.Player.Unkickable)
+			{
+				NoxShared.Console.WriteLine("{0} has an 'unkickable' name.", e.Player.Name);
+				NoxShared.Console.WriteLine("Fixing {0}'s 'unkickable' name.", e.Player.Name);
+				NoxMemoryHack.Fixes.FixUnkickable(e.Player.Number);
+			}
+
 			Player orig = (Player) BannedPlayers[e.Player.Serial];
 			if (AutoKickBanned && orig != null)
 			{
 				NoxShared.Console.WriteLine("{0} was banned under the alias {1}, kicking...", e.Player.Name, orig.Name);
 				NoxMemoryHack.KickPlayer(e.Player.Number);
 			}
-			if (e.Player.Unkickable)
+			else if (e.Player.Unkickable && AutoKickUnkickables)
 			{
-				NoxShared.Console.WriteLine("{0} has an 'unkickable' name.", e.Player.Name);
-				if (AutoKickUnkickables)
-				{
-					NoxShared.Console.WriteLine("Autokicking {0} for 'unkickable' name...", e.Player.Name);
+					NoxShared.Console.WriteLine("Autokicking {0} for 'unkickable' name.", e.Player.Name);
 					NoxMemoryHack.KickPlayer(e.Player.Number);
-				}
 			}
-			//Monitor.Enter(dataTable);
-			dataTable.Rows.Add(new object[] {e.Player.Name, e.Player.Login, e.Player.Number});
-			//Monitor.Exit(dataTable);
+
+			if (Created)
+				dataTable.Rows.Add(new object[] {e.Player.Name, e.Player.Login, e.Player.Number});
 		}
 
 		private void PlayerLeft(object sender, NoxShared.NoxMemoryHack.PlayerMemory.PlayerEventArgs e)
@@ -204,19 +196,18 @@ namespace NoxTrainer
 			//this is necessary for thread safety, since background thread will call this
 			if (InvokeRequired)
 			{
-				Invoke(new PlayerEventDelegate(PlayerLeft),new object[] {sender, e});
+				Invoke(new NoxMemoryHack.PlayerMemory.PlayerEvent(PlayerLeft),new object[] {sender, e});
 				return;
 			}
 
 			NoxShared.Console.WriteLine("{0} has left the game.", e.Player.Name);
-			//Monitor.Enter(dataTable);
-			for (int ndx = 0; ndx < dataTable.Rows.Count; ndx++)
-				if ((int) ((DataRow) dataTable.Rows[ndx]).ItemArray[2] == e.Player.Number)//FIXME: hardcoded index
-				{
-					dataTable.Rows.RemoveAt(ndx);
-					break;//there should only be one, so we can quit looking now
-				}
-			//Monitor.Exit(dataTable);
+			if (Created)
+				for (int ndx = 0; ndx < dataTable.Rows.Count; ndx++)
+					if ((int) ((DataRow) dataTable.Rows[ndx]).ItemArray[2] == e.Player.Number)//FIXME: hardcoded index
+					{
+						dataTable.Rows.RemoveAt(ndx);
+						break;//there should only be one, so we can quit looking now
+					}
 		}
 
 		protected void SaveBanList()

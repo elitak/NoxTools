@@ -4,6 +4,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.Data;
+using System.Diagnostics;
 
 using NoxShared;
 
@@ -332,6 +333,7 @@ namespace NoxTrainer
 			this.console.Location = new System.Drawing.Point(0, 360);
 			this.console.Multiline = true;
 			this.console.Name = "console";
+			this.console.ReadOnly = true;
 			this.console.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
 			this.console.Size = new System.Drawing.Size(304, 88);
 			this.console.TabIndex = 1;
@@ -371,6 +373,8 @@ namespace NoxTrainer
 		{
 			try
 			{
+				Debug.Listeners.Add(new TextWriterTraceListener("Debug.log"));
+				Debug.WriteLine(String.Format("Started at {0:yyyy-MM-dd HH:mm:ss}", DateTime.Now));
 				Application.Run(new MainWindow());
 			}
 			catch (Exception ex)
@@ -394,7 +398,6 @@ namespace NoxTrainer
 		private void buttonConsoleText_Click(object sender, System.EventArgs e)
 		{
 			NoxMemoryHack.PrintToConsole(boxConsoleText.Text, (NoxMemoryHack.ConsoleColor) Byte.Parse(boxConsoleColor.Text));
-			//NoxMemoryHack.PrintToScreen("string 1", "string 2");
 		}
 
 		private void buttonExecute_Click(object sender, System.EventArgs e)
@@ -418,7 +421,8 @@ namespace NoxTrainer
 		private void Console_LineWritten(object sender, NoxShared.Console.ConsoleEventArgs e)
 		{
 			console.AppendText((console.Text.EndsWith("\r\n") ? "" : "\r\n") + e.Line);
-			//console.Select(
+			if (console.Text.Length > 20000)
+				console.Text = console.Text.Substring(console.Text.IndexOf("\n")+1);
 			console.ScrollToCaret();
 		}
 	}

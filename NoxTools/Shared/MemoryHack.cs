@@ -12,7 +12,7 @@ namespace NoxShared
 {
 	public class NoxMemoryHack
 	{
-		public static ProcessMemory Process = ProcessMemory.OpenProcess("GAME");
+		public static ProcessMemory Process = new ProcessMemory("GAME");
 		//public static ProcessMemory Process = ProcessMemory.OpenProcessByWindowName("Nox Game Window", "Nox");
 		public static readonly NoxMemoryHack Instance = new NoxMemoryHack();
 		
@@ -38,18 +38,10 @@ namespace NoxShared
 
 		protected void RefreshThreadStart()
 		{
-			Teams.Read();
-
 			while (true)
 			{
-				Monitor.Enter(Teams);
-				Teams.Write();
 				Teams.Read();
-				Monitor.Exit(Teams);
-
-				Monitor.Enter(Players);
 				Players.Read();
-				Monitor.Exit(Players);
 
 				Thread.Sleep(1000);
 			}
@@ -58,10 +50,10 @@ namespace NoxShared
 		//TODO: use values from xml file for addresses
 		public class PlayerMemory
 		{
-			private const int PLAYER_TABLE_ADDRESS = 0x62F9A4;
-			private const int MAX_PLAYERS = 32;
-			private const int PLAYER_ENTRY_LENGTH = 0x12DC;
-			private const int PLAYER_TABLE_LENGTH = MAX_PLAYERS * PLAYER_ENTRY_LENGTH;
+			protected internal const int PLAYER_TABLE_ADDRESS = 0x62F9A4;
+			protected internal const int MAX_PLAYERS = 32;
+			protected internal const int PLAYER_ENTRY_LENGTH = 0x12DC;
+			protected internal const int PLAYER_TABLE_LENGTH = MAX_PLAYERS * PLAYER_ENTRY_LENGTH;
 
 			public ArrayList PlayerList = new ArrayList();
 
@@ -78,20 +70,18 @@ namespace NoxShared
 			public event PlayerEvent PlayerJoined;
 			public event PlayerEvent PlayerLeft;
 
-			public PlayerMemory()
-			{
-				Read();
-			}
-
 			public void Read()
 			{
 				ArrayList oldList = PlayerList;
 				PlayerList = new ArrayList();
 
-				BinaryReader rdr = new BinaryReader(new MemoryStream(NoxMemoryHack.Process.Read(PLAYER_TABLE_ADDRESS, PLAYER_TABLE_LENGTH)));
+				if (NoxMemoryHack.Process.Available)
+				{
+					BinaryReader rdr = new BinaryReader(new MemoryStream(NoxMemoryHack.Process.Read(PLAYER_TABLE_ADDRESS, PLAYER_TABLE_LENGTH)));
 
-				for (int player = 0; player < MAX_PLAYERS; player++)
-					PlayerList.Add(Player.ReadFromMemory(rdr.BaseStream));
+					for (int player = 0; player < MAX_PLAYERS; player++)
+						PlayerList.Add(Player.ReadFromMemory(rdr.BaseStream));
+				}
 
 				foreach (Player player in oldList)
 					if (!PlayerList.Contains(player) && player.Connected)
@@ -117,6 +107,8 @@ namespace NoxShared
 			}
 			public delegate void TeamEvent(object sender, TeamEventArgs e);
 			public event TeamEvent TeamChanged;
+			public delegate void Event(object sender, EventArgs e);
+			public event Event Refreshed;
 
 			public int TeamCount
 			{
@@ -171,49 +163,51 @@ namespace NoxShared
 			private const int TEAM_NAME_LENGTH = 0x2C;
 			private const int TEAM_TABLE_LENGTH = TEAM_HEADER_LENGTH + MAX_TEAMS * TEAM_ENTRY_LENGTH;
 
-			public TeamMemory()
-			{
-				Read();
-			}
-
 			public void Read()
 			{
-				//TODO: aquire lock on nox's memory somehow? probably not possible
-				BinaryReader rdr = new BinaryReader(new MemoryStream(NoxMemoryHack.Process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH)));
-
-				int  numTeams = rdr.ReadInt32();
-				flags = rdr.ReadInt32();
-
-				rdr.BaseStream.Seek(TEAM_HEADER_LENGTH, SeekOrigin.Begin);//skip to end of header
-
-				//read the teams
-				ArrayList old = TeamList;
-				TeamList =  new ArrayList();
-				for (int ndx = 0; ndx < MAX_TEAMS; ndx++)
+				lock (NoxMemoryHack.Process)
 				{
-					TeamList.Add(Team.FromBytes(rdr.ReadBytes(TEAM_ENTRY_LENGTH)));
-					((Team) TeamList[ndx]).TeamNumber = ndx + 1;//TODO? find a better way of keeping track of the team number/index
-					if (ndx >= old.Count || !TeamList[ndx].Equals(old[ndx]))
-						if (TeamChanged != null) TeamChanged(this, new TeamEventArgs((Team) TeamList[ndx]));
+					ArrayList old = TeamList;
+					TeamList =  new ArrayList();
+
+					BinaryReader rdr = new BinaryReader(new MemoryStream(NoxMemoryHack.Process.Available ? NoxMemoryHack.Process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH) : new byte[TEAM_TABLE_LENGTH]));
+
+					int numTeams = rdr.ReadInt32();
+					flags = rdr.ReadInt32();
+
+					rdr.BaseStream.Seek(TEAM_HEADER_LENGTH, SeekOrigin.Begin);//skip to end of header
+
+					//read the teams
+					for (int ndx = 0; ndx < MAX_TEAMS; ndx++)
+					{
+						TeamList.Add(Team.FromBytes(rdr.ReadBytes(TEAM_ENTRY_LENGTH)));
+						((Team) TeamList[ndx]).TeamNumber = ndx + 1;//TODO? find a better way of keeping track of the team number/index
+						if (ndx >= old.Count || !TeamList[ndx].Equals(old[ndx]))
+							if (TeamChanged != null) TeamChanged(this, new TeamEventArgs((Team) TeamList[ndx]));
+					}
 				}
+
+				if (Refreshed != null) Refreshed(this, new EventArgs());
 			}
 
 			public void Write()
 			{
-				BinaryWriter wtr = new BinaryWriter(new MemoryStream(NoxMemoryHack.Process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH)));
+				if (NoxMemoryHack.Process.Available)
+					lock (NoxMemoryHack.Process)
+					{
+						BinaryWriter wtr = new BinaryWriter(new MemoryStream(NoxMemoryHack.Process.Read(TEAM_TABLE_ADDRESS, TEAM_TABLE_LENGTH)));
 
-				wtr.Write((int) TeamCount);
-				wtr.Write((int) flags);
+						wtr.Write((int) TeamCount);
+						wtr.Write((int) flags);
 
-				wtr.BaseStream.Seek(TEAM_HEADER_LENGTH, SeekOrigin.Begin);//skip to end of header
+						wtr.BaseStream.Seek(TEAM_HEADER_LENGTH, SeekOrigin.Begin);//skip to end of header
 
-				//write the teams
-				foreach (Team team in TeamList)
-				{
-					team.Write(wtr.BaseStream);
-				}
+						//write the teams
+						foreach (Team team in TeamList)
+							team.Write(wtr.BaseStream);
 
-				NoxMemoryHack.Process.Write(TEAM_TABLE_ADDRESS, ((MemoryStream) wtr.BaseStream).ToArray());
+						NoxMemoryHack.Process.Write(TEAM_TABLE_ADDRESS, ((MemoryStream) wtr.BaseStream).ToArray());
+					}
 			}
 
 			public void AddTeam()
@@ -352,12 +346,13 @@ namespace NoxShared
 		// but not when a player is kicked from the admin menu
 		public static void KickPlayer(int playerId)
 		{
-			//Process.CallFunction((IntPtr) 0x4432B0, playerId);//wrong
+			if (playerId >= 31) return;//can't do host player
 			Process.CallFunction(FUNC_KICK_PLAYER, playerId, 4);//4 is needed to send "You have been kicked" message
 		}
 
 		public static void BanPlayer(int playerId)
 		{
+			if (playerId >= 31) return;//can't do host player
 			Player player = (Player) Instance.Players.PlayerList[playerId];
 			KickPlayer(player.Number);
 			Process.CallFunction(FUNC_ADD_TO_BAN_LIST, 0, player.Login, player.Serial.ToCharArray());
@@ -391,6 +386,12 @@ namespace NoxShared
 						//Process.Write(0x6DCBC4, );
 					}
 				}
+			}
+
+			public static void FixUnkickable(int playerId)
+			{
+				if (playerId <= 31)
+					Process.Write(PlayerMemory.PLAYER_TABLE_ADDRESS + PlayerMemory.PLAYER_ENTRY_LENGTH * playerId + 0xED, new byte[2]);
 			}
 		}
 	}

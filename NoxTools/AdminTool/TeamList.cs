@@ -62,12 +62,12 @@ namespace NoxTrainer
 			foreach (CheckBox box in enabled)
 				box.CheckedChanged += new EventHandler(box_CheckedChanged);
 
-			RefreshList();//necessary for initial refresh
-			NoxMemoryHack.Instance.Teams.TeamChanged += new NoxShared.NoxMemoryHack.TeamMemory.TeamEvent(TeamChanged);
+			NoxMemoryHack.Instance.Teams.Refreshed += new NoxShared.NoxMemoryHack.TeamMemory.Event(Refreshed);
 		}
 
 		public void RefreshList()
 		{
+			if (!Created) return;//we get a weird freeze if we dont check this
 			for (int ndx = 0; ndx < names.Count; ndx++)
 				RefreshTeam(ndx);
 			useTeams.Checked = NoxMemoryHack.Instance.Teams.UseTeams;
@@ -475,33 +475,21 @@ namespace NoxTrainer
 		}
 		#endregion
 
-		private void nameBox_TextChanged(object sender, EventArgs e)
+		private void Refreshed(object sender, EventArgs e)
 		{
-			TextBox box = (TextBox) sender;
-			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[names.IndexOf(box)]).Name = box.Text;
-		}
-
-		private void box_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			ComboBox box = (ComboBox) sender;
-			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[colors.IndexOf(box)]).Color = NoxMemoryHack.TeamMemory.Team.TeamColor[box.SelectedIndex];
-		}
-
-		private void box_CheckedChanged(object sender, EventArgs e)
-		{
-			CheckBox box = (CheckBox) sender;
-			int ndx = enabled.IndexOf(box);
-			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[ndx]).Enabled = box.Checked;
-		}
-
-		private void TeamChanged(object sender, NoxShared.NoxMemoryHack.TeamMemory.TeamEventArgs e)
-		{
-			RefreshTeam(e.Team.TeamNumber - 1);
+			//this is necessary for thread safety, since background thread will call this
+			if (InvokeRequired)
+			{
+				Invoke(new NoxShared.NoxMemoryHack.TeamMemory.Event(Refreshed) ,new object[] {sender, e});
+				return;
+			}
+			RefreshList();
 		}
 
 		private void RefreshTeam(int ndx)
 		{
-			if (ndx >= NoxMemoryHack.Instance.Teams.TeamList.Count)
+			if (!Created) return;//we get a weird freeze if we dont check this
+			if (ndx >= names.Count || ndx >= NoxMemoryHack.Instance.Teams.TeamList.Count)
 				return;
 			NoxMemoryHack.TeamMemory.Team team = (NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[ndx];
 			int oldSel = ((TextBox) names[ndx]).SelectionStart;
@@ -514,16 +502,41 @@ namespace NoxTrainer
 		private void teamDamage_CheckedChanged(object sender, System.EventArgs e)
 		{
 			NoxMemoryHack.Instance.Teams.TeamDamage = ((CheckBox) sender).Checked;
+			NoxMemoryHack.Instance.Teams.Write();
 		}
 
 		private void autoAssign_CheckedChanged(object sender, System.EventArgs e)
 		{
 			NoxMemoryHack.Instance.Teams.AutoAssign = ((CheckBox) sender).Checked;
+			NoxMemoryHack.Instance.Teams.Write();
 		}
 
 		private void useTeams_CheckedChanged(object sender, System.EventArgs e)
 		{
 			NoxMemoryHack.Instance.Teams.UseTeams = ((CheckBox) sender).Checked;
+			NoxMemoryHack.Instance.Teams.Write();
+		}
+
+		private void nameBox_TextChanged(object sender, EventArgs e)
+		{
+			TextBox box = (TextBox) sender;
+			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[names.IndexOf(box)]).Name = box.Text;
+			NoxMemoryHack.Instance.Teams.Write();
+		}
+
+		private void box_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			ComboBox box = (ComboBox) sender;
+			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[colors.IndexOf(box)]).Color = NoxMemoryHack.TeamMemory.Team.TeamColor[box.SelectedIndex];
+			NoxMemoryHack.Instance.Teams.Write();
+		}
+
+		private void box_CheckedChanged(object sender, EventArgs e)
+		{
+			CheckBox box = (CheckBox) sender;
+			int ndx = enabled.IndexOf(box);
+			((NoxMemoryHack.TeamMemory.Team) NoxMemoryHack.Instance.Teams.TeamList[ndx]).Enabled = box.Checked;
+			NoxMemoryHack.Instance.Teams.Write();
 		}
 	}
 }
