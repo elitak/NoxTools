@@ -9,9 +9,6 @@ using NoxShared;
 
 namespace NoxMapEditor
 {
-	/// <summary>
-	/// Summary description for MapView.
-	/// </summary>
 	public class MapView : System.Windows.Forms.UserControl
 	{
 		public Map Map;
@@ -19,17 +16,7 @@ namespace NoxMapEditor
 		protected int objectSelectionRadius = 7;
 		protected Button currentButton;
 		public Map.Object SelectedObject = new Map.Object();
-		public bool DrawGrid
-		{
-			get
-			{
-				return checkboxGrid.Checked == true;
-			}
-			set
-			{
-				checkboxGrid.Checked = value;
-			}
-		}
+		public bool DrawGrid;
 		protected const int wallThickness = 2;
 		protected const int gridThickness = 1;
 
@@ -63,26 +50,26 @@ namespace NoxMapEditor
 		private System.Windows.Forms.MenuItem contextMenuDelete;
 		private System.Windows.Forms.MenuItem contextMenuProperties;
 		private System.Windows.Forms.MenuItem menuItem3;
-		private System.Windows.Forms.Panel panel2;
 		private NoxMapEditor.WallSelector wallSelector1;
 		private System.Windows.Forms.Button windowsButton;
 		private System.Windows.Forms.Button destructableButton;
 		private System.Windows.Forms.Button floorButton;
 		private System.Windows.Forms.ComboBox tileGraphic;
-		private System.Windows.Forms.TextBox tileVar;
-		private System.Windows.Forms.CheckBox checkboxGrid;
 		private System.Windows.Forms.Button buttonSecret;
 		private NoxMapEditor.MapView.FlickerFreePanel mapPanel;
 		private System.Windows.Forms.Button buttonBlend;
+		private System.Windows.Forms.ComboBox tileVar;
+		private System.Windows.Forms.GroupBox floorGroup;
+		private System.Windows.Forms.GroupBox wallGroup;
+		private System.Windows.Forms.GroupBox objectGroup;
+		private System.Windows.Forms.Panel wallSelectPanel;
 		private System.Windows.Forms.MenuItem enchantItem;
 
 		public MapView()
 		{
 			InitializeComponent();
-			//SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-			//SetStyle(ControlStyles.DoubleBuffer, true);
 			wallSelector1 = new WallSelector();
-			this.panel2.Controls.Add(wallSelector1);
+			this.wallSelectPanel.Controls.Add(wallSelector1);
 			wallSelector1.Parent = this;
 
 			hScrollBar1.Value = (hScrollBar1.Maximum - hScrollBar1.Minimum) / 2;
@@ -91,7 +78,7 @@ namespace NoxMapEditor
 			tileGraphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
 			//set default values
 			tileGraphic.SelectedIndex = 0;
-			tileVar.Text = "0";
+			tileVar.SelectedIndex = 0;
 
 			Map = new Map();//dummy map
 			currentButton = selectButton;
@@ -314,7 +301,8 @@ namespace NoxMapEditor
 						tile = new Map.Tile(
 							pt,
 							(byte) tileGraphic.SelectedIndex,
-							Convert.ToByte(tileVar.Text, 16)
+							GetVariation(tileVar),
+							blendDialog.Blends
 							);
 						Map.FloorMap.Add(pt, tile);
 					}
@@ -467,18 +455,23 @@ namespace NoxMapEditor
 			this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
 			this.vScrollBar1 = new System.Windows.Forms.VScrollBar();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
-			this.buttonBlend = new System.Windows.Forms.Button();
-			this.buttonSecret = new System.Windows.Forms.Button();
-			this.tileVar = new System.Windows.Forms.TextBox();
-			this.tileGraphic = new System.Windows.Forms.ComboBox();
-			this.floorButton = new System.Windows.Forms.Button();
-			this.destructableButton = new System.Windows.Forms.Button();
-			this.windowsButton = new System.Windows.Forms.Button();
+			this.objectGroup = new System.Windows.Forms.GroupBox();
 			this.selectButton = new System.Windows.Forms.Button();
 			this.newObjectButton = new System.Windows.Forms.Button();
-			this.panel2 = new System.Windows.Forms.Panel();
-			this.checkboxGrid = new System.Windows.Forms.CheckBox();
+			this.floorGroup = new System.Windows.Forms.GroupBox();
+			this.buttonBlend = new System.Windows.Forms.Button();
+			this.tileVar = new System.Windows.Forms.ComboBox();
+			this.tileGraphic = new System.Windows.Forms.ComboBox();
+			this.floorButton = new System.Windows.Forms.Button();
+			this.wallGroup = new System.Windows.Forms.GroupBox();
+			this.wallSelectPanel = new System.Windows.Forms.Panel();
+			this.buttonSecret = new System.Windows.Forms.Button();
+			this.destructableButton = new System.Windows.Forms.Button();
+			this.windowsButton = new System.Windows.Forms.Button();
 			this.groupBox1.SuspendLayout();
+			this.objectGroup.SuspendLayout();
+			this.floorGroup.SuspendLayout();
+			this.wallGroup.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// mapPanel
@@ -538,10 +531,10 @@ namespace NoxMapEditor
 			// 
 			this.hScrollBar1.Dock = System.Windows.Forms.DockStyle.Bottom;
 			this.hScrollBar1.LargeChange = 230;
-			this.hScrollBar1.Location = new System.Drawing.Point(88, 730);
+			this.hScrollBar1.Location = new System.Drawing.Point(128, 730);
 			this.hScrollBar1.Maximum = 5888;
 			this.hScrollBar1.Name = "hScrollBar1";
-			this.hScrollBar1.Size = new System.Drawing.Size(920, 16);
+			this.hScrollBar1.Size = new System.Drawing.Size(880, 16);
 			this.hScrollBar1.SmallChange = 23;
 			this.hScrollBar1.TabIndex = 2;
 			this.hScrollBar1.ValueChanged += new System.EventHandler(this.ScrollBarChanged);
@@ -560,121 +553,143 @@ namespace NoxMapEditor
 			// 
 			// groupBox1
 			// 
-			this.groupBox1.Controls.Add(this.buttonBlend);
-			this.groupBox1.Controls.Add(this.buttonSecret);
-			this.groupBox1.Controls.Add(this.tileVar);
-			this.groupBox1.Controls.Add(this.tileGraphic);
-			this.groupBox1.Controls.Add(this.floorButton);
-			this.groupBox1.Controls.Add(this.destructableButton);
-			this.groupBox1.Controls.Add(this.windowsButton);
-			this.groupBox1.Controls.Add(this.selectButton);
-			this.groupBox1.Controls.Add(this.newObjectButton);
-			this.groupBox1.Controls.Add(this.panel2);
-			this.groupBox1.Controls.Add(this.checkboxGrid);
+			this.groupBox1.Controls.Add(this.objectGroup);
+			this.groupBox1.Controls.Add(this.floorGroup);
+			this.groupBox1.Controls.Add(this.wallGroup);
 			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
 			this.groupBox1.Location = new System.Drawing.Point(0, 0);
 			this.groupBox1.Name = "groupBox1";
-			this.groupBox1.Size = new System.Drawing.Size(88, 746);
+			this.groupBox1.Size = new System.Drawing.Size(128, 746);
 			this.groupBox1.TabIndex = 4;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Tools";
 			// 
+			// objectGroup
+			// 
+			this.objectGroup.Controls.Add(this.selectButton);
+			this.objectGroup.Controls.Add(this.newObjectButton);
+			this.objectGroup.Location = new System.Drawing.Point(8, 480);
+			this.objectGroup.Name = "objectGroup";
+			this.objectGroup.Size = new System.Drawing.Size(112, 72);
+			this.objectGroup.TabIndex = 24;
+			this.objectGroup.TabStop = false;
+			this.objectGroup.Text = "Objects";
+			// 
+			// selectButton
+			// 
+			this.selectButton.Location = new System.Drawing.Point(24, 40);
+			this.selectButton.Name = "selectButton";
+			this.selectButton.Size = new System.Drawing.Size(56, 23);
+			this.selectButton.TabIndex = 0;
+			this.selectButton.Text = "Select";
+			this.selectButton.Click += new System.EventHandler(this.selectButton_Click);
+			// 
+			// newObjectButton
+			// 
+			this.newObjectButton.Location = new System.Drawing.Point(24, 16);
+			this.newObjectButton.Name = "newObjectButton";
+			this.newObjectButton.Size = new System.Drawing.Size(56, 23);
+			this.newObjectButton.TabIndex = 1;
+			this.newObjectButton.Text = "Create";
+			this.newObjectButton.Click += new System.EventHandler(this.newObjectButton_Click);
+			// 
+			// floorGroup
+			// 
+			this.floorGroup.Controls.Add(this.buttonBlend);
+			this.floorGroup.Controls.Add(this.tileVar);
+			this.floorGroup.Controls.Add(this.tileGraphic);
+			this.floorGroup.Controls.Add(this.floorButton);
+			this.floorGroup.Location = new System.Drawing.Point(8, 328);
+			this.floorGroup.Name = "floorGroup";
+			this.floorGroup.Size = new System.Drawing.Size(112, 144);
+			this.floorGroup.TabIndex = 22;
+			this.floorGroup.TabStop = false;
+			this.floorGroup.Text = "Tiles";
+			// 
 			// buttonBlend
 			// 
-			this.buttonBlend.Location = new System.Drawing.Point(32, 456);
+			this.buttonBlend.Location = new System.Drawing.Point(24, 112);
 			this.buttonBlend.Name = "buttonBlend";
-			this.buttonBlend.Size = new System.Drawing.Size(48, 24);
+			this.buttonBlend.Size = new System.Drawing.Size(56, 24);
 			this.buttonBlend.TabIndex = 19;
 			this.buttonBlend.Text = "Blends";
 			this.buttonBlend.Click += new System.EventHandler(this.buttonBlend_Click);
 			// 
-			// buttonSecret
-			// 
-			this.buttonSecret.Location = new System.Drawing.Point(8, 344);
-			this.buttonSecret.Name = "buttonSecret";
-			this.buttonSecret.Size = new System.Drawing.Size(72, 23);
-			this.buttonSecret.TabIndex = 18;
-			this.buttonSecret.Text = "Secret";
-			this.buttonSecret.Click += new System.EventHandler(this.buttonSecret_Click);
-			// 
 			// tileVar
 			// 
-			this.tileVar.Location = new System.Drawing.Point(48, 432);
+			this.tileVar.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tileVar.DropDownWidth = 40;
+			this.tileVar.Location = new System.Drawing.Point(8, 80);
+			this.tileVar.MaxDropDownItems = 10;
 			this.tileVar.Name = "tileVar";
-			this.tileVar.Size = new System.Drawing.Size(24, 20);
-			this.tileVar.TabIndex = 16;
-			this.tileVar.Text = "";
+			this.tileVar.Size = new System.Drawing.Size(56, 21);
+			this.tileVar.TabIndex = 21;
 			// 
 			// tileGraphic
 			// 
 			this.tileGraphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.tileGraphic.DropDownWidth = 200;
-			this.tileGraphic.Location = new System.Drawing.Point(8, 408);
+			this.tileGraphic.DropDownWidth = 180;
+			this.tileGraphic.Location = new System.Drawing.Point(8, 48);
 			this.tileGraphic.Name = "tileGraphic";
-			this.tileGraphic.Size = new System.Drawing.Size(72, 21);
+			this.tileGraphic.Size = new System.Drawing.Size(96, 21);
 			this.tileGraphic.TabIndex = 13;
+			this.tileGraphic.SelectedIndexChanged += new System.EventHandler(this.tileGraphic_SelectedIndexChanged);
 			// 
 			// floorButton
 			// 
-			this.floorButton.Location = new System.Drawing.Point(8, 376);
+			this.floorButton.Location = new System.Drawing.Point(24, 16);
 			this.floorButton.Name = "floorButton";
-			this.floorButton.Size = new System.Drawing.Size(72, 23);
+			this.floorButton.Size = new System.Drawing.Size(56, 23);
 			this.floorButton.TabIndex = 8;
-			this.floorButton.Text = "Floor";
+			this.floorButton.Text = "Create";
 			this.floorButton.Click += new System.EventHandler(this.floorButton_Click);
+			// 
+			// wallGroup
+			// 
+			this.wallGroup.Controls.Add(this.wallSelectPanel);
+			this.wallGroup.Controls.Add(this.buttonSecret);
+			this.wallGroup.Controls.Add(this.destructableButton);
+			this.wallGroup.Controls.Add(this.windowsButton);
+			this.wallGroup.Location = new System.Drawing.Point(8, 16);
+			this.wallGroup.Name = "wallGroup";
+			this.wallGroup.Size = new System.Drawing.Size(112, 304);
+			this.wallGroup.TabIndex = 23;
+			this.wallGroup.TabStop = false;
+			this.wallGroup.Text = "Walls";
+			// 
+			// wallSelectPanel
+			// 
+			this.wallSelectPanel.Location = new System.Drawing.Point(16, 16);
+			this.wallSelectPanel.Name = "wallSelectPanel";
+			this.wallSelectPanel.Size = new System.Drawing.Size(80, 208);
+			this.wallSelectPanel.TabIndex = 19;
+			// 
+			// buttonSecret
+			// 
+			this.buttonSecret.Location = new System.Drawing.Point(24, 272);
+			this.buttonSecret.Name = "buttonSecret";
+			this.buttonSecret.Size = new System.Drawing.Size(56, 23);
+			this.buttonSecret.TabIndex = 18;
+			this.buttonSecret.Text = "Secret";
+			this.buttonSecret.Click += new System.EventHandler(this.buttonSecret_Click);
 			// 
 			// destructableButton
 			// 
-			this.destructableButton.Location = new System.Drawing.Point(8, 312);
+			this.destructableButton.Location = new System.Drawing.Point(24, 248);
 			this.destructableButton.Name = "destructableButton";
-			this.destructableButton.Size = new System.Drawing.Size(72, 23);
+			this.destructableButton.Size = new System.Drawing.Size(56, 23);
 			this.destructableButton.TabIndex = 7;
 			this.destructableButton.Text = "Destruct";
 			this.destructableButton.Click += new System.EventHandler(this.destructableButton_Click);
 			// 
 			// windowsButton
 			// 
-			this.windowsButton.Location = new System.Drawing.Point(8, 280);
+			this.windowsButton.Location = new System.Drawing.Point(24, 224);
 			this.windowsButton.Name = "windowsButton";
-			this.windowsButton.Size = new System.Drawing.Size(72, 23);
+			this.windowsButton.Size = new System.Drawing.Size(56, 23);
 			this.windowsButton.TabIndex = 6;
 			this.windowsButton.Text = "Windows";
 			this.windowsButton.Click += new System.EventHandler(this.windowsButton_Click);
-			// 
-			// selectButton
-			// 
-			this.selectButton.Location = new System.Drawing.Point(8, 248);
-			this.selectButton.Name = "selectButton";
-			this.selectButton.Size = new System.Drawing.Size(72, 23);
-			this.selectButton.TabIndex = 0;
-			this.selectButton.Text = "Sel./Move";
-			this.selectButton.Click += new System.EventHandler(this.selectButton_Click);
-			// 
-			// newObjectButton
-			// 
-			this.newObjectButton.Location = new System.Drawing.Point(8, 216);
-			this.newObjectButton.Name = "newObjectButton";
-			this.newObjectButton.Size = new System.Drawing.Size(72, 23);
-			this.newObjectButton.TabIndex = 1;
-			this.newObjectButton.Text = "New Object";
-			this.newObjectButton.Click += new System.EventHandler(this.newObjectButton_Click);
-			// 
-			// panel2
-			// 
-			this.panel2.Dock = System.Windows.Forms.DockStyle.Top;
-			this.panel2.Location = new System.Drawing.Point(3, 16);
-			this.panel2.Name = "panel2";
-			this.panel2.Size = new System.Drawing.Size(82, 192);
-			this.panel2.TabIndex = 5;
-			// 
-			// checkboxGrid
-			// 
-			this.checkboxGrid.Location = new System.Drawing.Point(16, 512);
-			this.checkboxGrid.Name = "checkboxGrid";
-			this.checkboxGrid.Size = new System.Drawing.Size(48, 24);
-			this.checkboxGrid.TabIndex = 0;
-			this.checkboxGrid.Text = "Grid";
-			this.checkboxGrid.CheckedChanged += new System.EventHandler(this.checkboxGrid_CheckedChanged);
 			// 
 			// MapView
 			// 
@@ -686,7 +701,11 @@ namespace NoxMapEditor
 			this.Name = "MapView";
 			this.Size = new System.Drawing.Size(1024, 768);
 			this.groupBox1.ResumeLayout(false);
+			this.objectGroup.ResumeLayout(false);
+			this.floorGroup.ResumeLayout(false);
+			this.wallGroup.ResumeLayout(false);
 			this.ResumeLayout(false);
+
 		}
 		#endregion
 
@@ -730,6 +749,27 @@ namespace NoxMapEditor
 		private void buttonBlend_Click(object sender, System.EventArgs e)
 		{
 			blendDialog.ShowDialog();
+		}
+
+		private byte GetVariation(ComboBox box)
+		{
+			return box.SelectedIndex == 0 ? (byte) new Random().Next(((ThingDb.Tile) ThingDb.FloorTiles[box.SelectedIndex]).Variations) : Convert.ToByte(box.Text);
+		}
+
+		private void repopulateVariations(ComboBox box, int variations)
+		{
+			int oldNdx = box.SelectedIndex;
+			box.Items.Clear();
+			box.Items.Add("Random");
+			for (int i = 0; i < variations; i++)
+				box.Items.Add(String.Format("{0}", i));
+			if (oldNdx < box.Items.Count)
+				box.SelectedIndex = oldNdx;
+		}
+
+		private void tileGraphic_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			repopulateVariations(tileVar, ((ThingDb.Tile) ThingDb.FloorTiles[((ComboBox) sender).SelectedIndex]).Variations);
 		}
 	}
 }
