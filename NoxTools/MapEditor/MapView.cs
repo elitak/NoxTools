@@ -299,7 +299,7 @@ namespace NoxMapEditor
 				mapPanel.Invalidate();
 			}
 		}
-		protected ObjectPropertiesDialog propDlg;		protected ObjectEnchantDialog enchantDlg;
+		protected ObjectPropertiesDialog propDlg;		protected ObjectEnchantDialog enchantDlg;		protected DoorProperties doorDlg;
 		private void contextMenuProperties_Click(object sender, EventArgs e)
 		{			propDlg = new ObjectPropertiesDialog();
 			propDlg.Object = SelectedObject;
@@ -355,6 +355,7 @@ namespace NoxMapEditor
 			this.contextMenuDelete = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
 			this.contextMenuProperties = new System.Windows.Forms.MenuItem();
+			this.enchantItem = new System.Windows.Forms.MenuItem();
 			this.statusBar1 = new System.Windows.Forms.StatusBar();
 			this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
 			this.vScrollBar1 = new System.Windows.Forms.VScrollBar();
@@ -371,7 +372,6 @@ namespace NoxMapEditor
 			this.newObjectButton = new System.Windows.Forms.Button();
 			this.panel2 = new System.Windows.Forms.Panel();
 			this.checkboxGrid = new System.Windows.Forms.CheckBox();
-			this.enchantItem = new System.Windows.Forms.MenuItem();
 			this.groupBox1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -395,6 +395,7 @@ namespace NoxMapEditor
 																						 this.menuItem3,
 																						 this.contextMenuProperties,
 																						 this.enchantItem});
+			this.contextMenu1.Popup += new System.EventHandler(this.contextMenu1_Popup);
 			// 
 			// contextMenuDelete
 			// 
@@ -412,6 +413,12 @@ namespace NoxMapEditor
 			this.contextMenuProperties.Index = 2;
 			this.contextMenuProperties.Text = "Properties";
 			this.contextMenuProperties.Click += new System.EventHandler(this.contextMenuProperties_Click);
+			// 
+			// enchantItem
+			// 
+			this.enchantItem.Index = 3;
+			this.enchantItem.Text = "Enchants";
+			this.enchantItem.Click += new System.EventHandler(this.enchantItem_Click);
 			// 
 			// statusBar1
 			// 
@@ -573,12 +580,6 @@ namespace NoxMapEditor
 			this.checkboxGrid.Text = "Grid";
 			this.checkboxGrid.CheckedChanged += new System.EventHandler(this.checkboxGrid_CheckedChanged);
 			// 
-			// enchantItem
-			// 
-			this.enchantItem.Index = 3;
-			this.enchantItem.Text = "Enchants";
-			this.enchantItem.Click += new System.EventHandler(this.enchantItem_Click);
-			// 
 			// MapView
 			// 
 			this.Controls.Add(this.hScrollBar1);
@@ -607,10 +608,27 @@ namespace NoxMapEditor
 				enchantDlg.Object = SelectedObject;
 				enchantDlg.ShowDialog();
 			}
+			else if((((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
+			{
+				doorDlg = new DoorProperties();
+				doorDlg.Object = SelectedObject;
+				doorDlg.ShowDialog();
+			}
 			else
 				System.Windows.Forms.MessageBox.Show("This object does not accept enchants.","Not compatible");
 			
 			mapPanel.Invalidate();
+		}
+
+		private void contextMenu1_Popup(object sender, System.EventArgs e)
+		{
+			if (SelectedObject != null)
+			{
+				if ((((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
+					enchantItem.Text = "Door Prop.";
+				if (!((((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR))
+					enchantItem.Text = "Enchants";
+			}
 		}
 	}
 }
