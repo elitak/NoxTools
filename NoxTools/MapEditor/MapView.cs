@@ -14,18 +14,30 @@ namespace NoxMapEditor
 	/// </summary>
 	public class MapView : System.Windows.Forms.UserControl
 	{
-		private System.ComponentModel.Container components = null;
-
+		public Map Map;
 		protected static int squareSize = 23;
 		protected int objectSelectionRadius = 7;
 		protected Button currentButton;
 		public Map.Object SelectedObject = new Map.Object();
+		public bool DrawGrid
+		{
+			get
+			{
+				return checkboxGrid.Checked == true;
+			}
+			set
+			{
+				checkboxGrid.Checked = value;
+			}
+		}
+		protected const int wallThickness = 2;
+		protected const int gridThickness = 1;
 
 		public enum Mode
 		{
 			MAKE_WALL,
 			MAKE_OBJECT,
-			SELECT,			MAKE_WINDOW,			MAKE_DESTRUCTABLE,			MAKE_FLOOR
+			SELECT,			MAKE_WINDOW,			MAKE_DESTRUCTABLE,			MAKE_SECRET,			MAKE_FLOOR
 		};
 		public Mode CurrentMode;
 
@@ -56,9 +68,9 @@ namespace NoxMapEditor
 		private System.Windows.Forms.ComboBox lTileGraphic;
 		private System.Windows.Forms.ComboBox rTileGraphic;
 		private System.Windows.Forms.TextBox lTileVar;
+		private System.Windows.Forms.CheckBox checkboxGrid;
+		private System.Windows.Forms.Button buttonSecret;
 		private System.Windows.Forms.TextBox rTileVar;
-
-		public Map Map;
 
 		public MapView()
 		{
@@ -86,12 +98,16 @@ namespace NoxMapEditor
 			if (Map == null)
 				return;
 
+			//black out the panel to start out
 			Size size = mapPanel.Size;
-			e.Graphics.FillRectangle(new SolidBrush(Color.Black), new Rectangle(new Point(0, 0), size));			if (CurrentMode == Mode.MAKE_FLOOR)//only draw the floor when editing it
+			e.Graphics.FillRectangle(new SolidBrush(Color.Black), new Rectangle(new Point(0, 0), size));			Point pos = new Point(hScrollBar1.Value, vScrollBar1.Value);			//draw grid			if (DrawGrid)			{				Pen pen = new Pen(Color.Gray, gridThickness);				//draw the grid sloppily (an extra screen's worth of lines along either axis)				for (int x = -squareSize*(size.Width/squareSize) - squareSize/2 - pos.X % (2*squareSize); x < 2*size.Width; x += 2*squareSize)				{					int y = -3*squareSize/2 - pos.Y % (2*squareSize);					e.Graphics.DrawLine(pen, new Point(x, y), new Point(y, x));					e.Graphics.DrawLine(pen, new Point(x, y), new Point(size.Width + x, size.Width + y));				}			}			if (CurrentMode == Mode.MAKE_FLOOR)//only draw the floor when editing it
 			{
+				//draw floor
 				foreach (Map.TilePair tilePair in Map.FloorMap.Values)				{					Point pt = tilePair.Location;					Pen pen = new Pen(Color.Yellow, 1);					PointF nwCorner, neCorner, seCorner, swCorner, center = new PointF(0, 0);					int x = pt.X * squareSize * 2 - hScrollBar1.Value;					int y = pt.Y * squareSize * 2 - vScrollBar1.Value;					if (x >= 0 && x < size.Width && y >= 0 && y < size.Height)						{						center = new PointF(x + squareSize/2f, y + (3/2f)*squareSize);						nwCorner = new PointF(x - squareSize/2f, y + (3/2f)*squareSize);						neCorner = new PointF(nwCorner.X + 2*squareSize, nwCorner.Y - 2*squareSize);						if(tilePair.OneTileOnly)						{							if (tilePair.Left != null)							{								neCorner.X += -squareSize;								neCorner.Y += squareSize;							}							else							{								center.X += squareSize;								center.Y += -squareSize;								nwCorner.X += squareSize;								nwCorner.Y += -squareSize;							}							}						swCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y + squareSize);						seCorner = new PointF(neCorner.X + squareSize, neCorner.Y + squareSize);						e.Graphics.DrawPolygon(pen, new PointF[] {nwCorner, neCorner, seCorner, swCorner});						e.Graphics.DrawEllipse(pen, center.X, center.Y, 2, 2);					}				}			}
+
+			//draw walls
 			foreach (Map.Wall wall in Map.WallMap.Values)
-			{				Point pt = wall.Location;				if (pt.X*squareSize >= hScrollBar1.Value && pt.X*squareSize < size.Width+hScrollBar1.Value && pt.Y*squareSize >= vScrollBar1.Value && pt.Y*squareSize < size.Height+vScrollBar1.Value)					{					Pen pen;					int x = pt.X * squareSize - hScrollBar1.Value, y = pt.Y * squareSize - vScrollBar1.Value;					if (wall.Destructable)						pen = new Pen(Color.Red, 1);										else if (wall.Window)						pen = new Pen(Color.Orange, 1);										else						pen = new Pen(Color.White, 1);					PointF center = new PointF(x + squareSize/2f, y + squareSize/2f);					Point nCorner = new Point(x, y);					Point sCorner = new Point(x + squareSize, y + squareSize);					Point wCorner = new Point(x + squareSize, y);					Point eCorner = new Point(x, y + squareSize);					switch ((Map.Wall.WallFacing) ((int) wall.Facing & 0x7F))//FIXME, TODO: sign bit seems to signify "internal" wall (not on the border of the map), however, there are seemingly random exceptions to this					{						case Map.Wall.WallFacing.NORTH:							e.Graphics.DrawLine(pen, wCorner, eCorner);							break;						case Map.Wall.WallFacing.WEST:							e.Graphics.DrawLine(pen, nCorner, sCorner);							break;
+			{				Point pt = wall.Location;				if (pt.X*squareSize >= hScrollBar1.Value && pt.X*squareSize < size.Width+hScrollBar1.Value && pt.Y*squareSize >= vScrollBar1.Value && pt.Y*squareSize < size.Height+vScrollBar1.Value)					{					Pen pen;					int x = pt.X * squareSize - hScrollBar1.Value, y = pt.Y * squareSize - vScrollBar1.Value;					if (wall.Destructable)						pen = new Pen(Color.Red, wallThickness);					else if (wall.Window)						pen = new Pen(Color.Orange, wallThickness);					else if (wall.Secret)						pen = new Pen(Color.Green, wallThickness);					else						pen = new Pen(Color.White, wallThickness);					PointF center = new PointF(x + squareSize/2f, y + squareSize/2f);					Point nCorner = new Point(x, y);					Point sCorner = new Point(x + squareSize, y + squareSize);					Point wCorner = new Point(x + squareSize, y);					Point eCorner = new Point(x, y + squareSize);					switch ((Map.Wall.WallFacing) ((int) wall.Facing & 0x7F))//FIXME, TODO: sign bit seems to signify "internal" wall (not on the border of the map), however, there are seemingly random exceptions to this					{						case Map.Wall.WallFacing.NORTH:							e.Graphics.DrawLine(pen, wCorner, eCorner);							break;						case Map.Wall.WallFacing.WEST:							e.Graphics.DrawLine(pen, nCorner, sCorner);							break;
 						case Map.Wall.WallFacing.CROSS:							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall							e.Graphics.DrawLine(pen, nCorner, sCorner);//south wall							break;
 						case Map.Wall.WallFacing.NORTH_T:							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall							e.Graphics.DrawLine(pen, center, sCorner);//tail towards south							break;
 						case Map.Wall.WallFacing.SOUTH_T:							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall							e.Graphics.DrawLine(pen, center, nCorner);//tail towards north							break;
@@ -102,6 +118,8 @@ namespace NoxMapEditor
 						case Map.Wall.WallFacing.SW_CORNER:							e.Graphics.DrawLine(pen, center, nCorner);							e.Graphics.DrawLine(pen, center, wCorner);							break;
 						case Map.Wall.WallFacing.SE_CORNER:							e.Graphics.DrawLine(pen, center, nCorner);							e.Graphics.DrawLine(pen, center, eCorner);							break;
 						default:							e.Graphics.DrawRectangle(pen, x, y, squareSize, squareSize);							e.Graphics.DrawString("?", new Font("Arial", 12), new SolidBrush(Color.Red), nCorner);							break;					}				}			}
+
+			//draw objects
 			foreach (Map.Object oe in Map.Objects)			{				PointF ptf = oe.Location;				if (ptf.X >= hScrollBar1.Value && ptf.X < size.Width+hScrollBar1.Value && ptf.Y >= vScrollBar1.Value && ptf.Y < size.Height+vScrollBar1.Value)					{					Pen pen;					float x = ptf.X - hScrollBar1.Value, y = ptf.Y - vScrollBar1.Value;										PointF center = new PointF(x, y);					PointF topLeft = new PointF(center.X - objectSelectionRadius, center.Y - objectSelectionRadius);					if (SelectedObject != null && ((Map.Object) SelectedObject).Location.Equals(oe.Location))						pen = new Pen(Color.Green, 1);
 					else						pen = new Pen(Color.Blue, 1);
 					e.Graphics.DrawEllipse(pen, new RectangleF(topLeft, new Size(2*objectSelectionRadius, 2*objectSelectionRadius)));					e.Graphics.DrawString(oe.Extent.ToString(),new Font("Arial", 10), new SolidBrush(Color.Purple), topLeft);				}			}		} 
@@ -126,7 +144,7 @@ namespace NoxMapEditor
 				else if (CurrentMode == Mode.MAKE_WALL)
 				{
 					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
-					if(Map.WallMap[pt] == null)
+					if(pt.X % 2 == pt.Y % 2 && Map.WallMap[pt] == null)
 					{
 						Map.Wall newWall = new Map.Wall(pt, wallSelector1.SelectedFacing, wallSelector1.SelectedMaterial);
 						Map.WallMap.Add(pt,newWall);
@@ -147,26 +165,22 @@ namespace NoxMapEditor
 					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
 					Map.Wall wall = (Map.Wall)Map.WallMap[pt];
 					if(wall != null)
-					{
 						wall.Window = !wall.Window;
-						if(wall.Window)
-							Map.num_Windows++;
-						else
-							Map.num_Windows--;
-					}
 				}
 				else if (CurrentMode == Mode.MAKE_DESTRUCTABLE)
 				{
 					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
 					Map.Wall wall = (Map.Wall)Map.WallMap[pt];
 					if(wall != null)
-					{
 						wall.Destructable = !wall.Destructable;
-						if(wall.Destructable)
-							Map.num_Destructable++;
-						else
-							Map.num_Destructable--;
-					}
+				}
+
+				else if (CurrentMode == Mode.MAKE_SECRET)
+				{
+					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
+					Map.Wall wall = (Map.Wall)Map.WallMap[pt];
+					if(wall != null)
+						wall.Secret = !wall.Secret;
 				}
 				else if (CurrentMode == Mode.MAKE_FLOOR)//TODO: allow addition of single tile tilepairs
 				{
@@ -234,20 +248,6 @@ namespace NoxMapEditor
 				statusBar1.Text += String.Format(" SelectedObject={0}", SelectedObject.Name);
 		}
 
-		/// <summary> 
-		/// Clean up any resources being used.
-		/// </summary>
-		protected override void Dispose( bool disposing )
-		{
-			if( disposing )
-			{
-				if(components != null)
-				{
-					components.Dispose();
-				}
-			}
-			base.Dispose( disposing );
-		}
 		private void selectButton_Click(object sender, System.EventArgs e)
 		{
 			CurrentMode = Mode.SELECT;//set new mode
@@ -275,6 +275,13 @@ namespace NoxMapEditor
 			mapPanel.Invalidate();
 		}
 
+		private void buttonSecret_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_SECRET;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
 		private void floorButton_Click(object sender, System.EventArgs e)
 		{
 			CurrentMode = Mode.MAKE_FLOOR;//set new mode
@@ -295,6 +302,7 @@ namespace NoxMapEditor
 		{
 			propDlg.Object = SelectedObject;
 			propDlg.ShowDialog();
+			mapPanel.Invalidate();
 		}
 
 		private bool dragging;
@@ -305,12 +313,9 @@ namespace NoxMapEditor
 			{
 				SelectedObject.Location = pointClicked;
 				dragging = false;
-				
-				/*if (SelectedObject != null)
-					SelectedObject = null;*/
 			}
+
 			mapPanel.Invalidate();
-			
 		}
 
 		public Map.Object SelectObject(Point pt)
@@ -339,7 +344,7 @@ namespace NoxMapEditor
 		/// the contents of this method with the code editor.
 		/// </summary>
 		private void InitializeComponent()
-		{			this.mapPanel = new FlickerFreePanel();
+		{			this.mapPanel = new NoxMapEditor.MapView.FlickerFreePanel();
 			this.contextMenu1 = new System.Windows.Forms.ContextMenu();
 			this.contextMenuDelete = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
@@ -359,6 +364,8 @@ namespace NoxMapEditor
 			this.newObjectButton = new System.Windows.Forms.Button();
 			this.panel2 = new System.Windows.Forms.Panel();
 			this.wallSelector1 = new NoxMapEditor.WallSelector();
+			this.checkboxGrid = new System.Windows.Forms.CheckBox();
+			this.buttonSecret = new System.Windows.Forms.Button();
 			this.groupBox1.SuspendLayout();
 			this.panel2.SuspendLayout();
 			this.SuspendLayout();
@@ -435,6 +442,7 @@ namespace NoxMapEditor
 			// 
 			// groupBox1
 			// 
+			this.groupBox1.Controls.Add(this.buttonSecret);
 			this.groupBox1.Controls.Add(this.rTileVar);
 			this.groupBox1.Controls.Add(this.lTileVar);
 			this.groupBox1.Controls.Add(this.rTileGraphic);
@@ -445,6 +453,7 @@ namespace NoxMapEditor
 			this.groupBox1.Controls.Add(this.selectButton);
 			this.groupBox1.Controls.Add(this.newObjectButton);
 			this.groupBox1.Controls.Add(this.panel2);
+			this.groupBox1.Controls.Add(this.checkboxGrid);
 			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
 			this.groupBox1.Location = new System.Drawing.Point(0, 0);
 			this.groupBox1.Name = "groupBox1";
@@ -455,7 +464,7 @@ namespace NoxMapEditor
 			// 
 			// rTileVar
 			// 
-			this.rTileVar.Location = new System.Drawing.Point(48, 448);
+			this.rTileVar.Location = new System.Drawing.Point(48, 480);
 			this.rTileVar.Name = "rTileVar";
 			this.rTileVar.Size = new System.Drawing.Size(24, 20);
 			this.rTileVar.TabIndex = 17;
@@ -463,7 +472,7 @@ namespace NoxMapEditor
 			// 
 			// lTileVar
 			// 
-			this.lTileVar.Location = new System.Drawing.Point(48, 400);
+			this.lTileVar.Location = new System.Drawing.Point(48, 432);
 			this.lTileVar.Name = "lTileVar";
 			this.lTileVar.Size = new System.Drawing.Size(24, 20);
 			this.lTileVar.TabIndex = 16;
@@ -473,7 +482,7 @@ namespace NoxMapEditor
 			// 
 			this.rTileGraphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.rTileGraphic.DropDownWidth = 200;
-			this.rTileGraphic.Location = new System.Drawing.Point(8, 424);
+			this.rTileGraphic.Location = new System.Drawing.Point(8, 456);
 			this.rTileGraphic.Name = "rTileGraphic";
 			this.rTileGraphic.Size = new System.Drawing.Size(72, 21);
 			this.rTileGraphic.TabIndex = 15;
@@ -482,14 +491,14 @@ namespace NoxMapEditor
 			// 
 			this.lTileGraphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.lTileGraphic.DropDownWidth = 200;
-			this.lTileGraphic.Location = new System.Drawing.Point(8, 376);
+			this.lTileGraphic.Location = new System.Drawing.Point(8, 408);
 			this.lTileGraphic.Name = "lTileGraphic";
 			this.lTileGraphic.Size = new System.Drawing.Size(72, 21);
 			this.lTileGraphic.TabIndex = 13;
 			// 
 			// floorButton
 			// 
-			this.floorButton.Location = new System.Drawing.Point(8, 344);
+			this.floorButton.Location = new System.Drawing.Point(8, 376);
 			this.floorButton.Name = "floorButton";
 			this.floorButton.Size = new System.Drawing.Size(72, 23);
 			this.floorButton.TabIndex = 8;
@@ -549,6 +558,24 @@ namespace NoxMapEditor
 			this.wallSelector1.Size = new System.Drawing.Size(82, 192);
 			this.wallSelector1.TabIndex = 0;
 			// 
+			// checkboxGrid
+			// 
+			this.checkboxGrid.Location = new System.Drawing.Point(16, 512);
+			this.checkboxGrid.Name = "checkboxGrid";
+			this.checkboxGrid.Size = new System.Drawing.Size(48, 24);
+			this.checkboxGrid.TabIndex = 0;
+			this.checkboxGrid.Text = "Grid";
+			this.checkboxGrid.CheckedChanged += new System.EventHandler(this.checkboxGrid_CheckedChanged);
+			// 
+			// buttonSecret
+			// 
+			this.buttonSecret.Location = new System.Drawing.Point(8, 344);
+			this.buttonSecret.Name = "buttonSecret";
+			this.buttonSecret.Size = new System.Drawing.Size(72, 23);
+			this.buttonSecret.TabIndex = 18;
+			this.buttonSecret.Text = "Secret";
+			this.buttonSecret.Click += new System.EventHandler(this.buttonSecret_Click);
+			// 
 			// MapView
 			// 
 			this.Controls.Add(this.hScrollBar1);
@@ -565,5 +592,9 @@ namespace NoxMapEditor
 		}
 		#endregion
 
+		private void checkboxGrid_CheckedChanged(object sender, System.EventArgs e)
+		{
+			mapPanel.Invalidate();
+		}
 	}
 }
