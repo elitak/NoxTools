@@ -1082,10 +1082,11 @@ namespace NoxShared
 
 		public static Thing GetThing(string name)
 		{
-			foreach (Thing thing in Things)
+			/*foreach (Thing thing in Things)
 				if (thing.Name == name)
 					return thing;
-			return null;
+			return null;*/
+			return (Thing) Things[name];
 		}
 	}
 }
