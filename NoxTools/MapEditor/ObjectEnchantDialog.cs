@@ -137,7 +137,7 @@ namespace NoxMapEditor
 			{			
 				buffer = rdr.ReadChars(bytes);
 			}
-			catch(System.IO.EndOfStreamException ex)
+			catch(System.IO.EndOfStreamException)
 			{
 				return null;
 			}
