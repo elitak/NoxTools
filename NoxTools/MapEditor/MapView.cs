@@ -20,6 +20,7 @@ namespace NoxMapEditor
 		protected const int wallThickness = 2;
 		protected const int gridThickness = 1;
 		protected Map.Object DefaultObject = new Map.Object();
+		protected PolygonDialog polyDlg = new PolygonDialog();
 
 		public enum Mode
 		{
@@ -65,6 +66,12 @@ namespace NoxMapEditor
 		private System.Windows.Forms.GroupBox objectGroup;
 		private System.Windows.Forms.CheckBox threeFloorBox;
 		private System.Windows.Forms.Button defaultButt;
+		private System.Windows.Forms.GroupBox groupPolygons;
+		private System.Windows.Forms.Button buttonPoints;
+		private System.Windows.Forms.Button buttonEditPolygon;
+		private System.Windows.Forms.Button buttonPolygonNew;
+		private System.Windows.Forms.ComboBox listPolygons;
+		private System.Windows.Forms.Button buttonPolygonDelete;
 		private System.Windows.Forms.Panel wallSelectPanel;
 
 		public MapView()
@@ -578,10 +585,17 @@ namespace NoxMapEditor
 			this.buttonSecret = new System.Windows.Forms.Button();
 			this.destructableButton = new System.Windows.Forms.Button();
 			this.windowsButton = new System.Windows.Forms.Button();
+			this.groupPolygons = new System.Windows.Forms.GroupBox();
+			this.buttonPolygonDelete = new System.Windows.Forms.Button();
+			this.buttonPolygonNew = new System.Windows.Forms.Button();
+			this.buttonEditPolygon = new System.Windows.Forms.Button();
+			this.buttonPoints = new System.Windows.Forms.Button();
+			this.listPolygons = new System.Windows.Forms.ComboBox();
 			this.groupBox1.SuspendLayout();
 			this.objectGroup.SuspendLayout();
 			this.floorGroup.SuspendLayout();
 			this.wallGroup.SuspendLayout();
+			this.groupPolygons.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// contextMenu1
@@ -646,6 +660,7 @@ namespace NoxMapEditor
 			this.groupBox1.Controls.Add(this.objectGroup);
 			this.groupBox1.Controls.Add(this.floorGroup);
 			this.groupBox1.Controls.Add(this.wallGroup);
+			this.groupBox1.Controls.Add(this.groupPolygons);
 			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
 			this.groupBox1.Location = new System.Drawing.Point(0, 0);
 			this.groupBox1.Name = "groupBox1";
@@ -800,6 +815,67 @@ namespace NoxMapEditor
 			this.windowsButton.Text = "Windows";
 			this.windowsButton.Click += new System.EventHandler(this.windowsButton_Click);
 			// 
+			// groupPolygons
+			// 
+			this.groupPolygons.Controls.Add(this.buttonPolygonDelete);
+			this.groupPolygons.Controls.Add(this.buttonPolygonNew);
+			this.groupPolygons.Controls.Add(this.buttonEditPolygon);
+			this.groupPolygons.Controls.Add(this.buttonPoints);
+			this.groupPolygons.Controls.Add(this.listPolygons);
+			this.groupPolygons.Location = new System.Drawing.Point(8, 616);
+			this.groupPolygons.Name = "groupPolygons";
+			this.groupPolygons.Size = new System.Drawing.Size(112, 104);
+			this.groupPolygons.TabIndex = 5;
+			this.groupPolygons.TabStop = false;
+			this.groupPolygons.Text = "Polygons";
+			// 
+			// buttonPolygonDelete
+			// 
+			this.buttonPolygonDelete.Location = new System.Drawing.Point(72, 72);
+			this.buttonPolygonDelete.Name = "buttonPolygonDelete";
+			this.buttonPolygonDelete.Size = new System.Drawing.Size(32, 24);
+			this.buttonPolygonDelete.TabIndex = 25;
+			this.buttonPolygonDelete.Text = "Del";
+			this.buttonPolygonDelete.Click += new System.EventHandler(this.buttonPolygonDelete_Click);
+			// 
+			// buttonPolygonNew
+			// 
+			this.buttonPolygonNew.Location = new System.Drawing.Point(16, 72);
+			this.buttonPolygonNew.Name = "buttonPolygonNew";
+			this.buttonPolygonNew.Size = new System.Drawing.Size(40, 23);
+			this.buttonPolygonNew.TabIndex = 24;
+			this.buttonPolygonNew.Text = "New";
+			this.buttonPolygonNew.Click += new System.EventHandler(this.buttonPolygonNew_Click);
+			// 
+			// buttonEditPolygon
+			// 
+			this.buttonEditPolygon.Location = new System.Drawing.Point(72, 48);
+			this.buttonEditPolygon.Name = "buttonEditPolygon";
+			this.buttonEditPolygon.Size = new System.Drawing.Size(32, 23);
+			this.buttonEditPolygon.TabIndex = 6;
+			this.buttonEditPolygon.Text = "Edit";
+			this.buttonEditPolygon.Click += new System.EventHandler(this.buttonEditPolygon_Click);
+			// 
+			// buttonPoints
+			// 
+			this.buttonPoints.Enabled = false;
+			this.buttonPoints.Location = new System.Drawing.Point(24, 24);
+			this.buttonPoints.Name = "buttonPoints";
+			this.buttonPoints.Size = new System.Drawing.Size(64, 23);
+			this.buttonPoints.TabIndex = 5;
+			this.buttonPoints.Text = "Points";
+			// 
+			// listPolygons
+			// 
+			this.listPolygons.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.listPolygons.DropDownWidth = 120;
+			this.listPolygons.Location = new System.Drawing.Point(8, 48);
+			this.listPolygons.MaxDropDownItems = 10;
+			this.listPolygons.Name = "listPolygons";
+			this.listPolygons.Size = new System.Drawing.Size(64, 21);
+			this.listPolygons.TabIndex = 23;
+			this.listPolygons.Click += new System.EventHandler(this.listPolygons_Click);
+			// 
 			// MapView
 			// 
 			this.Controls.Add(this.hScrollBar1);
@@ -812,6 +888,7 @@ namespace NoxMapEditor
 			this.objectGroup.ResumeLayout(false);
 			this.floorGroup.ResumeLayout(false);
 			this.wallGroup.ResumeLayout(false);
+			this.groupPolygons.ResumeLayout(false);
 			this.ResumeLayout(false);
 
 		}
@@ -854,6 +931,42 @@ namespace NoxMapEditor
 			propDlg = new ObjectPropertiesDialog();
 			propDlg.Object = DefaultObject;
 			propDlg.ShowDialog();
+		}
+
+
+		private void buttonPolygonNew_Click(object sender, System.EventArgs e)
+		{
+			polyDlg.Polygon = null;
+			if (polyDlg.ShowDialog() == DialogResult.OK && polyDlg.Polygon != null)
+			{
+				Map.Polygons.Add(polyDlg.Polygon);
+				listPolygons.Items.Add(polyDlg.Polygon.Name);
+				mapPanel.Invalidate();
+			}
+		}
+
+		private void buttonEditPolygon_Click(object sender, System.EventArgs e)
+		{
+			polyDlg.Polygon = (Map.Polygon) Map.Polygons[listPolygons.SelectedIndex];
+			if (polyDlg.ShowDialog() == DialogResult.OK && polyDlg.Polygon != null)
+			{
+				Map.Polygons.RemoveAt(listPolygons.SelectedIndex);
+				Map.Polygons.Insert(listPolygons.SelectedIndex, polyDlg.Polygon);
+				mapPanel.Invalidate();
+			}
+		}
+
+		private void buttonPolygonDelete_Click(object sender, System.EventArgs e)
+		{
+			Map.Polygons.RemoveAt(listPolygons.SelectedIndex);
+			mapPanel.Invalidate();
+		}
+
+		private void listPolygons_Click(object sender, System.EventArgs e)
+		{
+			listPolygons.Items.Clear();
+			foreach (Map.Polygon poly in Map.Polygons)
+				listPolygons.Items.Add(poly.Name);
 		}
 	}
 }
