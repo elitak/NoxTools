@@ -32,43 +32,33 @@ namespace NoxMapEditor
 		private System.Windows.Forms.CheckBox tile2Enabled;
 		private System.Windows.Forms.CheckBox tile3Enabled;
 		private System.Windows.Forms.CheckBox tile4Enabled;
+		private System.Windows.Forms.Button buttonCancel;
+		private System.Windows.Forms.Label label5;
+		private System.Windows.Forms.ComboBox tile1BlendType;
+		private System.Windows.Forms.ComboBox tile2BlendType;
+		private System.Windows.Forms.ComboBox tile3BlendType;
+		private System.Windows.Forms.ComboBox tile4BlendType;
 
 		public ArrayList Blends = new ArrayList();
-
-		protected static ArrayList dirs = new ArrayList();
-		private System.Windows.Forms.Button buttonCancel;
-		protected static Hashtable dirMap = new Hashtable();
-		static BlendDialog()
-		{
-			dirs.AddRange(new string[] {"N", "S", "W", "E", "NW", "NE", "SW", "SE"});
-			int ndx = 0;
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.NORTH);
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.SOUTH);
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.WEST);
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.EAST);
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.NW);
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.NE);
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.SW);
-			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.SE);
-		}
-
+		
 		public BlendDialog()
 		{
 			InitializeComponent();
 
 			tile1Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			tile1Graphic.SelectedIndex = 0;
 			tile2Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			tile2Graphic.SelectedIndex = 0;
 			tile3Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			tile3Graphic.SelectedIndex = 0;
 			tile4Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			tile4Graphic.SelectedIndex = 0;
 
-			tile1Dir.Items.AddRange(dirs.ToArray());
-			tile2Dir.Items.AddRange(dirs.ToArray());
-			tile3Dir.Items.AddRange(dirs.ToArray());
-			tile4Dir.Items.AddRange(dirs.ToArray());
+			tile1Dir.Items.AddRange(Enum.GetNames(typeof(Map.Tile.EdgeTile.Direction)));
+			tile2Dir.Items.AddRange(Enum.GetNames(typeof(Map.Tile.EdgeTile.Direction)));
+			tile3Dir.Items.AddRange(Enum.GetNames(typeof(Map.Tile.EdgeTile.Direction)));
+			tile4Dir.Items.AddRange(Enum.GetNames(typeof(Map.Tile.EdgeTile.Direction)));
+
+			tile1BlendType.Items.AddRange(ThingDb.EdgeTileNames.ToArray());
+			tile2BlendType.Items.AddRange(ThingDb.EdgeTileNames.ToArray());
+			tile3BlendType.Items.AddRange(ThingDb.EdgeTileNames.ToArray());
+			tile4BlendType.Items.AddRange(ThingDb.EdgeTileNames.ToArray());
 		}
 
 		#region Windows Form Designer generated code
@@ -100,6 +90,11 @@ namespace NoxMapEditor
 			this.tile1Dir = new System.Windows.Forms.ComboBox();
 			this.label4 = new System.Windows.Forms.Label();
 			this.buttonCancel = new System.Windows.Forms.Button();
+			this.label5 = new System.Windows.Forms.Label();
+			this.tile1BlendType = new System.Windows.Forms.ComboBox();
+			this.tile2BlendType = new System.Windows.Forms.ComboBox();
+			this.tile3BlendType = new System.Windows.Forms.ComboBox();
+			this.tile4BlendType = new System.Windows.Forms.ComboBox();
 			this.SuspendLayout();
 			// 
 			// tile1Enabled
@@ -132,7 +127,7 @@ namespace NoxMapEditor
 			// 
 			// buttonOK
 			// 
-			this.buttonOK.Location = new System.Drawing.Point(56, 192);
+			this.buttonOK.Location = new System.Drawing.Point(104, 192);
 			this.buttonOK.Name = "buttonOK";
 			this.buttonOK.TabIndex = 4;
 			this.buttonOK.Text = "OK";
@@ -241,33 +236,37 @@ namespace NoxMapEditor
 			// tile4Dir
 			// 
 			this.tile4Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile4Dir.DropDownWidth = 128;
 			this.tile4Dir.Location = new System.Drawing.Point(224, 160);
 			this.tile4Dir.Name = "tile4Dir";
-			this.tile4Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile4Dir.Size = new System.Drawing.Size(64, 21);
 			this.tile4Dir.TabIndex = 19;
 			// 
 			// tile3Dir
 			// 
 			this.tile3Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile3Dir.DropDownWidth = 128;
 			this.tile3Dir.Location = new System.Drawing.Point(224, 120);
 			this.tile3Dir.Name = "tile3Dir";
-			this.tile3Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile3Dir.Size = new System.Drawing.Size(64, 21);
 			this.tile3Dir.TabIndex = 18;
 			// 
 			// tile2Dir
 			// 
 			this.tile2Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile2Dir.DropDownWidth = 128;
 			this.tile2Dir.Location = new System.Drawing.Point(224, 80);
 			this.tile2Dir.Name = "tile2Dir";
-			this.tile2Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile2Dir.Size = new System.Drawing.Size(64, 21);
 			this.tile2Dir.TabIndex = 17;
 			// 
 			// tile1Dir
 			// 
 			this.tile1Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile1Dir.DropDownWidth = 128;
 			this.tile1Dir.Location = new System.Drawing.Point(224, 40);
 			this.tile1Dir.Name = "tile1Dir";
-			this.tile1Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile1Dir.Size = new System.Drawing.Size(64, 21);
 			this.tile1Dir.TabIndex = 16;
 			// 
 			// label4
@@ -281,18 +280,67 @@ namespace NoxMapEditor
 			// buttonCancel
 			// 
 			this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.buttonCancel.Location = new System.Drawing.Point(152, 192);
+			this.buttonCancel.Location = new System.Drawing.Point(200, 192);
 			this.buttonCancel.Name = "buttonCancel";
 			this.buttonCancel.TabIndex = 21;
 			this.buttonCancel.Text = "Cancel";
 			this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
+			// 
+			// label5
+			// 
+			this.label5.Location = new System.Drawing.Point(304, 16);
+			this.label5.Name = "label5";
+			this.label5.Size = new System.Drawing.Size(64, 16);
+			this.label5.TabIndex = 22;
+			this.label5.Text = "Edge";
+			// 
+			// tile1BlendType
+			// 
+			this.tile1BlendType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile1BlendType.DropDownWidth = 180;
+			this.tile1BlendType.Location = new System.Drawing.Point(304, 40);
+			this.tile1BlendType.Name = "tile1BlendType";
+			this.tile1BlendType.Size = new System.Drawing.Size(64, 21);
+			this.tile1BlendType.TabIndex = 23;
+			// 
+			// tile2BlendType
+			// 
+			this.tile2BlendType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile2BlendType.DropDownWidth = 180;
+			this.tile2BlendType.Location = new System.Drawing.Point(304, 80);
+			this.tile2BlendType.Name = "tile2BlendType";
+			this.tile2BlendType.Size = new System.Drawing.Size(64, 21);
+			this.tile2BlendType.TabIndex = 24;
+			// 
+			// tile3BlendType
+			// 
+			this.tile3BlendType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile3BlendType.DropDownWidth = 180;
+			this.tile3BlendType.Location = new System.Drawing.Point(304, 120);
+			this.tile3BlendType.Name = "tile3BlendType";
+			this.tile3BlendType.Size = new System.Drawing.Size(64, 21);
+			this.tile3BlendType.TabIndex = 25;
+			// 
+			// tile4BlendType
+			// 
+			this.tile4BlendType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile4BlendType.DropDownWidth = 180;
+			this.tile4BlendType.Location = new System.Drawing.Point(304, 160);
+			this.tile4BlendType.Name = "tile4BlendType";
+			this.tile4BlendType.Size = new System.Drawing.Size(64, 21);
+			this.tile4BlendType.TabIndex = 26;
 			// 
 			// BlendDialog
 			// 
 			this.AcceptButton = this.buttonOK;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
-			this.ClientSize = new System.Drawing.Size(282, 223);
+			this.ClientSize = new System.Drawing.Size(378, 223);
+			this.Controls.Add(this.tile4BlendType);
+			this.Controls.Add(this.tile3BlendType);
+			this.Controls.Add(this.tile2BlendType);
+			this.Controls.Add(this.tile1BlendType);
+			this.Controls.Add(this.label5);
 			this.Controls.Add(this.buttonCancel);
 			this.Controls.Add(this.label4);
 			this.Controls.Add(this.tile4Dir);
@@ -320,7 +368,7 @@ namespace NoxMapEditor
 			this.MinimizeBox = false;
 			this.Name = "BlendDialog";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Tile Blending";
+			this.Text = "Tile Edges";
 			this.ResumeLayout(false);
 
 		}
@@ -336,25 +384,29 @@ namespace NoxMapEditor
 			Blends = new ArrayList();
 
 			if (tile1Enabled.Checked)
-				Blends.Add(new Map.Tile.Blend(
+				Blends.Add(new Map.Tile.EdgeTile(
 					(byte) tile1Graphic.SelectedIndex,
 					GetVariation(tile1Var),
-					(Map.Tile.Blend.BlendDirection) dirMap[tile1Dir.SelectedIndex]));
+					(Map.Tile.EdgeTile.Direction) Enum.GetValues(typeof(Map.Tile.EdgeTile.Direction)).GetValue(tile1Dir.SelectedIndex),
+					(byte) tile1BlendType.SelectedIndex));
 			if (tile2Enabled.Checked)
-				Blends.Add(new Map.Tile.Blend(
+				Blends.Add(new Map.Tile.EdgeTile(
 					(byte) tile2Graphic.SelectedIndex,
 					GetVariation(tile2Var),
-					(Map.Tile.Blend.BlendDirection) dirMap[tile2Dir.SelectedIndex]));
+					(Map.Tile.EdgeTile.Direction) Enum.GetValues(typeof(Map.Tile.EdgeTile.Direction)).GetValue(tile2Dir.SelectedIndex),
+					(byte) tile2BlendType.SelectedIndex));
 			if (tile3Enabled.Checked)
-				Blends.Add(new Map.Tile.Blend(
+				Blends.Add(new Map.Tile.EdgeTile(
 					(byte) tile3Graphic.SelectedIndex,
 					GetVariation(tile3Var),
-					(Map.Tile.Blend.BlendDirection) dirMap[tile3Dir.SelectedIndex]));
+					(Map.Tile.EdgeTile.Direction) Enum.GetValues(typeof(Map.Tile.EdgeTile.Direction)).GetValue(tile3Dir.SelectedIndex),
+					(byte) tile3BlendType.SelectedIndex));
 			if (tile4Enabled.Checked)
-				Blends.Add(new Map.Tile.Blend(
+				Blends.Add(new Map.Tile.EdgeTile(
 					(byte) tile4Graphic.SelectedIndex,
 					GetVariation(tile4Var),
-					(Map.Tile.Blend.BlendDirection) dirMap[tile4Dir.SelectedIndex]));
+					(Map.Tile.EdgeTile.Direction) Enum.GetValues(typeof(Map.Tile.EdgeTile.Direction)).GetValue(tile4Dir.SelectedIndex),
+					(byte) tile4BlendType.SelectedIndex));
 
 			Hide();
 		}
