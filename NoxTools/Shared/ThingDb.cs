@@ -41,6 +41,8 @@ namespace NoxShared
 			public TileType Type;
 			public string Name;
 			public int Variations;
+			public byte numRows;
+			public byte numCols;
 
 			public uint Id;//must be set as the entries are read in. sorted in this order. (0-n)
 
@@ -59,8 +61,10 @@ namespace NoxShared
 				rdr.ReadInt32();
 				rdr.ReadInt32();
 				rdr.ReadInt32();
-				if (Type == TileType.Floor) rdr.ReadInt32(); else rdr.ReadInt16();
-				while(rdr.ReadInt32() != (int) ThingToken.END)//TODO: don't know what these represent
+				numRows = rdr.ReadByte();
+				numCols = rdr.ReadByte();
+				if (Type == TileType.Floor) rdr.ReadInt16();
+				while(rdr.ReadInt32() != (int) ThingToken.END)//Variations
 					Variations++;
 			}
 
