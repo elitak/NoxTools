@@ -45,36 +45,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_4AFBAAAAD68949F39C54A6A24F305914"
-        "OwnerKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_4AFBAAAAD68949F39C54A6A24F305914"
-        "OwnerKey" = "8:_A626C755388F41B099697DF9656CE253"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_4AFBAAAAD68949F39C54A6A24F305914"
-        "OwnerKey" = "8:_837A69340CB54E329F43C4249C2C0F77"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_4AFBAAAAD68949F39C54A6A24F305914"
-        "OwnerKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_4AFBAAAAD68949F39C54A6A24F305914"
-        "OwnerKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -95,6 +65,72 @@
         {
         "MsmKey" = "8:_A626C755388F41B099697DF9656CE253"
         "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_AA7DBCC121CF4C7FB6767662DD090C3F"
+        "OwnerKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_AA7DBCC121CF4C7FB6767662DD090C3F"
+        "OwnerKey" = "8:_A626C755388F41B099697DF9656CE253"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_AA7DBCC121CF4C7FB6767662DD090C3F"
+        "OwnerKey" = "8:_837A69340CB54E329F43C4249C2C0F77"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_AA7DBCC121CF4C7FB6767662DD090C3F"
+        "OwnerKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_AA7DBCC121CF4C7FB6767662DD090C3F"
+        "OwnerKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_AA7DBCC121CF4C7FB6767662DD090C3F"
+        "OwnerKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "OwnerKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "OwnerKey" = "8:_A626C755388F41B099697DF9656CE253"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "OwnerKey" = "8:_837A69340CB54E329F43C4249C2C0F77"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "OwnerKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "OwnerKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -240,6 +276,37 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{FB480208-1853-44D0-9ABD-A3B734C3FAAA}:_F28263B306E8F860B712B775E7CE9EE9"
+            {
+            "AssemblyRegister" = "3:1"
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:NoxShared, Version=0.0.0.0, Culture=neutral"
+                "ScatterAssemblies"
+                {
+                    "_F28263B306E8F860B712B775E7CE9EE9"
+                    {
+                    "Name" = "8:NoxShared.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:NoxShared.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
         }
@@ -396,13 +463,13 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:NoxTools"
-        "ProductCode" = "8:{449BF7A5-B161-4D9D-946F-86C8EFDFB64B}"
-        "PackageCode" = "8:{44A41D13-863B-44BF-AE55-5608CB58C3CE}"
+        "ProductCode" = "8:{522685A9-3E8C-4C62-B5BF-510F4ACBF479}"
+        "PackageCode" = "8:{DE8671D0-65EB-4442-9156-5432479FEF32}"
         "UpgradeCode" = "8:{91450AEE-501C-4CB0-9DA4-5546DBA97C05}"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
-        "ProductVersion" = "8:0.0.5"
+        "ProductVersion" = "8:0.0.6"
         "Manufacturer" = "8:Nox Hackers United"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -964,7 +1031,7 @@
         }
         "MergeModule"
         {
-            "{35A69C6E-5BA4-440D-803D-762B59A45393}:_4AFBAAAAD68949F39C54A6A24F305914"
+            "{35A69C6E-5BA4-440D-803D-762B59A45393}:_AA7DBCC121CF4C7FB6767662DD090C3F"
             {
             "UseDynamicProperties" = "11:TRUE"
             "IsDependency" = "11:TRUE"
