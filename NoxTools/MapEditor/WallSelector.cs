@@ -25,44 +25,27 @@ namespace NoxMapEditor
 		private System.Windows.Forms.Button button12;
 		private System.Windows.Forms.Button button4;
 		private System.Windows.Forms.Button button5;
-		private System.Windows.Forms.ComboBox comboBox1;
+		private System.Windows.Forms.ComboBox material;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.ImageList imageList1;
 		private System.Windows.Forms.Label label3;
+		private System.Windows.Forms.TextBox minimapGroup;
+		private System.Windows.Forms.Label label4;
 		private System.ComponentModel.IContainer components;
-
 
 		public new MapView Parent;
 		protected ArrayList wallFacingButtons;
-		public Map.Wall.WallFacing SelectedFacing;
-		public byte SelectedMaterial;
+		protected Map.Wall.WallFacing facing = Map.Wall.WallFacing.NORTH;
 
 		public WallSelector()
 		{
 			InitializeComponent();
 
-			comboBox1.Items.AddRange(ThingDb.WallNames.ToArray());
-
 			wallFacingButtons = new ArrayList(new Button[] {button1, button8, button12, button10, button4, button6, button3, button5, button7, button2, button11});
-			SelectedFacing = Map.Wall.WallFacing.NORTH;//default facing
-			SelectedMaterial = 0;//default material
-			comboBox1.SelectedIndex = 0;
-		}
-
-		/// <summary> 
-		/// Clean up any resources being used.
-		/// </summary>
-		protected override void Dispose( bool disposing )
-		{
-			if( disposing )
-			{
-				if(components != null)
-				{
-					components.Dispose();
-				}
-			}
-			base.Dispose( disposing );
+			material.Items.AddRange(ThingDb.WallNames.ToArray());
+			material.SelectedIndex = 0;
+			minimapGroup.Text = "100";
 		}
 
 		#region Component Designer generated code
@@ -86,10 +69,12 @@ namespace NoxMapEditor
 			this.button12 = new System.Windows.Forms.Button();
 			this.button4 = new System.Windows.Forms.Button();
 			this.button5 = new System.Windows.Forms.Button();
-			this.comboBox1 = new System.Windows.Forms.ComboBox();
+			this.material = new System.Windows.Forms.ComboBox();
 			this.label1 = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
 			this.label3 = new System.Windows.Forms.Label();
+			this.minimapGroup = new System.Windows.Forms.TextBox();
+			this.label4 = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// button1
@@ -212,15 +197,14 @@ namespace NoxMapEditor
 			this.button5.Text = "v";
 			this.button5.Click += new System.EventHandler(this.wallFacingButton_Click);
 			// 
-			// comboBox1
+			// material
 			// 
-			this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBox1.DropDownWidth = 200;
-			this.comboBox1.Location = new System.Drawing.Point(0, 168);
-			this.comboBox1.Name = "comboBox1";
-			this.comboBox1.Size = new System.Drawing.Size(80, 21);
-			this.comboBox1.TabIndex = 13;
-			this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
+			this.material.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.material.DropDownWidth = 200;
+			this.material.Location = new System.Drawing.Point(0, 168);
+			this.material.Name = "material";
+			this.material.Size = new System.Drawing.Size(80, 21);
+			this.material.TabIndex = 13;
 			// 
 			// label1
 			// 
@@ -245,12 +229,29 @@ namespace NoxMapEditor
 			this.label3.TabIndex = 14;
 			this.label3.Text = "Wall Material";
 			// 
+			// minimapGroup
+			// 
+			this.minimapGroup.Location = new System.Drawing.Point(48, 200);
+			this.minimapGroup.Name = "minimapGroup";
+			this.minimapGroup.Size = new System.Drawing.Size(28, 20);
+			this.minimapGroup.TabIndex = 15;
+			this.minimapGroup.Text = "";
+			// 
+			// label4
+			// 
+			this.label4.Location = new System.Drawing.Point(4, 200);
+			this.label4.Name = "label4";
+			this.label4.Size = new System.Drawing.Size(56, 28);
+			this.label4.TabIndex = 16;
+			this.label4.Text = "Minimap Group";
+			// 
 			// WallSelector
 			// 
+			this.Controls.Add(this.minimapGroup);
 			this.Controls.Add(this.label3);
 			this.Controls.Add(this.label2);
 			this.Controls.Add(this.label1);
-			this.Controls.Add(this.comboBox1);
+			this.Controls.Add(this.material);
 			this.Controls.Add(this.button4);
 			this.Controls.Add(this.button5);
 			this.Controls.Add(this.button10);
@@ -262,8 +263,9 @@ namespace NoxMapEditor
 			this.Controls.Add(this.button3);
 			this.Controls.Add(this.button2);
 			this.Controls.Add(this.button1);
+			this.Controls.Add(this.label4);
 			this.Name = "WallSelector";
-			this.Size = new System.Drawing.Size(80, 208);
+			this.Size = new System.Drawing.Size(80, 236);
 			this.ResumeLayout(false);
 
 		}
@@ -271,13 +273,13 @@ namespace NoxMapEditor
 
 		private void wallFacingButton_Click(object sender, EventArgs e)
 		{
-			SelectedFacing = (Map.Wall.WallFacing) wallFacingButtons.IndexOf(sender);
+			facing = (Map.Wall.WallFacing) wallFacingButtons.IndexOf(sender);
 			Parent.CurrentMode = MapView.Mode.MAKE_WALL;
 		}
 
-		private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+		public Map.Wall NewWall(Point location)
 		{
-			SelectedMaterial = (byte) ((ComboBox) sender).SelectedIndex;
+			return new Map.Wall(location, facing, (byte) material.SelectedIndex, Convert.ToByte(minimapGroup.Text));
 		}
 	}
 }
