@@ -37,7 +37,11 @@ namespace NoxMapEditor
 		{
 			MAKE_WALL,
 			MAKE_OBJECT,
-			SELECT,			MAKE_WINDOW,			MAKE_DESTRUCTABLE,			MAKE_SECRET,			MAKE_FLOOR
+			SELECT,
+			MAKE_WINDOW,
+			MAKE_DESTRUCTABLE,
+			MAKE_SECRET,
+			MAKE_FLOOR
 		};
 		public Mode CurrentMode;
 
@@ -64,31 +68,30 @@ namespace NoxMapEditor
 		private System.Windows.Forms.Button windowsButton;
 		private System.Windows.Forms.Button destructableButton;
 		private System.Windows.Forms.Button floorButton;
-		private System.Windows.Forms.ComboBox lTileGraphic;
-		private System.Windows.Forms.ComboBox rTileGraphic;
-		private System.Windows.Forms.TextBox lTileVar;
+		private System.Windows.Forms.ComboBox tileGraphic;
+		private System.Windows.Forms.TextBox tileVar;
 		private System.Windows.Forms.CheckBox checkboxGrid;
 		private System.Windows.Forms.Button buttonSecret;
 		private NoxMapEditor.MapView.FlickerFreePanel mapPanel;
+		private System.Windows.Forms.Button buttonBlend;
 		private System.Windows.Forms.MenuItem enchantItem;
-		private System.Windows.Forms.TextBox rTileVar;
 
 		public MapView()
 		{
 			InitializeComponent();
 			//SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-			//SetStyle(ControlStyles.DoubleBuffer, true);			wallSelector1 = new WallSelector();
+			//SetStyle(ControlStyles.DoubleBuffer, true);
+			wallSelector1 = new WallSelector();
 			this.panel2.Controls.Add(wallSelector1);
 			wallSelector1.Parent = this;
 
 			hScrollBar1.Value = (hScrollBar1.Maximum - hScrollBar1.Minimum) / 2;
 			vScrollBar1.Value = (vScrollBar1.Maximum - vScrollBar1.Minimum) / 2;
 
-			lTileGraphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			rTileGraphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
+			tileGraphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
 			//set default values
-			lTileGraphic.SelectedIndex = rTileGraphic.SelectedIndex = 0;
-			lTileVar.Text = rTileVar.Text = "0";
+			tileGraphic.SelectedIndex = 0;
+			tileVar.Text = "0";
 
 			Map = new Map();//dummy map
 			currentButton = selectButton;
@@ -102,29 +105,147 @@ namespace NoxMapEditor
 
 			//black out the panel to start out
 			Size size = mapPanel.Size;
-			e.Graphics.FillRectangle(new SolidBrush(Color.Black), new Rectangle(new Point(0, 0), size));			Point pos = new Point(hScrollBar1.Value, vScrollBar1.Value);			//draw grid			if (DrawGrid)			{				Pen pen = new Pen(Color.Gray, gridThickness);				//draw the grid sloppily (an extra screen's worth of lines along either axis)				for (int x = -squareSize*(size.Width/squareSize) - squareSize/2 - pos.X % (2*squareSize); x < 2*size.Width; x += 2*squareSize)				{					int y = -3*squareSize/2 - pos.Y % (2*squareSize);					e.Graphics.DrawLine(pen, new Point(x, y), new Point(y, x));					e.Graphics.DrawLine(pen, new Point(x, y), new Point(size.Width + x, size.Width + y));				}			}			if (CurrentMode == Mode.MAKE_FLOOR)//only draw the floor when editing it
+			e.Graphics.FillRectangle(new SolidBrush(Color.Black), new Rectangle(new Point(0, 0), size));
+			Point pos = new Point(hScrollBar1.Value, vScrollBar1.Value);
+			//draw grid
+			if (DrawGrid)
+			{
+				Pen pen = new Pen(Color.Gray, gridThickness);
+				//draw the grid sloppily (an extra screen's worth of lines along either axis)
+				for (int x = -squareSize*(size.Width/squareSize) - squareSize/2 - pos.X % (2*squareSize); x < 2*size.Width; x += 2*squareSize)
+				{
+					int y = -3*squareSize/2 - pos.Y % (2*squareSize);
+					e.Graphics.DrawLine(pen, new Point(x, y), new Point(y, x));
+					e.Graphics.DrawLine(pen, new Point(x, y), new Point(size.Width + x, size.Width + y));
+				}
+			}
+			if (CurrentMode == Mode.MAKE_FLOOR)//only draw the floor when editing it
 			{
 				//draw floor
-				foreach (Map.TilePair tilePair in Map.FloorMap.Values)				{					Point pt = tilePair.Location;					Pen pen = new Pen(Color.Yellow, 1);					PointF nwCorner, neCorner, seCorner, swCorner, center = new PointF(0, 0);					int x = pt.X * squareSize * 2 - hScrollBar1.Value;					int y = pt.Y * squareSize * 2 - vScrollBar1.Value;					if (x >= 0 && x < size.Width && y >= 0 && y < size.Height)						{						center = new PointF(x + squareSize/2f, y + (3/2f)*squareSize);						nwCorner = new PointF(x - squareSize/2f, y + (3/2f)*squareSize);						neCorner = new PointF(nwCorner.X + 2*squareSize, nwCorner.Y - 2*squareSize);						if(tilePair.OneTileOnly)						{							if (tilePair.Left != null)							{								neCorner.X += -squareSize;								neCorner.Y += squareSize;							}							else							{								center.X += squareSize;								center.Y += -squareSize;								nwCorner.X += squareSize;								nwCorner.Y += -squareSize;							}							}						swCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y + squareSize);						seCorner = new PointF(neCorner.X + squareSize, neCorner.Y + squareSize);						e.Graphics.DrawPolygon(pen, new PointF[] {nwCorner, neCorner, seCorner, swCorner});						e.Graphics.DrawEllipse(pen, center.X, center.Y, 2, 2);					}				}			}
+				foreach (Map.Tile tile in Map.FloorMap.Values)
+				{
+					Pen pen = new Pen(Color.Yellow, 1);
+					int x = tile.Location.X * squareSize - hScrollBar1.Value;
+					int y = tile.Location.Y * squareSize - vScrollBar1.Value;
+					if (x >= 0 && x < size.Width && y >= 0 && y < size.Height)	
+					{
+						PointF nwCorner, neCorner, seCorner, swCorner, center;
+						center = new PointF(x + squareSize/2f, y + (3/2f)*squareSize);
+						nwCorner = new PointF(x - squareSize/2f, y + (3/2f)*squareSize);
+						neCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y - squareSize);
+						swCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y + squareSize);
+						seCorner = new PointF(neCorner.X + squareSize, neCorner.Y + squareSize);
+						e.Graphics.DrawPolygon(pen, new PointF[] {nwCorner, neCorner, seCorner, swCorner});
+						e.Graphics.DrawEllipse(pen, center.X, center.Y, 2, 2);
+					}
+				}
+			}
 
 			//draw walls
 			foreach (Map.Wall wall in Map.WallMap.Values)
-			{				Point pt = wall.Location;				if (pt.X*squareSize >= hScrollBar1.Value && pt.X*squareSize < size.Width+hScrollBar1.Value && pt.Y*squareSize >= vScrollBar1.Value && pt.Y*squareSize < size.Height+vScrollBar1.Value)					{					Pen pen;					int x = pt.X * squareSize - hScrollBar1.Value, y = pt.Y * squareSize - vScrollBar1.Value;					if (wall.Destructable)						pen = new Pen(Color.Red, wallThickness);					else if (wall.Window)						pen = new Pen(Color.Orange, wallThickness);					else if (wall.Secret)						pen = new Pen(Color.Green, wallThickness);					else						pen = new Pen(Color.White, wallThickness);					PointF center = new PointF(x + squareSize/2f, y + squareSize/2f);					Point nCorner = new Point(x, y);					Point sCorner = new Point(x + squareSize, y + squareSize);					Point wCorner = new Point(x + squareSize, y);					Point eCorner = new Point(x, y + squareSize);					switch ((Map.Wall.WallFacing) ((int) wall.Facing & 0x7F))//FIXME, TODO: sign bit seems to signify "internal" wall (not on the border of the map), however, there are seemingly random exceptions to this					{						case Map.Wall.WallFacing.NORTH:							e.Graphics.DrawLine(pen, wCorner, eCorner);							break;						case Map.Wall.WallFacing.WEST:							e.Graphics.DrawLine(pen, nCorner, sCorner);							break;
-						case Map.Wall.WallFacing.CROSS:							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall							e.Graphics.DrawLine(pen, nCorner, sCorner);//south wall							break;
-						case Map.Wall.WallFacing.NORTH_T:							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall							e.Graphics.DrawLine(pen, center, sCorner);//tail towards south							break;
-						case Map.Wall.WallFacing.SOUTH_T:							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall							e.Graphics.DrawLine(pen, center, nCorner);//tail towards north							break;
-						case Map.Wall.WallFacing.WEST_T:							e.Graphics.DrawLine(pen, nCorner, sCorner);//west wall							e.Graphics.DrawLine(pen, center, eCorner);//tail towards east							break;
-						case Map.Wall.WallFacing.EAST_T:							e.Graphics.DrawLine(pen, nCorner, sCorner);//west wall							e.Graphics.DrawLine(pen, center, wCorner);//tail towards west							break;
-						case Map.Wall.WallFacing.NE_CORNER:							e.Graphics.DrawLine(pen, center, eCorner);							e.Graphics.DrawLine(pen, center, sCorner);							break;
-						case Map.Wall.WallFacing.NW_CORNER:							e.Graphics.DrawLine(pen, center, wCorner);							e.Graphics.DrawLine(pen, center, sCorner);							break;
-						case Map.Wall.WallFacing.SW_CORNER:							e.Graphics.DrawLine(pen, center, nCorner);							e.Graphics.DrawLine(pen, center, wCorner);							break;
-						case Map.Wall.WallFacing.SE_CORNER:							e.Graphics.DrawLine(pen, center, nCorner);							e.Graphics.DrawLine(pen, center, eCorner);							break;
-						default:							e.Graphics.DrawRectangle(pen, x, y, squareSize, squareSize);							e.Graphics.DrawString("?", new Font("Arial", 12), new SolidBrush(Color.Red), nCorner);							break;					}				}			}
+			{
+				Point pt = wall.Location;
+				if (pt.X*squareSize >= hScrollBar1.Value && pt.X*squareSize < size.Width+hScrollBar1.Value && pt.Y*squareSize >= vScrollBar1.Value && pt.Y*squareSize < size.Height+vScrollBar1.Value)	
+				{
+					Pen pen;
+					int x = pt.X * squareSize - hScrollBar1.Value, y = pt.Y * squareSize - vScrollBar1.Value;
+					if (wall.Destructable)
+						pen = new Pen(Color.Red, wallThickness);
+					else if (wall.Window)
+						pen = new Pen(Color.Orange, wallThickness);
+					else if (wall.Secret)
+						pen = new Pen(Color.Green, wallThickness);
+					else if (wall.Internal)
+						pen = new Pen(Color.Cyan, wallThickness);
+					else
+						pen = new Pen(Color.White, wallThickness);
+					PointF center = new PointF(x + squareSize/2f, y + squareSize/2f);
+					Point nCorner = new Point(x, y);
+					Point sCorner = new Point(x + squareSize, y + squareSize);
+					Point wCorner = new Point(x + squareSize, y);
+					Point eCorner = new Point(x, y + squareSize);
+					switch (wall.Facing)
+					{
+						case Map.Wall.WallFacing.NORTH:
+							e.Graphics.DrawLine(pen, wCorner, eCorner);
+							break;
+						case Map.Wall.WallFacing.WEST:
+							e.Graphics.DrawLine(pen, nCorner, sCorner);
+							break;
+						case Map.Wall.WallFacing.CROSS:
+							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall
+							e.Graphics.DrawLine(pen, nCorner, sCorner);//south wall
+							break;
+						case Map.Wall.WallFacing.NORTH_T:
+							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall
+							e.Graphics.DrawLine(pen, center, sCorner);//tail towards south
+							break;
+						case Map.Wall.WallFacing.SOUTH_T:
+							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall
+							e.Graphics.DrawLine(pen, center, nCorner);//tail towards north
+							break;
+						case Map.Wall.WallFacing.WEST_T:
+							e.Graphics.DrawLine(pen, nCorner, sCorner);//west wall
+							e.Graphics.DrawLine(pen, center, eCorner);//tail towards east
+							break;
+						case Map.Wall.WallFacing.EAST_T:
+							e.Graphics.DrawLine(pen, nCorner, sCorner);//west wall
+							e.Graphics.DrawLine(pen, center, wCorner);//tail towards west
+							break;
+						case Map.Wall.WallFacing.NE_CORNER:
+							e.Graphics.DrawLine(pen, center, eCorner);
+							e.Graphics.DrawLine(pen, center, sCorner);
+							break;
+						case Map.Wall.WallFacing.NW_CORNER:
+							e.Graphics.DrawLine(pen, center, wCorner);
+							e.Graphics.DrawLine(pen, center, sCorner);
+							break;
+						case Map.Wall.WallFacing.SW_CORNER:
+							e.Graphics.DrawLine(pen, center, nCorner);
+							e.Graphics.DrawLine(pen, center, wCorner);
+							break;
+						case Map.Wall.WallFacing.SE_CORNER:
+							e.Graphics.DrawLine(pen, center, nCorner);
+							e.Graphics.DrawLine(pen, center, eCorner);
+							break;
+						default:
+							e.Graphics.DrawRectangle(pen, x, y, squareSize, squareSize);
+							e.Graphics.DrawString("?", new Font("Arial", 12), new SolidBrush(Color.Red), nCorner);
+							break;
+					}
+				}
+			}
 
 			//draw objects
-			foreach (Map.Object oe in Map.Objects)			{				PointF ptf = oe.Location;				if (ptf.X >= hScrollBar1.Value && ptf.X < size.Width+hScrollBar1.Value && ptf.Y >= vScrollBar1.Value && ptf.Y < size.Height+vScrollBar1.Value)					{					Pen pen;					float x = ptf.X - hScrollBar1.Value, y = ptf.Y - vScrollBar1.Value;										PointF center = new PointF(x, y);					PointF topLeft = new PointF(center.X - objectSelectionRadius, center.Y - objectSelectionRadius);					if (SelectedObject != null && ((Map.Object) SelectedObject).Location.Equals(oe.Location))						pen = new Pen(Color.Green, 1);
-					else						pen = new Pen(Color.Blue, 1);
-					e.Graphics.DrawEllipse(pen, new RectangleF(topLeft, new Size(2*objectSelectionRadius, 2*objectSelectionRadius)));					e.Graphics.DrawString(oe.Extent.ToString(),new Font("Arial", 10), new SolidBrush(Color.Purple), topLeft);				}			}		} 
+			foreach (Map.Object oe in Map.Objects)
+			{
+				PointF ptf = oe.Location;
+				if (ptf.X >= hScrollBar1.Value && ptf.X < size.Width+hScrollBar1.Value && ptf.Y >= vScrollBar1.Value && ptf.Y < size.Height+vScrollBar1.Value)	
+				{
+					Pen pen;
+					float x = ptf.X - hScrollBar1.Value, y = ptf.Y - vScrollBar1.Value;
+					
+					PointF center = new PointF(x, y);
+					PointF topLeft = new PointF(center.X - objectSelectionRadius, center.Y - objectSelectionRadius);
+					if (SelectedObject != null && ((Map.Object) SelectedObject).Location.Equals(oe.Location))
+						pen = new Pen(Color.Green, 1);
+					else
+						pen = new Pen(Color.Blue, 1);
+					e.Graphics.DrawEllipse(pen, new RectangleF(topLeft, new Size(2*objectSelectionRadius, 2*objectSelectionRadius)));
+					e.Graphics.DrawString(oe.Extent.ToString(),new Font("Arial", 10), new SolidBrush(Color.Purple), topLeft);
+				}
+			}
+			//draw polygons
+			foreach (Map.Polygon poly in Map.Polygons)
+			{
+				Pen pen = new Pen(Color.PaleGreen, 1);
+				ArrayList points = new ArrayList();
+				foreach (PointF pt in poly.Points)
+					points.Add(new PointF(pt.X-hScrollBar1.Value, pt.Y - vScrollBar1.Value));
+				points.Add(points[0]);//complete the loop
+				e.Graphics.DrawLines(pen, (PointF[]) points.ToArray(typeof(PointF)));
+			}
+		} 
 		private void ScrollBarChanged(object sender, System.EventArgs e)
 		{
 			mapPanel.Invalidate();
@@ -184,19 +305,18 @@ namespace NoxMapEditor
 					if(wall != null)
 						wall.Secret = !wall.Secret;
 				}
-				else if (CurrentMode == Mode.MAKE_FLOOR)//TODO: allow addition of single tile tilepairs
+				else if (CurrentMode == Mode.MAKE_FLOOR)
 				{
-					Point pt = new Point((e.X+hScrollBar1.Value)/(squareSize*2),(e.Y+vScrollBar1.Value)/(squareSize*2));
-					Map.TilePair tilePair = (Map.TilePair)Map.FloorMap[pt];
-					if(tilePair == null)
+					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value-squareSize)/squareSize);
+					Map.Tile tile = (Map.Tile) Map.FloorMap[pt];
+					if(tile == null && pt.X % 2 == pt.Y % 2)
 					{
-						tilePair = new Map.TilePair(
-							(byte)pt.X,
-							(byte)pt.Y,
-							new Map.TilePair.Tile((byte) lTileGraphic.SelectedIndex, Byte.Parse(lTileVar.Text,System.Globalization.NumberStyles.HexNumber)),
-							new Map.TilePair.Tile((byte) rTileGraphic.SelectedIndex, Byte.Parse(rTileVar.Text,System.Globalization.NumberStyles.HexNumber))
+						tile = new Map.Tile(
+							pt,
+							(byte) tileGraphic.SelectedIndex,
+							Convert.ToByte(tileVar.Text, 16)
 							);
-						Map.FloorMap.Add(pt, tilePair);
+						Map.FloorMap.Add(pt, tile);
 					}
 					else
 					{
@@ -209,40 +329,23 @@ namespace NoxMapEditor
 
 		private void mapPanel_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
 		{
-			Map.Wall wall = (Map.Wall)Map.WallMap[new Point((e.X+hScrollBar1.Value)/23,(e.Y+vScrollBar1.Value)/23)];
-			Map.TilePair tilePair = (Map.TilePair)Map.FloorMap[new Point((e.X+hScrollBar1.Value)/(squareSize*2),(e.Y+vScrollBar1.Value)/(squareSize*2))];
+			Map.Wall wall = (Map.Wall)Map.WallMap[new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize)];
+			Map.Tile tile = (Map.Tile)Map.FloorMap[new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value-squareSize)/squareSize)];
 
 			statusBar1.Text = "";
 			statusBar1.Text += String.Format("X={0} Y={1}", e.X + hScrollBar1.Value, e.Y + vScrollBar1.Value);
 
 			if (wall != null)
 				statusBar1.Text += String.Format("  Wall Material=\"{0}\"", wall.Material);
-			if (tilePair != null && CurrentMode == Mode.MAKE_FLOOR)
+			if (tile != null && CurrentMode == Mode.MAKE_FLOOR)
 			{
-				//TODO: show the info on the single tile that is selected, not both in its corresponding pair
-				if (tilePair.Left != null)
+				statusBar1.Text += "  Tile:";
+				statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}", tile.Graphic, tile.Variation);
+				if (tile.Blends.Count > 0)
 				{
-					Map.TilePair.Tile tile = tilePair.Left;
-					statusBar1.Text += "  LEFT:";
-					statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}", tile.Graphic, tile.Variation);
-					if (tile.EdgeTiles.Count > 0)
-					{
-						statusBar1.Text += String.Format(" EdgeTiles({0}):", tile.EdgeTiles.Count);
-						foreach (Map.TilePair.Tile.EdgeTile eTile in tile.EdgeTiles)
-							statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}-{2}", eTile.Graphic, eTile.Variation, eTile.Direction);
-					}
-				}
-				if (tilePair.Right != null)
-				{
-					Map.TilePair.Tile tile = tilePair.Right;
-					statusBar1.Text += "  RIGHT:";
-					statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}", tile.Graphic, tile.Variation);
-					if (tile.EdgeTiles.Count > 0)
-					{
-						statusBar1.Text += String.Format(" EdgeTiles({0}):", tile.EdgeTiles.Count);
-						foreach (Map.TilePair.Tile.EdgeTile eTile in tile.EdgeTiles)
-							statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}-{2}", eTile.Graphic, eTile.Variation, eTile.Direction);
-					}
+					statusBar1.Text += String.Format(" EdgeTiles({0}):", tile.Blends.Count);
+					foreach (Map.Tile.Blend blend in tile.Blends)
+						statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}-{2}", blend.Graphic, blend.Variation, blend.Direction);
 				}
 			}
 
@@ -299,9 +402,12 @@ namespace NoxMapEditor
 				mapPanel.Invalidate();
 			}
 		}
-		protected ObjectPropertiesDialog propDlg;		protected ObjectEnchantDialog enchantDlg;		protected DoorProperties doorDlg;
+		protected ObjectPropertiesDialog propDlg;
+		protected ObjectEnchantDialog enchantDlg;
+		protected DoorProperties doorDlg;
 		private void contextMenuProperties_Click(object sender, EventArgs e)
-		{			propDlg = new ObjectPropertiesDialog();
+		{
+			propDlg = new ObjectPropertiesDialog();
 			propDlg.Object = SelectedObject;
 			propDlg.ShowDialog();
 			mapPanel.Invalidate();
@@ -350,7 +456,8 @@ namespace NoxMapEditor
 		/// the contents of this method with the code editor.
 		/// </summary>
 		private void InitializeComponent()
-		{			this.mapPanel = new NoxMapEditor.MapView.FlickerFreePanel();
+		{
+			this.mapPanel = new NoxMapEditor.MapView.FlickerFreePanel();
 			this.contextMenu1 = new System.Windows.Forms.ContextMenu();
 			this.contextMenuDelete = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
@@ -360,11 +467,10 @@ namespace NoxMapEditor
 			this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
 			this.vScrollBar1 = new System.Windows.Forms.VScrollBar();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
+			this.buttonBlend = new System.Windows.Forms.Button();
 			this.buttonSecret = new System.Windows.Forms.Button();
-			this.rTileVar = new System.Windows.Forms.TextBox();
-			this.lTileVar = new System.Windows.Forms.TextBox();
-			this.rTileGraphic = new System.Windows.Forms.ComboBox();
-			this.lTileGraphic = new System.Windows.Forms.ComboBox();
+			this.tileVar = new System.Windows.Forms.TextBox();
+			this.tileGraphic = new System.Windows.Forms.ComboBox();
 			this.floorButton = new System.Windows.Forms.Button();
 			this.destructableButton = new System.Windows.Forms.Button();
 			this.windowsButton = new System.Windows.Forms.Button();
@@ -395,7 +501,6 @@ namespace NoxMapEditor
 																						 this.menuItem3,
 																						 this.contextMenuProperties,
 																						 this.enchantItem});
-			this.contextMenu1.Popup += new System.EventHandler(this.contextMenu1_Popup);
 			// 
 			// contextMenuDelete
 			// 
@@ -455,11 +560,10 @@ namespace NoxMapEditor
 			// 
 			// groupBox1
 			// 
+			this.groupBox1.Controls.Add(this.buttonBlend);
 			this.groupBox1.Controls.Add(this.buttonSecret);
-			this.groupBox1.Controls.Add(this.rTileVar);
-			this.groupBox1.Controls.Add(this.lTileVar);
-			this.groupBox1.Controls.Add(this.rTileGraphic);
-			this.groupBox1.Controls.Add(this.lTileGraphic);
+			this.groupBox1.Controls.Add(this.tileVar);
+			this.groupBox1.Controls.Add(this.tileGraphic);
 			this.groupBox1.Controls.Add(this.floorButton);
 			this.groupBox1.Controls.Add(this.destructableButton);
 			this.groupBox1.Controls.Add(this.windowsButton);
@@ -475,6 +579,15 @@ namespace NoxMapEditor
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Tools";
 			// 
+			// buttonBlend
+			// 
+			this.buttonBlend.Location = new System.Drawing.Point(32, 456);
+			this.buttonBlend.Name = "buttonBlend";
+			this.buttonBlend.Size = new System.Drawing.Size(48, 24);
+			this.buttonBlend.TabIndex = 19;
+			this.buttonBlend.Text = "Blends";
+			this.buttonBlend.Click += new System.EventHandler(this.buttonBlend_Click);
+			// 
 			// buttonSecret
 			// 
 			this.buttonSecret.Location = new System.Drawing.Point(8, 344);
@@ -484,39 +597,22 @@ namespace NoxMapEditor
 			this.buttonSecret.Text = "Secret";
 			this.buttonSecret.Click += new System.EventHandler(this.buttonSecret_Click);
 			// 
-			// rTileVar
+			// tileVar
 			// 
-			this.rTileVar.Location = new System.Drawing.Point(48, 480);
-			this.rTileVar.Name = "rTileVar";
-			this.rTileVar.Size = new System.Drawing.Size(24, 20);
-			this.rTileVar.TabIndex = 17;
-			this.rTileVar.Text = "";
+			this.tileVar.Location = new System.Drawing.Point(48, 432);
+			this.tileVar.Name = "tileVar";
+			this.tileVar.Size = new System.Drawing.Size(24, 20);
+			this.tileVar.TabIndex = 16;
+			this.tileVar.Text = "";
 			// 
-			// lTileVar
+			// tileGraphic
 			// 
-			this.lTileVar.Location = new System.Drawing.Point(48, 432);
-			this.lTileVar.Name = "lTileVar";
-			this.lTileVar.Size = new System.Drawing.Size(24, 20);
-			this.lTileVar.TabIndex = 16;
-			this.lTileVar.Text = "";
-			// 
-			// rTileGraphic
-			// 
-			this.rTileGraphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.rTileGraphic.DropDownWidth = 200;
-			this.rTileGraphic.Location = new System.Drawing.Point(8, 456);
-			this.rTileGraphic.Name = "rTileGraphic";
-			this.rTileGraphic.Size = new System.Drawing.Size(72, 21);
-			this.rTileGraphic.TabIndex = 15;
-			// 
-			// lTileGraphic
-			// 
-			this.lTileGraphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.lTileGraphic.DropDownWidth = 200;
-			this.lTileGraphic.Location = new System.Drawing.Point(8, 408);
-			this.lTileGraphic.Name = "lTileGraphic";
-			this.lTileGraphic.Size = new System.Drawing.Size(72, 21);
-			this.lTileGraphic.TabIndex = 13;
+			this.tileGraphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tileGraphic.DropDownWidth = 200;
+			this.tileGraphic.Location = new System.Drawing.Point(8, 408);
+			this.tileGraphic.Name = "tileGraphic";
+			this.tileGraphic.Size = new System.Drawing.Size(72, 21);
+			this.tileGraphic.TabIndex = 13;
 			// 
 			// floorButton
 			// 
@@ -591,7 +687,6 @@ namespace NoxMapEditor
 			this.Size = new System.Drawing.Size(1024, 768);
 			this.groupBox1.ResumeLayout(false);
 			this.ResumeLayout(false);
-
 		}
 		#endregion
 
@@ -629,6 +724,12 @@ namespace NoxMapEditor
 				if (!((((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR))
 					enchantItem.Text = "Enchants";
 			}
+		}
+
+		protected BlendDialog blendDialog = new BlendDialog();
+		private void buttonBlend_Click(object sender, System.EventArgs e)
+		{
+			blendDialog.ShowDialog();
 		}
 	}
 }
