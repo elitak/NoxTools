@@ -115,6 +115,18 @@
                     BuildAction = "Compile"
                 />
                 <File
+                    RelPath = "ExceptionDialog.cs"
+                    Link = "..\shared\ExceptionDialog.cs"
+                    SubType = "Form"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "ExceptionDialog.resx"
+                    Link = "..\shared\ExceptionDialog.resx"
+                    DependentUpon = "ExceptionDialog.cs"
+                    BuildAction = "EmbeddedResource"
+                />
+                <File
                     RelPath = "MainWindow.cs"
                     SubType = "Form"
                     BuildAction = "Compile"
