@@ -34,7 +34,7 @@ namespace NoxMapEditor
 			set
 			{
 				obj = value;
-				if (obj.modbuf != null)
+				if (obj.modbuf.Length >= 8)
 				{
 					System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
 					dirBox.Text = ((DOORS_DIR)rdr.ReadInt32()).ToString();
