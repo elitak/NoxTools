@@ -251,14 +251,14 @@ namespace NoxMapEditor
 			this.tabControl1.Location = new System.Drawing.Point(0, 0);
 			this.tabControl1.Name = "tabControl1";
 			this.tabControl1.SelectedIndex = 0;
-			this.tabControl1.Size = new System.Drawing.Size(1016, 721);
+			this.tabControl1.Size = new System.Drawing.Size(1272, 913);
 			this.tabControl1.TabIndex = 0;
 			// 
 			// largeMap
 			// 
 			this.largeMap.Location = new System.Drawing.Point(4, 22);
 			this.largeMap.Name = "largeMap";
-			this.largeMap.Size = new System.Drawing.Size(1008, 695);
+			this.largeMap.Size = new System.Drawing.Size(1264, 887);
 			this.largeMap.TabIndex = 0;
 			this.largeMap.Text = "Large Map";
 			// 
@@ -267,7 +267,7 @@ namespace NoxMapEditor
 			this.WallViewer.Controls.Add(this.MinimapPanel);
 			this.WallViewer.Location = new System.Drawing.Point(4, 22);
 			this.WallViewer.Name = "WallViewer";
-			this.WallViewer.Size = new System.Drawing.Size(1008, 695);
+			this.WallViewer.Size = new System.Drawing.Size(1208, 845);
 			this.WallViewer.TabIndex = 0;
 			this.WallViewer.Text = "Mini Map";
 			// 
@@ -276,7 +276,7 @@ namespace NoxMapEditor
 			this.MinimapPanel.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.MinimapPanel.Location = new System.Drawing.Point(0, 0);
 			this.MinimapPanel.Name = "MinimapPanel";
-			this.MinimapPanel.Size = new System.Drawing.Size(1008, 695);
+			this.MinimapPanel.Size = new System.Drawing.Size(1208, 845);
 			this.MinimapPanel.TabIndex = 0;
 			this.MinimapPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.MinimapPanel_Paint);
 			// 
@@ -285,7 +285,7 @@ namespace NoxMapEditor
 			this.tabPage1.Controls.Add(this.groupBox1);
 			this.tabPage1.Location = new System.Drawing.Point(4, 22);
 			this.tabPage1.Name = "tabPage1";
-			this.tabPage1.Size = new System.Drawing.Size(1008, 695);
+			this.tabPage1.Size = new System.Drawing.Size(1208, 845);
 			this.tabPage1.TabIndex = 0;
 			this.tabPage1.Text = "Map Info";
 			// 
@@ -319,7 +319,7 @@ namespace NoxMapEditor
 			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
 			this.groupBox1.Location = new System.Drawing.Point(0, 0);
 			this.groupBox1.Name = "groupBox1";
-			this.groupBox1.Size = new System.Drawing.Size(1008, 560);
+			this.groupBox1.Size = new System.Drawing.Size(1208, 560);
 			this.groupBox1.TabIndex = 2;
 			this.groupBox1.TabStop = false;
 			// 
@@ -540,7 +540,7 @@ namespace NoxMapEditor
 			// MainWindow
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.ClientSize = new System.Drawing.Size(1016, 721);
+			this.ClientSize = new System.Drawing.Size(1272, 913);
 			this.Controls.Add(this.tabControl1);
 			this.Menu = this.mainMenu1;
 			this.MinimumSize = new System.Drawing.Size(526, 582);
@@ -565,7 +565,7 @@ namespace NoxMapEditor
 			}
 			catch (Exception ex)
 			{
-				 new ExceptionDialog(ex).ShowDialog();
+				new ExceptionDialog(ex).ShowDialog();
 				Environment.Exit(1);
 			}
 		}
