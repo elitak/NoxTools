@@ -82,7 +82,7 @@ namespace NoxShared
 		#region Read Methods
 		public void ReadFile()
 		{
-			NoxBinaryReader rdr = new NoxBinaryReader(File.Open(filename, FileMode.Open), NoxCryptFormat.PLR);
+			NoxBinaryReader rdr = new NoxBinaryReader(File.Open(filename, FileMode.Open), CryptApi.NoxCryptFormat.PLR);
 
 			//find out what kind of file we got
 			FileType = (PlrFileType) rdr.ReadInt64();
@@ -208,7 +208,7 @@ namespace NoxShared
 		//precondition: all members are properly initialized
 		public void WriteFile()
 		{
-			NoxBinaryWriter wtr = new NoxBinaryWriter(File.Open(filename, FileMode.Create), NoxCryptFormat.PLR);
+			NoxBinaryWriter wtr = new NoxBinaryWriter(File.Open(filename, FileMode.Create), CryptApi.NoxCryptFormat.PLR);
 
 			wtr.Write((long) FileType);
 			switch (FileType)
