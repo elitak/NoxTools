@@ -177,9 +177,9 @@ namespace NoxMapEditor
 			msg.Body = boxMessage.Text + (boxNotes.Text == "" ? "" : "\n\nNotes:\n" + boxNotes.Text);
 
 			bool sent = false;
-			foreach (DnsLib.MXRecord mx in new DnsLib.DnsLite().getMXRecords(boxEmailTo.Text.Split('@')[1]))
+			foreach (string server in DnsLib.DnsApi.GetMXRecords(boxEmailTo.Text.Split('@')[1]))
 			{
-				SmtpMail.SmtpServer = mx.exchange;
+				SmtpMail.SmtpServer = server;
 				try
 				{
 					SmtpMail.Send(msg);
