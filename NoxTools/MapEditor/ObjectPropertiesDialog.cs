@@ -9,9 +9,6 @@ using NoxShared;
 
 namespace NoxMapEditor
 {
-	/// <summary>
-	/// Summary description for ObjectPropertiesDialog.
-	/// </summary>
 	public class ObjectPropertiesDialog : System.Windows.Forms.Form
 	{
 		protected Map.Object obj;
@@ -49,10 +46,6 @@ namespace NoxMapEditor
 		private System.Windows.Forms.TextBox extentBox;
 		private System.Windows.Forms.ComboBox nameBox;
 		private System.Windows.Forms.TextBox boxMod;
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.Container components = null;
 
 		public ObjectPropertiesDialog()
 		{
@@ -62,17 +55,6 @@ namespace NoxMapEditor
 			//nameList.Sort();
 			//nameBox.Items.AddRange(nameList.ToArray());
 			nameBox.Items.AddRange(new ArrayList(ThingDb.Things.Keys).ToArray());
-		}
-
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		protected override void Dispose(bool disposing)
-		{
-			if(disposing)
-				if(components != null)
-					components.Dispose();
-			base.Dispose(disposing);
 		}
 
 		#region Windows Form Designer generated code
@@ -239,6 +221,8 @@ namespace NoxMapEditor
 					wtr.Write(Convert.ToByte(match.Value, 16));
 				obj.modbuf = stream.ToArray();
 			}
+			else
+				obj.modbuf = null;
 			this.Visible = false;
 		}
 	}
