@@ -9,11 +9,7 @@ using NoxShared.NoxType;
 
 namespace NoxShared
 {
-	/// <summary>
-	/// NoxPlayer represents the player data contained within a .plr file. This class handles the decryption/encryption when given a filename via the constructor.
-	/// </summary>
-
-	public class Map : Observable
+	public class Map
 	{
 		// ----PUBLIC MEMBERS----
 		public MapInfo Info;
@@ -164,20 +160,22 @@ namespace NoxShared
 				}
 			}
 
-			public Tile(byte graphic, byte variation)
+			public int Variations
 			{
-				graphicId = graphic; Variation = variation;
+				get
+				{
+					return ((ThingDb.Tile) ThingDb.FloorTiles[graphicId]).Variations;
+				}
 			}
 
-			public Tile(byte graphic, byte variation, ArrayList blends) : this(graphic, variation)
+			public Tile(Point loc, byte graphic, byte variation, ArrayList blends)
 			{
+				Location = loc;
+				graphicId = graphic; Variation = variation;
 				Blends = blends;
 			}
 
-			public Tile(Point loc, byte graphic, byte variation) : this(graphic, variation)
-			{
-				Location = loc;
-			}
+			public Tile(Point loc, byte graphic, byte variation) : this(loc, graphic, variation, new ArrayList()) {}
 
 			public Tile(Stream stream)
 			{
@@ -210,8 +208,8 @@ namespace NoxShared
 			{
 				protected byte graphicId;
 				public byte Variation;
-				public byte unknown1; //Always 00(?)
-				public byte unknown2; //Always 10(?)
+				public byte unknown1 = 0x00; //Always 00(?)
+				public byte unknown2 = 0x10; //Always 10(?)
 				public BlendDirection Direction;
 
 				public string Graphic
@@ -246,9 +244,9 @@ namespace NoxShared
 					// is "EdgeTile" a misnomer for blends? -- what are the EDGE thingdb entries for? where/when/how are they indexed? appended to end of floortiles maybe? prob. not
 				}
 
-				public Blend(byte graphic,byte variation, byte unk1, byte unk2, byte dir)
+				public Blend(byte graphic, byte variation, BlendDirection dir)
 				{
-					graphicId = graphic; Variation = variation; unknown1 = unk1; unknown2 = unk2; Direction = (BlendDirection) dir;
+					graphicId = graphic; Variation = variation; Direction = dir;
 				}
 
 				public Blend(Stream stream)
@@ -670,6 +668,11 @@ namespace NoxShared
 			{
 				return obj is TilePair && CompareTo(obj) == 0;
 			}
+
+			public override int GetHashCode()
+			{
+				return Location.GetHashCode();
+			}
 		}
 
 		public class Wall : IComparable
@@ -1034,12 +1037,12 @@ namespace NoxShared
 		#region Reading Methods
 		public void ReadFile()
 		{
-			NoxBinaryReader rdr	= new NoxBinaryReader(File.Open(FileName, FileMode.Open), NoxCryptFormat.MAP);
+			NoxBinaryReader rdr	= new NoxBinaryReader(File.Open(FileName, FileMode.Open), CryptApi.NoxCryptFormat.MAP);
 
 			//check to see if the file is not encrypted
 			if (rdr.ReadUInt32() != 0xFADEFACE)//all unencrypted maps start with this
 			{
-				rdr = new NoxBinaryReader(File.Open(FileName, FileMode.Open), NoxCryptFormat.NONE);
+				rdr = new NoxBinaryReader(File.Open(FileName, FileMode.Open), CryptApi.NoxCryptFormat.NONE);
 				Encrypted = false;
 			}
 			rdr.BaseStream.Seek(0, SeekOrigin.Begin);//reset to start
@@ -1113,7 +1116,6 @@ namespace NoxShared
 			}
 
 			rdr.Close();
-			NotifyObservers();
 		}
 
 		private Stream tocStream;
@@ -1250,10 +1252,10 @@ namespace NoxShared
 			wtr.Write(hed.header);
 		}
 
-		public void WriteFile()
+		protected byte[] mapData;
+		protected void Serialize()
 		{
-			MemoryStream mapData = new MemoryStream();
-			NoxBinaryWriter wtr = new NoxBinaryWriter(mapData, NoxType.NoxCryptFormat.NONE);//encrypt later
+			NoxBinaryWriter wtr = new NoxBinaryWriter(new MemoryStream(), CryptApi.NoxCryptFormat.NONE);//encrypt later
 
 			Header.Write(wtr.BaseStream);
 			Info.Write(wtr.BaseStream);
@@ -1278,20 +1280,32 @@ namespace NoxShared
 			wtr.Write(new byte[(8 - wtr.BaseStream.Position % 8) % 8]);
 			
 			//go back and write header again, with a proper checksum
-			Header.GenerateChecksum(mapData.ToArray());
+			Header.GenerateChecksum(((MemoryStream) wtr.BaseStream).ToArray());
 			wtr.BaseStream.Seek(0, SeekOrigin.Begin);
 			Header.Write(wtr.BaseStream);
 			wtr.BaseStream.Seek(0, SeekOrigin.End);
-
 			wtr.Close();
 
-			FileStream fStr = File.Open(FileName, FileMode.Create);
-			NoxBinaryWriter fileWtr;
+			mapData = ((MemoryStream) wtr.BaseStream).ToArray();
 			if (Encrypted)
-				fileWtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.MAP);
-			else
-				fileWtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.NONE);
-			fileWtr.Write(mapData.ToArray());
+				mapData = CryptApi.NoxEncrypt(mapData, CryptApi.NoxCryptFormat.MAP);
+		}
+
+		public void WriteMap()
+		{
+			Serialize();
+			BinaryWriter fileWtr = new BinaryWriter(File.Open(FileName, FileMode.Create));
+			fileWtr.Write(mapData);
+			fileWtr.Close();
+		}
+
+		public void WriteNxz()
+		{
+			Serialize();
+			//do a stupid replace of ".map" -- better be named correctly!!!
+			BinaryWriter fileWtr = new BinaryWriter(File.Open(FileName.Replace(".map", ".nxz"), FileMode.Create));
+			fileWtr.Write((uint) mapData.Length);
+			fileWtr.Write(CryptApi.NxzEncrypt(mapData));
 			fileWtr.Close();
 		}
 
