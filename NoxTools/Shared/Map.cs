@@ -14,7 +14,11 @@ namespace NoxShared
 		// ----PUBLIC MEMBERS----
 		public MapInfo Info;
 		public SortedList WallMap;
-		public bool Encrypted; //default true if map will be encrypted upon saving
+
+		public bool Encrypted = true;//whether map will be encrypted upon saving
+		//encrypt file unless this is explicitly set to false
+		//  OR we find upon loading that the file was originally unencrypted
+
 		public TileMap FloorMap;
 		public ObjectTable Objects;//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
 		public PolygonList Polygons = new PolygonList();
@@ -168,7 +172,7 @@ namespace NoxShared
 			public Point Location;
 			protected byte graphicId;
 			public byte Variation;
-			public ArrayList Blends = new ArrayList();
+			public ArrayList EdgeTiles = new ArrayList();
 
 			public string Graphic
 			{
@@ -186,11 +190,11 @@ namespace NoxShared
 				}
 			}
 
-			public Tile(Point loc, byte graphic, byte variation, ArrayList blends)
+			public Tile(Point loc, byte graphic, byte variation, ArrayList edgetiles)
 			{
 				Location = loc;
 				graphicId = graphic; Variation = variation;
-				Blends = blends;
+				EdgeTiles = edgetiles;
 			}
 
 			public Tile(Point loc, byte graphic, byte variation) : this(loc, graphic, variation, new ArrayList()) {}
@@ -206,8 +210,8 @@ namespace NoxShared
 				graphicId = rdr.ReadByte();
 				Variation = (byte) rdr.ReadByte();
 				rdr.ReadBytes(3);//these are always null for first tilePair of a blending group (?)
-				for (int numBlends = rdr.ReadByte(); numBlends > 0; numBlends--)
-					Blends.Add(new Blend(rdr.BaseStream));
+				for (int numEdgeTiles = rdr.ReadByte(); numEdgeTiles > 0; numEdgeTiles--)
+					EdgeTiles.Add(new EdgeTile(rdr.BaseStream));
 			}
 
 			public void Write(Stream stream)
@@ -217,57 +221,50 @@ namespace NoxShared
 				wtr.Write((byte )graphicId);
 				wtr.Write((byte) Variation);
 				wtr.Write(new byte[3]);//3 nulls
-				wtr.Write((byte) Blends.Count);
-				foreach(Blend blend in Blends)
-					blend.Write(stream);
+				wtr.Write((byte) EdgeTiles.Count);
+				foreach(EdgeTile edge in EdgeTiles)
+					edge.Write(stream);
 			}
 
-			public class Blend//maybe derive from tile?
+			public class EdgeTile//maybe derive from tile?
 			{
-				protected byte graphicId;
+				public byte Graphic;
 				public byte Variation;
 				public byte unknown1 = 0x00; //Always 00(?)
-				public byte unknown2 = 0x10; //Always 10(?)
-				public BlendDirection Direction;
+				public Direction Dir;
+				public byte Edge;
 
-				public string Graphic
+				public enum Direction : byte
 				{
-					get
-					{
-						return ((ThingDb.Tile) ThingDb.FloorTiles[graphicId]).Name;//FIXME
-					}
+					SW_Tip,//0x00
+					West,
+					West_02,
+					West_03,
+					NW_Tip,//0x04
+					South,
+					North,
+					South_07,
+					North_08,//0x08
+					South_09,
+					North_0A,
+					SE_Tip,
+					East,//0x0C
+					East_D,
+					East_E,
+					NE_Tip,
+					SW_Sides,//0x10
+					NW_Sides,
+					NE_Sides,
+					SE_Sides//0x13
+					//TODO: figure out what's up with the different directions
 				}
 
-				public enum BlendDirection : byte
+				public EdgeTile(byte graphic, byte variation, Direction dir, byte edge)
 				{
-					SW = 0x00,
-					WEST = 0x01,
-					WEST_2 = 0x02,
-					WEST_3 = 0x03,
-					NW = 0x04,
-					SOUTH = 0x05,
-					SOUTH_7 = 0x07,
-					SOUTH_9 = 0x09,
-					NORTH = 0x06,
-					NORTH_8 = 0x08,
-					NORTH_A = 0x0A,
-					SE = 0x0B,
-					EAST = 0x0C,
-					EAST_D = 0x0D,
-					EAST_E = 0x0E,
-					NE = 0x0F
-					//TODO: figure out what's up with the differnt directions
-					//  also: beyond 0x0F... do they occur in WW maps?
-					// fix status bar so it doesnt truncate...
-					// is "EdgeTile" a misnomer for blends? -- what are the EDGE thingdb entries for? where/when/how are they indexed? appended to end of floortiles maybe? prob. not
+					Graphic = graphic; Variation = variation; Dir = dir; Edge = edge;
 				}
 
-				public Blend(byte graphic, byte variation, BlendDirection dir)
-				{
-					graphicId = graphic; Variation = variation; Direction = dir;
-				}
-
-				public Blend(Stream stream)
+				public EdgeTile(Stream stream)
 				{
 					Read(stream);
 				}
@@ -276,22 +273,26 @@ namespace NoxShared
 				{
 					BinaryReader rdr = new BinaryReader(stream);
 
-					graphicId = rdr.ReadByte();
+					Graphic = rdr.ReadByte();
 					Variation = rdr.ReadByte();
 					unknown1 = rdr.ReadByte();
-					unknown2 = rdr.ReadByte();
-					Direction = (BlendDirection) rdr.ReadByte();
+					if (unknown1 != 0)
+						Console.WriteLine("WARNING: tile unknown byte was not 0");
+					Edge = rdr.ReadByte();
+					Dir = (Direction) rdr.ReadByte();
+					if (!Enum.IsDefined(typeof(Direction), (byte) Dir))
+						Console.WriteLine("WARNING: edgetile direction {0} is undefined", (byte) Dir);
 				}
 
 				public void Write(Stream stream)
 				{
 					BinaryWriter wtr = new BinaryWriter(stream);
 
-					wtr.Write((byte) graphicId);
+					wtr.Write((byte) Graphic);
 					wtr.Write((byte) Variation);
 					wtr.Write((byte) unknown1);
-					wtr.Write((byte) unknown2);
-					wtr.Write((byte) Direction);
+					wtr.Write((byte) Edge);
+					wtr.Write((byte) Dir);
 				}
 			}
 		}
@@ -691,21 +692,19 @@ namespace NoxShared
 		{
 			public enum WallFacing : byte
 			{
-				NORTH = 0,
-				//SOUTH = 0,//same as north
-				WEST = 1,
-				//EAST = 1,//same as west
-				CROSS = 2,
+				NORTH,//same as SOUTH
+				WEST,//same as EAST
+				CROSS,
 				
-				SOUTH_T = 3,
-				EAST_T = 4,
-				NORTH_T = 5,
-				WEST_T = 6,
+				SOUTH_T,
+				EAST_T,//4
+				NORTH_T,
+				WEST_T,
 
-				SW_CORNER = 7,
-				NW_CORNER = 8,
-				NE_CORNER = 9,
-				SE_CORNER = 10
+				SW_CORNER,
+				NW_CORNER,//8
+				NE_CORNER,
+				SE_CORNER//10
 			}
 
 			public Point Location;
@@ -713,9 +712,9 @@ namespace NoxShared
 			//perhaps add these in the NoxTypes namespace?
 			public WallFacing Facing;
 			protected byte matId;
-			public byte Unknown1;
-			public byte Minimap;//name might not be appropriate
-			public byte Unknown2;
+			public byte Unknown1 = 0x00;
+			public byte Minimap = 0x64;
+			public byte Unknown2 = 0x01;
 			public bool Destructable;
 			public bool Secret;
 			public bool Window;
@@ -747,7 +746,11 @@ namespace NoxShared
 			public Wall(Point loc, WallFacing facing, byte mat)
 			{
 				Location = loc;	Facing = facing; matId = mat;
-				Minimap = 0x64; Unknown1 = 0x00; Unknown2 = 0x01; Destructable = false; Secret = false; Window = false;//defaults
+			}
+
+			public Wall(Point loc, WallFacing facing, byte mat, byte mmGroup)
+			{
+				Location = loc;	Facing = facing; matId = mat; Minimap = mmGroup;
 			}
 
 			protected void Read(Stream stream)
@@ -958,13 +961,14 @@ namespace NoxShared
 				Unknown = 0;
 				Location = new PointF(rdr.ReadSingle(), rdr.ReadSingle());//x then y
 				Terminator = rdr.ReadByte();
+				/* FIXME Andrew
 				if(Terminator == 0xFF)
 				{
 					temp1 = rdr.ReadBytes(4);
 					Scr_Name = rdr.ReadString();
 					Team = rdr.ReadByte();
 					temp2 = rdr.ReadBytes(17);
-				}
+				}*/
 				if (rdr.BaseStream.Position < endOfData)
 				{
 					/*
@@ -1003,13 +1007,9 @@ namespace NoxShared
 				BinaryWriter wtr = new BinaryWriter(stream);
 				wtr.Write((short) toc[Name]);
 				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
-				//if (Name == "WizardRobe" || Name == "LeatherBoots") modbuf = new byte[] {0,0,0,0,0x00,0x00};//HACK for testing
-				//TODO:
-				//   read from thing.bin? -> if type SIMPLE and not IMMOBILE, then add six nulls to the end of the entry?
-				//   modifier support, read from modifier.bin?
-				//   new object, move object, delete object
+				/* FIXME Andrew
 				int xtraLength = 0;
-				if(Terminator == 0xFF)
+				if (Terminator == 0xFF)
 				{
 					if(temp1 == null)
 						temp1 = new Byte[] {0, 0, 0, 1, 0};
@@ -1017,7 +1017,9 @@ namespace NoxShared
 						temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00};
 					xtraLength = temp1.Length + temp2.Length + 1 + Scr_Name.Length;
 				}
-				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length) + xtraLength;
+				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length) + xtraLength;//0x15 is the minumum length of an entry
+				*/
+				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length);//0x15 is the minumum length of an entry
 				wtr.Write((long) dataLength);
 				wtr.Write((int) Type);
 				wtr.Write((int) Extent);
@@ -1025,14 +1027,15 @@ namespace NoxShared
 				wtr.Write((float) Location.X);
 				wtr.Write((float) Location.Y);
 				wtr.Write((byte) Terminator);
-				if(Terminator == 0xFF)
+				/* FIXME Andrew
+				if (Terminator == 0xFF)
 				{
 					wtr.Write(temp1);
 					wtr.Write(Scr_Name);
 					wtr.Write(Team);
 					wtr.Write(temp2);
-				}
-				if(modbuf != null)
+				}*/
+				if (modbuf != null)
 					wtr.Write(modbuf);
 			}
 
@@ -1093,10 +1096,6 @@ namespace NoxShared
 			Headers = new Hashtable();
 			Info = new MapInfo();
 			Objects = new ObjectTable();//dummy table
-
-			//encrypt file unless this is explicitly set to false
-			//  OR we find upon loading that the file was originally unencrypted
-			Encrypted = true;
 		}
 
 		public Map(string filename) : this()
@@ -1106,7 +1105,7 @@ namespace NoxShared
 
 		public void Load(string filename)
 		{
-			this.FileName = filename;
+			FileName = filename;
       		ReadFile();
 		}
 
