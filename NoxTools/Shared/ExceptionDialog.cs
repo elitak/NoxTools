@@ -4,8 +4,9 @@ using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.Web.Mail;
+using System.IO;
 
-namespace NoxMapEditor
+namespace NoxShared
 {
 	/// <summary>
 	/// Summary description for ExceptionDialog.
@@ -42,6 +43,13 @@ namespace NoxMapEditor
 			//use default email addresses
 			boxFrom.Text = defaultFrom;
 			boxEmailTo.Text = defaultTo;
+
+			//save the message to disk
+			StreamWriter wtr = new StreamWriter("CrashLog.txt");
+			wtr.Write(ex.Message + "\r\n" + ex.Source + "\r\n" + ex.StackTrace + "\r\n\r\n");
+			if (ex.InnerException != null)
+				wtr.Write(ex.InnerException.Message + "\r\n" + ex.InnerException.Source + "\r\n" + ex.InnerException.StackTrace + "\r\n\r\n");
+			wtr.Close();
 		}
 
 		#region Windows Form Designer generated code
