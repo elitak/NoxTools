@@ -103,6 +103,8 @@ namespace NoxShared
 			public ArrayList Points = new ArrayList();
 			protected byte[] endbuf;
 			protected PolygonList list;
+			public string s1;
+			public string s2;
 
 			public Polygon(Stream stream, PolygonList list)
 			{
@@ -125,17 +127,28 @@ namespace NoxShared
 				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
 				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
 				//always "01 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00" or 4 shorter?
-				rdr.ReadInt16();
-				rdr.ReadChars(rdr.ReadInt32());
-				rdr.ReadInt32();
-				rdr.ReadInt16();
-				rdr.ReadChars(rdr.ReadInt32());
+				System.IO.MemoryStream nStream = new System.IO.MemoryStream();
+				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(nStream);
+				
+				string temp;
+
+				wtr.Write(rdr.ReadInt16());
+				temp = new string(rdr.ReadChars(rdr.ReadInt32()));
+				wtr.Write((int)temp.Length);
+				wtr.Write(temp.ToCharArray());
+				wtr.Write(rdr.ReadInt32());
+				wtr.Write(rdr.ReadInt16());
+				temp = new string(rdr.ReadChars(rdr.ReadInt32()));
+				wtr.Write((int)temp.Length);
+				wtr.Write(temp.ToCharArray());
+
 				if (list.TermCount == 0x0003)
-					endbuf = rdr.ReadBytes(0x4);
+					wtr.Write(rdr.ReadBytes(0x4));
 				else if (list.TermCount == 0x0004)
-					endbuf = rdr.ReadBytes(0x8);
+					wtr.Write(rdr.ReadBytes(0x8));
 				else
 					Debug.Assert(false, "(Map, Polygons) Unhandled terminal count.");
+				endbuf = nStream.ToArray();
 			}
 
 			public void Write(Stream stream)
