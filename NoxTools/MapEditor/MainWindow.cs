@@ -565,7 +565,7 @@ namespace NoxMapEditor
 			}
 			catch (Exception ex)
 			{
-				new ExceptionDialog(ex).ShowDialog();
+				 new ExceptionDialog(ex).ShowDialog();
 				Environment.Exit(1);
 			}
 		}
@@ -597,6 +597,8 @@ namespace NoxMapEditor
 
 				mapMinRec.Text = String.Format("{0}", map.Info.RecommendedMin);
 				mapMaxRec.Text = String.Format("{0}", map.Info.RecommendedMax);
+
+				mapView1.SelectedObject = null;
 
 				Invalidate(true);
 			}

@@ -16,13 +16,17 @@ namespace NoxMapEditor
 	public class ObjectEnchantDialog : System.Windows.Forms.Form
 	{
 		protected Map.Object obj;
+		protected byte[] temp1;
+		protected byte[] temp2;
+		protected string endMod;
 		private System.Windows.Forms.ComboBox enchant1;
 		private System.Windows.Forms.ComboBox enchant2;
 		private System.Windows.Forms.ComboBox enchant3;
 		private System.Windows.Forms.ComboBox enchant4;
-		private System.Windows.Forms.TextBox boxMod;
 		private System.Windows.Forms.Button okButton;
 		private System.Windows.Forms.Button cancelButton;
+		private System.Windows.Forms.Label label1;
+		private System.Windows.Forms.TextBox teamBox;
 		
 		public static ArrayList objEnchants = new ArrayList(new String[]{
 																			"WeaponPower1",
@@ -221,8 +225,10 @@ namespace NoxMapEditor
 			}
 			set
 			{
+				temp1 = new Byte[] {0, 0, 0, 1, 0};
+				temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00};
 				obj = value;
-				boxMod.Text = "";
+				endMod = "";
 				if (obj.modbuf != null)
 				{
 					System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
@@ -231,6 +237,13 @@ namespace NoxMapEditor
 					byte fByte;
 					char[] buffer;
 					obj.enchants = new ArrayList();
+					if(obj.Terminator == 0xFF)
+					{
+						temp1 = rdr.ReadBytes(5);
+						obj.Team = rdr.ReadByte();
+						temp2 = rdr.ReadBytes(17);
+						teamBox.Text = obj.Team.ToString();
+					}
 					if(((ThingDb.Thing)ThingDb.Things[obj.Name]).Init == "ModifierInit")
 					{
 						pos = rdr.BaseStream.Position;
@@ -246,7 +259,7 @@ namespace NoxMapEditor
 						}
 						while (rdr.BaseStream.Position < rdr.BaseStream.Length)
 						{
-							boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
+							endMod += String.Format("{0:x2} ", rdr.ReadByte());
 						}
 						enchant1.Text = (string)obj.enchants[0];
 						enchant2.Text = (string)obj.enchants[1];
@@ -308,9 +321,10 @@ namespace NoxMapEditor
 			this.enchant2 = new System.Windows.Forms.ComboBox();
 			this.enchant3 = new System.Windows.Forms.ComboBox();
 			this.enchant4 = new System.Windows.Forms.ComboBox();
-			this.boxMod = new System.Windows.Forms.TextBox();
 			this.okButton = new System.Windows.Forms.Button();
 			this.cancelButton = new System.Windows.Forms.Button();
+			this.teamBox = new System.Windows.Forms.TextBox();
+			this.label1 = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// enchant1
@@ -345,15 +359,6 @@ namespace NoxMapEditor
 			this.enchant4.Sorted = true;
 			this.enchant4.TabIndex = 5;
 			// 
-			// boxMod
-			// 
-			this.boxMod.Location = new System.Drawing.Point(128, 8);
-			this.boxMod.Multiline = true;
-			this.boxMod.Name = "boxMod";
-			this.boxMod.Size = new System.Drawing.Size(208, 120);
-			this.boxMod.TabIndex = 6;
-			this.boxMod.Text = "";
-			// 
 			// okButton
 			// 
 			this.okButton.Location = new System.Drawing.Point(48, 136);
@@ -372,14 +377,33 @@ namespace NoxMapEditor
 			this.cancelButton.Text = "Cancel";
 			this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
 			// 
+			// teamBox
+			// 
+			this.teamBox.Location = new System.Drawing.Point(192, 8);
+			this.teamBox.MaxLength = 1;
+			this.teamBox.Name = "teamBox";
+			this.teamBox.Size = new System.Drawing.Size(24, 20);
+			this.teamBox.TabIndex = 9;
+			this.teamBox.Text = "";
+			// 
+			// label1
+			// 
+			this.label1.Location = new System.Drawing.Point(144, 8);
+			this.label1.Name = "label1";
+			this.label1.Size = new System.Drawing.Size(40, 23);
+			this.label1.TabIndex = 10;
+			this.label1.Text = "Team:";
+			this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+			// 
 			// ObjectEnchantDialog
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.ClientSize = new System.Drawing.Size(344, 165);
 			this.ControlBox = false;
+			this.Controls.Add(this.label1);
+			this.Controls.Add(this.teamBox);
 			this.Controls.Add(this.cancelButton);
 			this.Controls.Add(this.okButton);
-			this.Controls.Add(this.boxMod);
 			this.Controls.Add(this.enchant4);
 			this.Controls.Add(this.enchant3);
 			this.Controls.Add(this.enchant2);
@@ -395,49 +419,58 @@ namespace NoxMapEditor
 
 		private void okButton_Click(object sender, System.EventArgs e)
 		{
-				System.IO.MemoryStream stream = new System.IO.MemoryStream();
-				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
-				
-				if(objEnchants.Contains(enchant1.Text))
-				{
-					wtr.Write((byte)enchant1.Text.Length);
-					wtr.Write(enchant1.Text.ToCharArray());
-					//wtr.Write('\0');
-				}
-				else
-					wtr.Write('\0');
-				
-				if(objEnchants.Contains(enchant2.Text))
-				{
-					wtr.Write((byte)(enchant2.Text.Length));
-					wtr.Write(enchant2.Text.ToCharArray());
-					//wtr.Write('\0');
-				}
-				else
-					wtr.Write('\0');
-				if(objEnchants.Contains(enchant3.Text))
-				{
-					wtr.Write((byte)(enchant3.Text.Length));
-					wtr.Write(enchant3.Text.ToCharArray());
-					//wtr.Write('\0');
-				}
-				else
-					wtr.Write('\0');
-				if(objEnchants.Contains(enchant4.Text))
-				{
-					wtr.Write((byte)(enchant4.Text.Length));
-					wtr.Write(enchant4.Text.ToCharArray());
-					//wtr.Write('\0');
-				}
-				else
-					wtr.Write('\0');
+			System.IO.MemoryStream stream = new System.IO.MemoryStream();
+			System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
+			if(teamBox.Text != "")
+			{
+				obj.Terminator = 0xFF;
+				obj.Team = Byte.Parse(teamBox.Text);
+				wtr.Write(temp1);
+				wtr.Write((byte)obj.Team);
+				wtr.Write(temp2);
+			}
+			else
+				obj.Terminator = 0x00;
+			if(objEnchants.Contains(enchant1.Text))
+			{
+				wtr.Write((byte)enchant1.Text.Length);
+				wtr.Write(enchant1.Text.ToCharArray());
+				//wtr.Write('\0');
+			}
+			else
+				wtr.Write('\0');
+			
+			if(objEnchants.Contains(enchant2.Text))
+			{
+				wtr.Write((byte)(enchant2.Text.Length));
+				wtr.Write(enchant2.Text.ToCharArray());
+				//wtr.Write('\0');
+			}
+			else
+				wtr.Write('\0');
+			if(objEnchants.Contains(enchant3.Text))
+			{
+				wtr.Write((byte)(enchant3.Text.Length));
+				wtr.Write(enchant3.Text.ToCharArray());
+				//wtr.Write('\0');
+			}
+			else
+				wtr.Write('\0');
+			if(objEnchants.Contains(enchant4.Text))
+			{
+				wtr.Write((byte)(enchant4.Text.Length));
+				wtr.Write(enchant4.Text.ToCharArray());
+				//wtr.Write('\0');
+			}
+			else
+				wtr.Write('\0');
 
-				Regex bytes = new Regex("[0-9|a-f|A-F]{2}");
-				foreach (Match match in bytes.Matches(boxMod.Text))
-					wtr.Write(Convert.ToByte(match.Value, 16));
-				obj.modbuf = stream.ToArray();
-				if(obj.modbuf.GetLength(0) == 0)
-					obj.modbuf = new byte[] { 0x00, 0x00};
+			Regex bytes = new Regex("[0-9|a-f|A-F]{2}");
+			foreach (Match match in bytes.Matches(endMod))
+				wtr.Write(Convert.ToByte(match.Value, 16));
+			obj.modbuf = stream.ToArray();
+			if(obj.modbuf.GetLength(0) == 0)
+				obj.modbuf = new byte[] { 0x00, 0x00};
 			Close();
 		}
 

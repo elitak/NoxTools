@@ -25,6 +25,7 @@ namespace NoxMapEditor
 				xBox.Text = obj.Location.X.ToString();
 				yBox.Text = obj.Location.Y.ToString();
 				extentBox.Text = obj.Extent.ToString();
+				terminatorText.Text = String.Format("{0:x2} ", obj.Terminator);
 				//print out the bytes in hex
 				boxMod.Text = "";
 				if (obj.modbuf != null)
@@ -51,6 +52,7 @@ namespace NoxMapEditor
 		private System.Windows.Forms.ComboBox nameBox;
 		private System.Windows.Forms.Button enchantButton;
 		private System.Windows.Forms.Button lockButton;
+		private System.Windows.Forms.Label terminatorText;
 		private System.Windows.Forms.TextBox boxMod;
 
 		public ObjectPropertiesDialog()
@@ -79,6 +81,7 @@ namespace NoxMapEditor
 			this.boxMod = new System.Windows.Forms.TextBox();
 			this.enchantButton = new System.Windows.Forms.Button();
 			this.lockButton = new System.Windows.Forms.Button();
+			this.terminatorText = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -191,8 +194,15 @@ namespace NoxMapEditor
 			this.lockButton.Location = new System.Drawing.Point(192, 48);
 			this.lockButton.Name = "lockButton";
 			this.lockButton.TabIndex = 14;
-			this.lockButton.Text = "Locks";
+			this.lockButton.Text = "Doors";
 			this.lockButton.Click += new System.EventHandler(this.lockButton_Click);
+			// 
+			// terminatorText
+			// 
+			this.terminatorText.Location = new System.Drawing.Point(112, 64);
+			this.terminatorText.Name = "terminatorText";
+			this.terminatorText.Size = new System.Drawing.Size(64, 16);
+			this.terminatorText.TabIndex = 15;
 			// 
 			// ObjectPropertiesDialog
 			// 
@@ -200,6 +210,7 @@ namespace NoxMapEditor
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
 			this.ClientSize = new System.Drawing.Size(274, 223);
+			this.Controls.Add(this.terminatorText);
 			this.Controls.Add(this.lockButton);
 			this.Controls.Add(this.enchantButton);
 			this.Controls.Add(this.boxMod);
@@ -256,6 +267,7 @@ namespace NoxMapEditor
 			ObjectEnchantDialog enchantDlg = new ObjectEnchantDialog();
 			enchantDlg.Object = obj;
 			enchantDlg.ShowDialog();
+			boxMod.Clear();
 			if (obj.modbuf != null)
 			{
 				System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
@@ -269,6 +281,7 @@ namespace NoxMapEditor
 			DoorProperties doorDlg = new DoorProperties();
 			doorDlg.Object = obj;
 			doorDlg.ShowDialog();
+			boxMod.Clear();
 			if (obj.modbuf != null)
 			{
 				System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));

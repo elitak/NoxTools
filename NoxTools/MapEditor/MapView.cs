@@ -19,6 +19,7 @@ namespace NoxMapEditor
 		public bool DrawGrid;
 		protected const int wallThickness = 2;
 		protected const int gridThickness = 1;
+		protected Map.Object DefaultObject = new Map.Object();
 
 		public enum Mode
 		{
@@ -62,6 +63,8 @@ namespace NoxMapEditor
 		private System.Windows.Forms.GroupBox floorGroup;
 		private System.Windows.Forms.GroupBox wallGroup;
 		private System.Windows.Forms.GroupBox objectGroup;
+		private System.Windows.Forms.CheckBox threeFloorBox;
+		private System.Windows.Forms.Button defaultButt;
 		private System.Windows.Forms.Panel wallSelectPanel;
 
 		public MapView()
@@ -266,7 +269,11 @@ namespace NoxMapEditor
 				else if (CurrentMode == Mode.MAKE_OBJECT)
 				{
 					Map.Object obj = new Map.Object();
+					DefaultObject.CopyTo(obj);
 					obj.Location = pointClicked;
+					obj.Extent = DefaultObject.Extent + 1;
+					while(Map.Objects.extents.Contains(obj.Extent))
+						obj.Extent++;
 					Map.Objects.Add(obj);
 				}
 				else if (CurrentMode == Mode.MAKE_WINDOW)
@@ -295,7 +302,7 @@ namespace NoxMapEditor
 				{
 					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value-squareSize)/squareSize);
 					Map.Tile tile = (Map.Tile) Map.FloorMap[pt];
-					if(tile == null && pt.X % 2 == pt.Y % 2)
+					if(tile == null && pt.X % 2 == pt.Y % 2 && !threeFloorBox.Checked)
 					{
 						tile = new Map.Tile(
 							pt,
@@ -304,6 +311,81 @@ namespace NoxMapEditor
 							blendDialog.Blends
 							);
 						Map.FloorMap.Add(pt, tile);
+					}
+					else if(tile==null && pt.X % 2 == pt.Y % 2)
+					{
+						tile = new Map.Tile(
+							new Point(pt.X-1,pt.Y-1),
+							(byte) tileGraphic.SelectedIndex,
+							3,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(pt.X-2,pt.Y),
+							(byte) tileGraphic.SelectedIndex,
+							0,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(pt.X-1,pt.Y+1),
+							(byte) tileGraphic.SelectedIndex,
+							1,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(pt.X,pt.Y-2),
+							(byte) tileGraphic.SelectedIndex,
+							6,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							pt,
+							(byte) tileGraphic.SelectedIndex,
+							4,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(pt.X,pt.Y+2),
+							(byte) tileGraphic.SelectedIndex,
+							2,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(pt.X+1,pt.Y-1),
+							(byte) tileGraphic.SelectedIndex,
+							7,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(pt.X+2,pt.Y),
+							(byte) tileGraphic.SelectedIndex,
+							8,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(pt.X+1,pt.Y+1),
+							(byte) tileGraphic.SelectedIndex,
+							5,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
 					}
 					else
 					{
@@ -457,6 +539,7 @@ namespace NoxMapEditor
 			this.selectButton = new System.Windows.Forms.Button();
 			this.newObjectButton = new System.Windows.Forms.Button();
 			this.floorGroup = new System.Windows.Forms.GroupBox();
+			this.threeFloorBox = new System.Windows.Forms.CheckBox();
 			this.buttonBlend = new System.Windows.Forms.Button();
 			this.tileVar = new System.Windows.Forms.ComboBox();
 			this.tileGraphic = new System.Windows.Forms.ComboBox();
@@ -466,6 +549,7 @@ namespace NoxMapEditor
 			this.buttonSecret = new System.Windows.Forms.Button();
 			this.destructableButton = new System.Windows.Forms.Button();
 			this.windowsButton = new System.Windows.Forms.Button();
+			this.defaultButt = new System.Windows.Forms.Button();
 			this.groupBox1.SuspendLayout();
 			this.objectGroup.SuspendLayout();
 			this.floorGroup.SuspendLayout();
@@ -474,6 +558,7 @@ namespace NoxMapEditor
 			// 
 			// mapPanel
 			// 
+			this.mapPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
 			this.mapPanel.ContextMenu = this.contextMenu1;
 			this.mapPanel.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.mapPanel.Location = new System.Drawing.Point(0, 0);
@@ -559,16 +644,17 @@ namespace NoxMapEditor
 			// 
 			this.objectGroup.Controls.Add(this.selectButton);
 			this.objectGroup.Controls.Add(this.newObjectButton);
+			this.objectGroup.Controls.Add(this.defaultButt);
 			this.objectGroup.Location = new System.Drawing.Point(8, 480);
 			this.objectGroup.Name = "objectGroup";
-			this.objectGroup.Size = new System.Drawing.Size(112, 72);
+			this.objectGroup.Size = new System.Drawing.Size(112, 96);
 			this.objectGroup.TabIndex = 24;
 			this.objectGroup.TabStop = false;
 			this.objectGroup.Text = "Objects";
 			// 
 			// selectButton
 			// 
-			this.selectButton.Location = new System.Drawing.Point(24, 40);
+			this.selectButton.Location = new System.Drawing.Point(24, 64);
 			this.selectButton.Name = "selectButton";
 			this.selectButton.Size = new System.Drawing.Size(56, 23);
 			this.selectButton.TabIndex = 0;
@@ -586,6 +672,7 @@ namespace NoxMapEditor
 			// 
 			// floorGroup
 			// 
+			this.floorGroup.Controls.Add(this.threeFloorBox);
 			this.floorGroup.Controls.Add(this.buttonBlend);
 			this.floorGroup.Controls.Add(this.tileVar);
 			this.floorGroup.Controls.Add(this.tileGraphic);
@@ -596,6 +683,13 @@ namespace NoxMapEditor
 			this.floorGroup.TabIndex = 22;
 			this.floorGroup.TabStop = false;
 			this.floorGroup.Text = "Tiles";
+			// 
+			// threeFloorBox
+			// 
+			this.threeFloorBox.Location = new System.Drawing.Point(80, 80);
+			this.threeFloorBox.Name = "threeFloorBox";
+			this.threeFloorBox.Size = new System.Drawing.Size(16, 24);
+			this.threeFloorBox.TabIndex = 22;
 			// 
 			// buttonBlend
 			// 
@@ -682,6 +776,15 @@ namespace NoxMapEditor
 			this.windowsButton.Text = "Windows";
 			this.windowsButton.Click += new System.EventHandler(this.windowsButton_Click);
 			// 
+			// defaultButt
+			// 
+			this.defaultButt.Location = new System.Drawing.Point(24, 40);
+			this.defaultButt.Name = "defaultButt";
+			this.defaultButt.Size = new System.Drawing.Size(56, 23);
+			this.defaultButt.TabIndex = 25;
+			this.defaultButt.Text = "Defaults";
+			this.defaultButt.Click += new System.EventHandler(this.defaultButt_Click);
+			// 
 			// MapView
 			// 
 			this.Controls.Add(this.hScrollBar1);
@@ -730,6 +833,13 @@ namespace NoxMapEditor
 		private void tileGraphic_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			repopulateVariations(tileVar, ((ThingDb.Tile) ThingDb.FloorTiles[((ComboBox) sender).SelectedIndex]).Variations);
+		}
+
+		private void defaultButt_Click(object sender, System.EventArgs e)
+		{
+			propDlg = new ObjectPropertiesDialog();
+			propDlg.Object = DefaultObject;
+			propDlg.ShowDialog();
 		}
 	}
 }
