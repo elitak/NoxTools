@@ -26,9 +26,9 @@ namespace NoxMapEditor
 		private System.Windows.Forms.Panel MinimapPanel;
 		private System.Windows.Forms.MainMenu mainMenu1;
 		private System.Windows.Forms.MenuItem menuItem1;
-		private System.Windows.Forms.MenuItem menuItem2;
+		private System.Windows.Forms.MenuItem menuItemOpen;
 		private System.Windows.Forms.MenuItem menuItem3;
-		private System.Windows.Forms.MenuItem menuItem4;
+		private System.Windows.Forms.MenuItem menuItemExit;
 		private System.Windows.Forms.TabControl tabControl1;
 		private System.Windows.Forms.TabPage tabPage1;
 		private System.Windows.Forms.Label label1;
@@ -49,7 +49,7 @@ namespace NoxMapEditor
 		private System.Windows.Forms.TextBox mapDate;
 		private System.Windows.Forms.TextBox mapVersion;
 		private System.Windows.Forms.Label label9;
-		private System.Windows.Forms.MenuItem menuItem6;
+		private System.Windows.Forms.MenuItem menuItemSave;
 		private System.Windows.Forms.Label minRecLbl;
 		private System.Windows.Forms.Label maxRecLbl;
 		private System.Windows.Forms.Label recommendedLbl;
@@ -57,8 +57,8 @@ namespace NoxMapEditor
 		private System.Windows.Forms.TextBox mapMinRec;
 		private System.Windows.Forms.TextBox mapMaxRec;
 		private System.Windows.Forms.ComboBox mapType;
-		private System.Windows.Forms.MenuItem menuItem5;
-		private System.Windows.Forms.MenuItem menuItem7;
+		private System.Windows.Forms.MenuItem itemSave;
+		private System.Windows.Forms.MenuItem menuItemAbout;
 		private System.Windows.Forms.MenuItem menuItemNew;
 		private System.Windows.Forms.MenuItem menuItemSaveAs;
 		private System.Windows.Forms.TextBox mapCopyright;
@@ -105,12 +105,12 @@ namespace NoxMapEditor
 			this.mainMenu1 = new System.Windows.Forms.MainMenu();
 			this.menuItem1 = new System.Windows.Forms.MenuItem();
 			this.menuItemNew = new System.Windows.Forms.MenuItem();
-			this.menuItem2 = new System.Windows.Forms.MenuItem();
-			this.menuItem6 = new System.Windows.Forms.MenuItem();
+			this.menuItemOpen = new System.Windows.Forms.MenuItem();
+			this.menuItemSave = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
-			this.menuItem4 = new System.Windows.Forms.MenuItem();
-			this.menuItem5 = new System.Windows.Forms.MenuItem();
-			this.menuItem7 = new System.Windows.Forms.MenuItem();
+			this.menuItemExit = new System.Windows.Forms.MenuItem();
+			this.itemSave = new System.Windows.Forms.MenuItem();
+			this.menuItemAbout = new System.Windows.Forms.MenuItem();
 			this.tabControl1 = new System.Windows.Forms.TabControl();
 			this.largeMap = new System.Windows.Forms.TabPage();
 			this.mapView1 = new NoxMapEditor.MapView();
@@ -155,18 +155,18 @@ namespace NoxMapEditor
 			// 
 			this.mainMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					  this.menuItem1,
-																					  this.menuItem5});
+																					  this.itemSave});
 			// 
 			// menuItem1
 			// 
 			this.menuItem1.Index = 0;
 			this.menuItem1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					  this.menuItemNew,
-																					  this.menuItem2,
-																					  this.menuItem6,
+																					  this.menuItemOpen,
+																					  this.menuItemSave,
 																					  this.menuItemSaveAs,
 																					  this.menuItem3,
-																					  this.menuItem4});
+																					  this.menuItemExit});
 			this.menuItem1.Text = "File";
 			// 
 			// menuItemNew
@@ -175,41 +175,41 @@ namespace NoxMapEditor
 			this.menuItemNew.Text = "New";
 			this.menuItemNew.Click += new System.EventHandler(this.menuItemNew_Click);
 			// 
-			// menuItem2
+			// menuItemOpen
 			// 
-			this.menuItem2.Index = 1;
-			this.menuItem2.Text = "Open";
-			this.menuItem2.Click += new System.EventHandler(this.menuItem2_Click);
+			this.menuItemOpen.Index = 1;
+			this.menuItemOpen.Text = "Open";
+			this.menuItemOpen.Click += new System.EventHandler(this.menuItemOpen_Click);
 			// 
-			// menuItem6
+			// menuItemSave
 			// 
-			this.menuItem6.Index = 2;
-			this.menuItem6.Text = "Save";
-			this.menuItem6.Click += new System.EventHandler(this.menuItem6_Click);
+			this.menuItemSave.Index = 2;
+			this.menuItemSave.Text = "Save";
+			this.menuItemSave.Click += new System.EventHandler(this.menuItemSave_Click);
 			// 
 			// menuItem3
 			// 
 			this.menuItem3.Index = 4;
 			this.menuItem3.Text = "-";
 			// 
-			// menuItem4
+			// menuItemExit
 			// 
-			this.menuItem4.Index = 5;
-			this.menuItem4.Text = "Exit";
-			this.menuItem4.Click += new System.EventHandler(this.menuItem4_Click);
+			this.menuItemExit.Index = 5;
+			this.menuItemExit.Text = "Exit";
+			this.menuItemExit.Click += new System.EventHandler(this.menuItemExit_Click);
 			// 
-			// menuItem5
+			// itemSave
 			// 
-			this.menuItem5.Index = 1;
-			this.menuItem5.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
-																					  this.menuItem7});
-			this.menuItem5.Text = "Help";
+			this.itemSave.Index = 1;
+			this.itemSave.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+																					  this.menuItemAbout});
+			this.itemSave.Text = "Help";
 			// 
-			// menuItem7
+			// menuItemAbout
 			// 
-			this.menuItem7.Index = 0;
-			this.menuItem7.Text = "About";
-			this.menuItem7.Click += new System.EventHandler(this.menuItem7_Click);
+			this.menuItemAbout.Index = 0;
+			this.menuItemAbout.Text = "About";
+			this.menuItemAbout.Click += new System.EventHandler(this.menuItemAbout_Click);
 			// 
 			// tabControl1
 			// 
@@ -546,10 +546,19 @@ namespace NoxMapEditor
 		[STAThread]
 		static void Main()
 		{
-			Application.Run(new MainWindow());
+			try
+			{
+				Application.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
+				Application.Run(new MainWindow());
+			}
+			catch (Exception ex)
+			{
+				new ExceptionDialog(ex).ShowDialog();
+				Environment.Exit(1);
+			}
 		}
 
-		private void menuItem2_Click(object sender, System.EventArgs e)
+		private void menuItemOpen_Click(object sender, System.EventArgs e)
 		{
 			OpenFileDialog fd = new OpenFileDialog();
 
@@ -586,10 +595,10 @@ namespace NoxMapEditor
 			mapMinRec.Text = String.Format("{0}", map.Info.RecommendedMin);
 			mapMaxRec.Text = String.Format("{0}", map.Info.RecommendedMax);
 
-			WallViewer.Invalidate();
+			mapView1.Invalidate();
 		}
 
-		private void menuItem4_Click(object sender, System.EventArgs e)
+		private void menuItemExit_Click(object sender, System.EventArgs e)
 		{
 			//do any necessary prompts or cleanup...
 
@@ -608,12 +617,15 @@ namespace NoxMapEditor
 				e.Graphics.DrawRectangle(new Pen(Color.White, 1), pt.X*mapZoom, pt.Y*mapZoom, mapZoom/2, mapZoom/2);
 		}
 
-		private void menuItem6_Click(object sender, System.EventArgs e)
+		private void menuItemSave_Click(object sender, System.EventArgs e)
 		{
 			if(map == null)
 				return;
 			else if (map.FileName == null)
+			{
 				menuItemSaveAs_Click(sender, e);//FIXME, fire event instead
+				return;
+			}
 
 			//TODO: check lengths for each to make sure they aren't too long
 			map.Info.Type = (Map.MapInfo.MapType) Map.MapInfo.MapTypeNames.GetKey(mapType.SelectedIndex);//FIXME: default to something if unspecified
@@ -634,7 +646,7 @@ namespace NoxMapEditor
 			map.WriteFile();
 		}
 
-		private void menuItem7_Click(object sender, System.EventArgs e)
+		private void menuItemAbout_Click(object sender, System.EventArgs e)
 		{
 			AboutDialog dlg = new AboutDialog();
 			dlg.ShowDialog();
@@ -653,7 +665,7 @@ namespace NoxMapEditor
 			if (fd.ShowDialog() == DialogResult.OK)//&& fd.FileName)
 			{
 				map.FileName = fd.FileName;
-				this.menuItem6_Click(sender, e);//FIXME HOWTO? fire the event instead
+				this.menuItemSave_Click(sender, e);//FIXME HOWTO? fire the event instead
 			}
 		}
 	}
