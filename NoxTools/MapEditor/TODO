@@ -1,19 +1,18 @@
-"align to grid" function for doors
+polygon editing
+fix selection,placement of walls,tiles. right now there are "gaps" between them
+alphabetical ordering for walls, tiles
 "find by extent" function, "find by name"
 "new object" automatically opens properties
 automatic extent numbering
-toggleable grid
-accelerator keys - delete, ctrl-s
+accelerator keys: delete, ctrl-s, ctrl-o, etc.
 "make backup" function that saves with <mapname>-<date>-<time>.map
-clone object menu option + accelerators
+clone object(i.e., copy & paste) menu option + accelerators
 "encrypt" or "no encrypt" option for saving
-"generate nxz" option for saving
 "exit without saving?" message
-support strings in object modifier box (toggleable sequences in quotes '')
-give priority to respawning items in objectlist
+support strings in object modifier box (toggleable, sequences in quotes '')?
+give priority to respawning items in objectlist (low priority)
 
 add maptype flagball
 color scheme?
 use 1 T-junction icon and rotate it?
 what is that sign bit on the wall material byte for?
-xml the wall description strings
