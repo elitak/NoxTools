@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StringEditor", "StringEdito
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trainer", "Trainer\Trainer.csproj", "{C53FBBFA-B3A0-4FFF-8E08-59FFF0ADF5B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminTool", "AdminTool\AdminTool.csproj", "{C53FBBFA-B3A0-4FFF-8E08-59FFF0ADF5B3}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
@@ -20,6 +20,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlrEditor", "PlrEditor\PlrE
 	EndProjectSection
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{AACA5018-313E-4BB5-840C-3530A97C7666}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoxShared", "Shared\NoxShared.csproj", "{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
@@ -51,6 +55,10 @@ Global
 		{56AA53AC-998D-4B36-9BF1-FB14BE89AA37}.Release.Build.0 = Release|.NET
 		{AACA5018-313E-4BB5-840C-3530A97C7666}.Debug.ActiveCfg = Debug
 		{AACA5018-313E-4BB5-840C-3530A97C7666}.Release.ActiveCfg = Release
+		{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}.Debug.ActiveCfg = Debug|.NET
+		{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}.Debug.Build.0 = Debug|.NET
+		{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}.Release.ActiveCfg = Release|.NET
+		{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}.Release.Build.0 = Release|.NET
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
