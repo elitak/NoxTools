@@ -22,6 +22,7 @@ namespace NoxShared
 		public TileMap FloorMap;
 		public ObjectTable Objects;//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
 		public PolygonList Polygons = new PolygonList();
+		public ScriptObject Scripts;
 
 		// ----PROTECTED MEMBERS----
 		protected MapHeader Header;
@@ -1091,6 +1092,11 @@ namespace NoxShared
 			}
 		}
 		
+		public class ScriptObject
+		{
+			public SortedList SctStr;
+			public byte[] rest; // CODE till DONE, hopefully	
+		}
 		public class Modifier
 		{
 			//TODO: is object to modifier a 1 to n relationship? or is it more like constructor info instead of modifiers?
@@ -1181,7 +1187,8 @@ namespace NoxShared
 						break;
 					case "ScriptObject":
 						//TODO
-						SkipSection(rdr,"ScriptObject");
+						//SkipSection(rdr,"ScriptObject");
+						ReadScriptObject(rdr);
 						break;
 					case "AmbientData":
 						//TODO
@@ -1322,6 +1329,33 @@ namespace NoxShared
 			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (SecretWalls) ERROR: bad section length");
 		}
 
+		protected void ReadScriptObject(NoxBinaryReader rdr)
+		{
+			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
+			SectHeader hed = new SectHeader("ScriptObject",2,rdr.ReadBytes(2));
+			Headers.Add(hed.name,hed);
+			
+			Scripts = new ScriptObject();
+			
+			int Sectlen = rdr.ReadInt32();
+			while(rdr.BaseStream.Position < finish)
+			{
+				if(rdr.BaseStream.Position < finish-12)
+				{
+					if(new String(rdr.ReadChars(12)).CompareTo("SCRIPT03STRG")==0)
+					{
+						int numStr = rdr.ReadInt32();
+						Scripts.SctStr = new SortedList(numStr);
+						for(int i = 0; i < numStr; i++)
+							Scripts.SctStr.Add(i,new string(rdr.ReadChars(rdr.ReadInt32())));
+					}
+					else
+						rdr.BaseStream.Seek(-12,SeekOrigin.Current);
+				}
+				Scripts.rest = rdr.ReadBytes((int)(finish - rdr.BaseStream.Position));
+			}		
+
+		}
 		//Just a utility method to skip sections, remove this when all sections are being read properly.
 		private void SkipSection(NoxBinaryReader rdr, string name)
 		{
@@ -1359,7 +1393,8 @@ namespace NoxShared
 			SkipSection(wtr,"DebugData");
 			WriteWindowWalls(wtr);
 			SkipSection(wtr,"GroupData");
-			SkipSection(wtr,"ScriptObject");
+			//SkipSection(wtr,"ScriptObject");
+			WriteScriptObject(wtr);
 			SkipSection(wtr,"AmbientData");
 			Polygons.Write(wtr.BaseStream);
 			SkipSection(wtr,"MapIntro");
@@ -1515,6 +1550,44 @@ namespace NoxShared
 			foreach (Wall wall in WallMap.Values)
 				wall.Write(wtr.BaseStream);
 			wtr.Write((byte) 0xFF);//wallmap terminates with this byte
+
+			//rewrite the length
+			length = wtr.BaseStream.Position - (pos + 8);
+			wtr.Seek((int) pos, SeekOrigin.Begin);
+			wtr.Write(length);
+			wtr.Seek(0, SeekOrigin.End);
+		}
+		private void WriteScriptObject(NoxBinaryWriter wtr)
+		{
+			string str = "ScriptObject";
+			SectHeader hed = (SectHeader) Headers[str];
+			wtr.Write(str+"\0");
+			long length = 0;
+			long pos;
+			wtr.SkipToNextBoundary();
+			pos = wtr.BaseStream.Position;
+			wtr.Write(length);
+			wtr.Write(hed.header);
+			int sectlen = 0;
+			long secpos;
+			secpos = wtr.BaseStream.Position;
+			wtr.Write(sectlen);
+			if(Scripts.SctStr != null && Scripts.SctStr.Count > 0)
+			{
+				wtr.Write("SCRIPT03STRG".ToCharArray());
+				wtr.Write(Scripts.SctStr.Count);
+				foreach(String s in Scripts.SctStr.Values)
+				{
+					wtr.Write(s.Length);
+					wtr.Write(s.ToCharArray());
+				}
+			}
+			if(Scripts.rest != null)
+				wtr.Write(Scripts.rest);
+			sectlen = (int)(wtr.BaseStream.Position - (secpos + 4));
+			wtr.Seek((int)secpos,SeekOrigin.Begin);
+			wtr.Write(sectlen);
+			wtr.Seek(0, SeekOrigin.End);
 
 			//rewrite the length
 			length = wtr.BaseStream.Position - (pos + 8);
