@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
 using System.Drawing;
@@ -14,21 +13,19 @@ namespace NoxShared
 	/// </summary>
 	public class NoxBinaryReader : BinaryReader
 	{
-		[DllImport("noxcrypt.dll")]
-		protected static extern int NoxCrypt_crypt(byte[] data, int length, int format, int mode);
 
-		public NoxBinaryReader(Stream stream, NoxCryptFormat format) : base(DecryptStream(stream, format))
+		public NoxBinaryReader(Stream stream, CryptApi.NoxCryptFormat format) : base(DecryptStream(stream, format))
 		{
 		}
 
-		public NoxBinaryReader(Stream stream) : this(stream, NoxCryptFormat.NONE)
+		public NoxBinaryReader(Stream stream) : this(stream, CryptApi.NoxCryptFormat.NONE)
 		{
 		}
 
-		protected static Stream DecryptStream(Stream stream, NoxCryptFormat format)
+		protected static Stream DecryptStream(Stream stream, CryptApi.NoxCryptFormat format)
 		{
 			//return original stream if no encryption
-			if (format == NoxCryptFormat.NONE)
+			if (format == CryptApi.NoxCryptFormat.NONE)
 				return stream;
 
 			int length = (int) stream.Length;
@@ -37,7 +34,7 @@ namespace NoxShared
 			stream.Read(buffer, 0, length);
 			stream.Close();
 
-			NoxCrypt_crypt(buffer, length, (int) format, (int) NoxCryptMode.DECRYPT);
+			buffer = CryptApi.NoxDecrypt(buffer, format);
 
 			return new MemoryStream(buffer);
 		}
@@ -110,12 +107,9 @@ namespace NoxShared
 
 	public class NoxBinaryWriter : BinaryWriter
 	{
-		protected NoxType.NoxCryptFormat format;
+		protected CryptApi.NoxCryptFormat format;
 
-		[System.Runtime.InteropServices.DllImportAttribute("noxcrypt.dll")]
-		protected static extern int NoxCrypt_crypt(byte[] data, int length, int format, int mode);
-
-		public NoxBinaryWriter(Stream stream, NoxCryptFormat format) : base(stream)
+		public NoxBinaryWriter(Stream stream, CryptApi.NoxCryptFormat format) : base(stream)
 		{
 			this.format = format;
 		}
@@ -130,7 +124,8 @@ namespace NoxShared
 			BaseStream.Seek(0, SeekOrigin.Begin);
 			BaseStream.Read(buffer, 0, length);
 
-			NoxCrypt_crypt(buffer, length, (int) format, (int) NoxCryptMode.ENCRYPT);
+			if (format != CryptApi.NoxCryptFormat.NONE)
+				buffer = CryptApi.NoxEncrypt(buffer, format);
 
 			BaseStream.Seek(0, SeekOrigin.Begin);
 			Write(buffer);
