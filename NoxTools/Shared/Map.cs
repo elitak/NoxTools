@@ -1014,7 +1014,16 @@ namespace NoxShared
 				//   read from thing.bin? -> if type SIMPLE and not IMMOBILE, then add six nulls to the end of the entry?
 				//   modifier support, read from modifier.bin?
 				//   new object, move object, delete object
-				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length);
+				int xtraLength = 0;
+				if(Terminator == 0xFF)
+				{
+					if(temp1 == null)
+						temp1 = new Byte[] {0, 0, 0, 1, 0};
+					if(temp2 == null)
+						temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00};
+					xtraLength = temp1.Length + temp2.Length + 1 + Scr_Name.Length;
+				}
+				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length) + xtraLength;
 				wtr.Write((long) dataLength);
 				wtr.Write((int) Type);
 				wtr.Write((int) Extent);
@@ -1024,10 +1033,6 @@ namespace NoxShared
 				wtr.Write((byte) Terminator);
 				if(Terminator == 0xFF)
 				{
-					if(temp1 == null)
-						temp1 = new Byte[] {0, 0, 0, 1, 0};
-					if(temp2 == null)
-						temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00};
 					wtr.Write(temp1);
 					wtr.Write(Scr_Name);
 					wtr.Write(Team);
@@ -1057,7 +1062,8 @@ namespace NoxShared
 				}
 				obj.enchants = enchants;
 				obj.Team = obj.Team;
-				obj.Scr_Name = String.Copy(Scr_Name);
+				if(Scr_Name != null)
+					obj.Scr_Name = String.Copy(Scr_Name);
 				if(temp1 != null && temp1.Length > 0)
 				{
 					obj.temp1 = new byte[temp1.Length];
