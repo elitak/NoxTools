@@ -4,6 +4,8 @@ using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.Data;
+using System.Globalization;
+using System.Diagnostics;
 
 using NoxShared;
 
@@ -99,6 +101,7 @@ namespace NoxMapEditor
 			this.menuItemExit = new System.Windows.Forms.MenuItem();
 			this.menuItem2 = new System.Windows.Forms.MenuItem();
 			this.viewObjects = new System.Windows.Forms.MenuItem();
+			this.menuItemStrings = new System.Windows.Forms.MenuItem();
 			this.menuItem4 = new System.Windows.Forms.MenuItem();
 			this.menuItemGrid = new System.Windows.Forms.MenuItem();
 			this.menuItemNxz = new System.Windows.Forms.MenuItem();
@@ -135,7 +138,6 @@ namespace NoxMapEditor
 			this.label2 = new System.Windows.Forms.Label();
 			this.label1 = new System.Windows.Forms.Label();
 			this.mapSummary = new System.Windows.Forms.TextBox();
-			this.menuItemStrings = new System.Windows.Forms.MenuItem();
 			this.tabControl1.SuspendLayout();
 			this.WallViewer.SuspendLayout();
 			this.tabPage1.SuspendLayout();
@@ -160,30 +162,33 @@ namespace NoxMapEditor
 																					  this.menuItemSaveAs,
 																					  this.menuItem3,
 																					  this.menuItemExit});
-			this.menuItem1.Text = "File";
+			this.menuItem1.Text = "&File";
 			// 
 			// menuItemNew
 			// 
 			this.menuItemNew.Index = 0;
-			this.menuItemNew.Text = "New";
+			this.menuItemNew.Shortcut = System.Windows.Forms.Shortcut.CtrlN;
+			this.menuItemNew.Text = "&New";
 			this.menuItemNew.Click += new System.EventHandler(this.menuItemNew_Click);
 			// 
 			// menuItemOpen
 			// 
 			this.menuItemOpen.Index = 1;
-			this.menuItemOpen.Text = "Open";
+			this.menuItemOpen.Shortcut = System.Windows.Forms.Shortcut.CtrlO;
+			this.menuItemOpen.Text = "&Open";
 			this.menuItemOpen.Click += new System.EventHandler(this.menuItemOpen_Click);
 			// 
 			// menuItemSave
 			// 
 			this.menuItemSave.Index = 2;
-			this.menuItemSave.Text = "Save";
+			this.menuItemSave.Shortcut = System.Windows.Forms.Shortcut.CtrlS;
+			this.menuItemSave.Text = "&Save";
 			this.menuItemSave.Click += new System.EventHandler(this.menuItemSave_Click);
 			// 
 			// menuItemSaveAs
 			// 
 			this.menuItemSaveAs.Index = 3;
-			this.menuItemSaveAs.Text = "Save As...";
+			this.menuItemSaveAs.Text = "Save &As...";
 			this.menuItemSaveAs.Click += new System.EventHandler(this.menuItemSaveAs_Click);
 			// 
 			// menuItem3
@@ -194,7 +199,7 @@ namespace NoxMapEditor
 			// menuItemExit
 			// 
 			this.menuItemExit.Index = 5;
-			this.menuItemExit.Text = "Exit";
+			this.menuItemExit.Text = "E&xit";
 			this.menuItemExit.Click += new System.EventHandler(this.menuItemExit_Click);
 			// 
 			// menuItem2
@@ -203,13 +208,21 @@ namespace NoxMapEditor
 			this.menuItem2.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					  this.viewObjects,
 																					  this.menuItemStrings});
-			this.menuItem2.Text = "Map";
+			this.menuItem2.Text = "&Map";
 			// 
 			// viewObjects
 			// 
 			this.viewObjects.Index = 0;
-			this.viewObjects.Text = "List Objects";
+			this.viewObjects.Shortcut = System.Windows.Forms.Shortcut.CtrlShiftL;
+			this.viewObjects.Text = "&List Objects";
 			this.viewObjects.Click += new System.EventHandler(this.viewObjects_Click);
+			// 
+			// menuItemStrings
+			// 
+			this.menuItemStrings.Index = 1;
+			this.menuItemStrings.Shortcut = System.Windows.Forms.Shortcut.CtrlShiftS;
+			this.menuItemStrings.Text = "&Script Strings";
+			this.menuItemStrings.Click += new System.EventHandler(this.menuItemStrings_Click);
 			// 
 			// menuItem4
 			// 
@@ -217,19 +230,21 @@ namespace NoxMapEditor
 			this.menuItem4.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					  this.menuItemGrid,
 																					  this.menuItemNxz});
-			this.menuItem4.Text = "Options";
+			this.menuItem4.Text = "&Options";
 			// 
 			// menuItemGrid
 			// 
 			this.menuItemGrid.Index = 0;
-			this.menuItemGrid.Text = "Grid";
+			this.menuItemGrid.Shortcut = System.Windows.Forms.Shortcut.CtrlG;
+			this.menuItemGrid.Text = "&Grid";
 			this.menuItemGrid.Click += new System.EventHandler(this.menuItemGrid_Click);
 			// 
 			// menuItemNxz
 			// 
 			this.menuItemNxz.Checked = true;
 			this.menuItemNxz.Index = 1;
-			this.menuItemNxz.Text = "Save .nxz";
+			this.menuItemNxz.Shortcut = System.Windows.Forms.Shortcut.CtrlShiftN;
+			this.menuItemNxz.Text = "Save .&nxz";
 			this.menuItemNxz.Click += new System.EventHandler(this.menuItemNxz_Click);
 			// 
 			// itemSave
@@ -237,12 +252,12 @@ namespace NoxMapEditor
 			this.itemSave.Index = 3;
 			this.itemSave.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																					 this.menuItemAbout});
-			this.itemSave.Text = "Help";
+			this.itemSave.Text = "&Help";
 			// 
 			// menuItemAbout
 			// 
 			this.menuItemAbout.Index = 0;
-			this.menuItemAbout.Text = "About";
+			this.menuItemAbout.Text = "&About";
 			this.menuItemAbout.Click += new System.EventHandler(this.menuItemAbout_Click);
 			// 
 			// tabControl1
@@ -254,14 +269,14 @@ namespace NoxMapEditor
 			this.tabControl1.Location = new System.Drawing.Point(0, 0);
 			this.tabControl1.Name = "tabControl1";
 			this.tabControl1.SelectedIndex = 0;
-			this.tabControl1.Size = new System.Drawing.Size(1272, 913);
+			this.tabControl1.Size = new System.Drawing.Size(792, 555);
 			this.tabControl1.TabIndex = 0;
 			// 
 			// largeMap
 			// 
 			this.largeMap.Location = new System.Drawing.Point(4, 22);
 			this.largeMap.Name = "largeMap";
-			this.largeMap.Size = new System.Drawing.Size(1264, 887);
+			this.largeMap.Size = new System.Drawing.Size(784, 529);
 			this.largeMap.TabIndex = 0;
 			this.largeMap.Text = "Large Map";
 			// 
@@ -270,7 +285,7 @@ namespace NoxMapEditor
 			this.WallViewer.Controls.Add(this.MinimapPanel);
 			this.WallViewer.Location = new System.Drawing.Point(4, 22);
 			this.WallViewer.Name = "WallViewer";
-			this.WallViewer.Size = new System.Drawing.Size(1264, 887);
+			this.WallViewer.Size = new System.Drawing.Size(784, 527);
 			this.WallViewer.TabIndex = 0;
 			this.WallViewer.Text = "Mini Map";
 			// 
@@ -279,7 +294,7 @@ namespace NoxMapEditor
 			this.MinimapPanel.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.MinimapPanel.Location = new System.Drawing.Point(0, 0);
 			this.MinimapPanel.Name = "MinimapPanel";
-			this.MinimapPanel.Size = new System.Drawing.Size(1264, 887);
+			this.MinimapPanel.Size = new System.Drawing.Size(784, 527);
 			this.MinimapPanel.TabIndex = 0;
 			this.MinimapPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.MinimapPanel_Paint);
 			// 
@@ -288,7 +303,7 @@ namespace NoxMapEditor
 			this.tabPage1.Controls.Add(this.groupBox1);
 			this.tabPage1.Location = new System.Drawing.Point(4, 22);
 			this.tabPage1.Name = "tabPage1";
-			this.tabPage1.Size = new System.Drawing.Size(1264, 887);
+			this.tabPage1.Size = new System.Drawing.Size(784, 527);
 			this.tabPage1.TabIndex = 0;
 			this.tabPage1.Text = "Map Info";
 			// 
@@ -322,7 +337,7 @@ namespace NoxMapEditor
 			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
 			this.groupBox1.Location = new System.Drawing.Point(0, 0);
 			this.groupBox1.Name = "groupBox1";
-			this.groupBox1.Size = new System.Drawing.Size(1264, 560);
+			this.groupBox1.Size = new System.Drawing.Size(784, 560);
 			this.groupBox1.TabIndex = 2;
 			this.groupBox1.TabStop = false;
 			// 
@@ -540,16 +555,10 @@ namespace NoxMapEditor
 			this.mapSummary.TabIndex = 1;
 			this.mapSummary.Text = "";
 			// 
-			// menuItemStrings
-			// 
-			this.menuItemStrings.Index = 1;
-			this.menuItemStrings.Text = "Script Strings";
-			this.menuItemStrings.Click += new System.EventHandler(this.menuItemStrings_Click);
-			// 
 			// MainWindow
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.ClientSize = new System.Drawing.Size(1272, 913);
+			this.ClientSize = new System.Drawing.Size(792, 555);
 			this.Controls.Add(this.tabControl1);
 			this.Menu = this.mainMenu1;
 			this.MinimumSize = new System.Drawing.Size(526, 582);
@@ -569,7 +578,9 @@ namespace NoxMapEditor
 		{
 			try
 			{
-				Application.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
+				Application.CurrentCulture = CultureInfo.CreateSpecificCulture("en-US");
+				Debug.Listeners.Add(new TextWriterTraceListener("Debug.log"));
+				Debug.WriteLine(String.Format("Started at {0:yyyy-MM-dd HH:mm:ss}", DateTime.Now));
 				Application.Run(new MainWindow());
 			}
 			catch (Exception ex)
