@@ -120,7 +120,7 @@
                 />
                 <File
                     RelPath = "plr.ico"
-                    BuildAction = "Content"
+                    BuildAction = "EmbeddedResource"
                 />
                 <File
                     RelPath = "UserColorDialog.cs"
