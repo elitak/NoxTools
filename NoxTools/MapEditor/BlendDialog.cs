@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
+using System.Reflection;
 
 using NoxShared;
 
@@ -10,35 +11,64 @@ namespace NoxMapEditor
 {
 	public class BlendDialog : System.Windows.Forms.Form
 	{
-		private System.Windows.Forms.CheckBox checkBox1;
-		private System.Windows.Forms.CheckBox checkBox2;
-		private System.Windows.Forms.CheckBox checkBox3;
-		private System.Windows.Forms.CheckBox checkBox4;
-		private System.Windows.Forms.ComboBox comboBox1;
-		private System.Windows.Forms.ComboBox comboBox2;
-		private System.Windows.Forms.ComboBox comboBox3;
-		private System.Windows.Forms.ComboBox comboBox4;
-		private System.Windows.Forms.ComboBox comboBox5;
-		private System.Windows.Forms.ComboBox comboBox6;
-		private System.Windows.Forms.ComboBox comboBox7;
-		private System.Windows.Forms.ComboBox comboBox8;
+		private System.Windows.Forms.ComboBox tile1Graphic;
+		private System.Windows.Forms.ComboBox tile1Var;
+		private System.Windows.Forms.ComboBox tile2Var;
+		private System.Windows.Forms.ComboBox tile2Graphic;
+		private System.Windows.Forms.ComboBox tile4Var;
+		private System.Windows.Forms.ComboBox tile4Graphic;
+		private System.Windows.Forms.ComboBox tile3Var;
+		private System.Windows.Forms.ComboBox tile3Graphic;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.Button buttonOK;
 		private System.Windows.Forms.Label label3;
+		private System.Windows.Forms.ComboBox tile4Dir;
+		private System.Windows.Forms.ComboBox tile3Dir;
+		private System.Windows.Forms.ComboBox tile2Dir;
+		private System.Windows.Forms.ComboBox tile1Dir;
+		private System.Windows.Forms.Label label4;
+		private System.Windows.Forms.CheckBox tile1Enabled;
+		private System.Windows.Forms.CheckBox tile2Enabled;
+		private System.Windows.Forms.CheckBox tile3Enabled;
+		private System.Windows.Forms.CheckBox tile4Enabled;
+
+		public ArrayList Blends = new ArrayList();
+
+		protected static ArrayList dirs = new ArrayList();
+		private System.Windows.Forms.Button buttonCancel;
+		protected static Hashtable dirMap = new Hashtable();
+		static BlendDialog()
+		{
+			dirs.AddRange(new string[] {"N", "S", "W", "E", "NW", "NE", "SW", "SE"});
+			int ndx = 0;
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.NORTH);
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.SOUTH);
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.WEST);
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.EAST);
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.NW);
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.NE);
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.SW);
+			dirMap.Add(ndx++, Map.Tile.Blend.BlendDirection.SE);
+		}
 
 		public BlendDialog()
 		{
 			InitializeComponent();
 
-			comboBox1.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			comboBox1.SelectedIndex = 0;
-			comboBox4.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			comboBox4.SelectedIndex = 0;
-			comboBox8.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			comboBox8.SelectedIndex = 0;
-			comboBox6.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			comboBox6.SelectedIndex = 0;
+			tile1Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
+			tile1Graphic.SelectedIndex = 0;
+			tile2Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
+			tile2Graphic.SelectedIndex = 0;
+			tile3Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
+			tile3Graphic.SelectedIndex = 0;
+			tile4Graphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
+			tile4Graphic.SelectedIndex = 0;
+
+			tile1Dir.Items.AddRange(dirs.ToArray());
+			tile2Dir.Items.AddRange(dirs.ToArray());
+			tile3Dir.Items.AddRange(dirs.ToArray());
+			tile4Dir.Items.AddRange(dirs.ToArray());
 		}
 
 		#region Windows Form Designer generated code
@@ -48,123 +78,145 @@ namespace NoxMapEditor
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.checkBox1 = new System.Windows.Forms.CheckBox();
-			this.checkBox2 = new System.Windows.Forms.CheckBox();
-			this.checkBox3 = new System.Windows.Forms.CheckBox();
-			this.checkBox4 = new System.Windows.Forms.CheckBox();
+			this.tile1Enabled = new System.Windows.Forms.CheckBox();
+			this.tile2Enabled = new System.Windows.Forms.CheckBox();
+			this.tile3Enabled = new System.Windows.Forms.CheckBox();
+			this.tile4Enabled = new System.Windows.Forms.CheckBox();
 			this.buttonOK = new System.Windows.Forms.Button();
-			this.comboBox1 = new System.Windows.Forms.ComboBox();
-			this.comboBox2 = new System.Windows.Forms.ComboBox();
-			this.comboBox3 = new System.Windows.Forms.ComboBox();
-			this.comboBox4 = new System.Windows.Forms.ComboBox();
-			this.comboBox5 = new System.Windows.Forms.ComboBox();
-			this.comboBox6 = new System.Windows.Forms.ComboBox();
-			this.comboBox7 = new System.Windows.Forms.ComboBox();
-			this.comboBox8 = new System.Windows.Forms.ComboBox();
+			this.tile1Graphic = new System.Windows.Forms.ComboBox();
+			this.tile1Var = new System.Windows.Forms.ComboBox();
+			this.tile2Var = new System.Windows.Forms.ComboBox();
+			this.tile2Graphic = new System.Windows.Forms.ComboBox();
+			this.tile4Var = new System.Windows.Forms.ComboBox();
+			this.tile4Graphic = new System.Windows.Forms.ComboBox();
+			this.tile3Var = new System.Windows.Forms.ComboBox();
+			this.tile3Graphic = new System.Windows.Forms.ComboBox();
 			this.label1 = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
 			this.label3 = new System.Windows.Forms.Label();
+			this.tile4Dir = new System.Windows.Forms.ComboBox();
+			this.tile3Dir = new System.Windows.Forms.ComboBox();
+			this.tile2Dir = new System.Windows.Forms.ComboBox();
+			this.tile1Dir = new System.Windows.Forms.ComboBox();
+			this.label4 = new System.Windows.Forms.Label();
+			this.buttonCancel = new System.Windows.Forms.Button();
 			this.SuspendLayout();
 			// 
-			// checkBox1
+			// tile1Enabled
 			// 
-			this.checkBox1.Location = new System.Drawing.Point(16, 40);
-			this.checkBox1.Name = "checkBox1";
-			this.checkBox1.Size = new System.Drawing.Size(64, 24);
-			this.checkBox1.TabIndex = 0;
-			this.checkBox1.Text = "Blend 1";
+			this.tile1Enabled.Location = new System.Drawing.Point(24, 40);
+			this.tile1Enabled.Name = "tile1Enabled";
+			this.tile1Enabled.Size = new System.Drawing.Size(16, 24);
+			this.tile1Enabled.TabIndex = 0;
 			// 
-			// checkBox2
+			// tile2Enabled
 			// 
-			this.checkBox2.Location = new System.Drawing.Point(16, 85);
-			this.checkBox2.Name = "checkBox2";
-			this.checkBox2.Size = new System.Drawing.Size(64, 24);
-			this.checkBox2.TabIndex = 1;
-			this.checkBox2.Text = "Blend 2";
+			this.tile2Enabled.Location = new System.Drawing.Point(24, 80);
+			this.tile2Enabled.Name = "tile2Enabled";
+			this.tile2Enabled.Size = new System.Drawing.Size(16, 24);
+			this.tile2Enabled.TabIndex = 1;
 			// 
-			// checkBox3
+			// tile3Enabled
 			// 
-			this.checkBox3.Location = new System.Drawing.Point(16, 130);
-			this.checkBox3.Name = "checkBox3";
-			this.checkBox3.Size = new System.Drawing.Size(64, 24);
-			this.checkBox3.TabIndex = 2;
-			this.checkBox3.Text = "Blend 3";
+			this.tile3Enabled.Location = new System.Drawing.Point(24, 120);
+			this.tile3Enabled.Name = "tile3Enabled";
+			this.tile3Enabled.Size = new System.Drawing.Size(16, 24);
+			this.tile3Enabled.TabIndex = 2;
 			// 
-			// checkBox4
+			// tile4Enabled
 			// 
-			this.checkBox4.Location = new System.Drawing.Point(16, 175);
-			this.checkBox4.Name = "checkBox4";
-			this.checkBox4.Size = new System.Drawing.Size(64, 24);
-			this.checkBox4.TabIndex = 3;
-			this.checkBox4.Text = "Blend 4";
+			this.tile4Enabled.Location = new System.Drawing.Point(24, 160);
+			this.tile4Enabled.Name = "tile4Enabled";
+			this.tile4Enabled.Size = new System.Drawing.Size(16, 24);
+			this.tile4Enabled.TabIndex = 3;
 			// 
 			// buttonOK
 			// 
-			this.buttonOK.Location = new System.Drawing.Point(109, 216);
+			this.buttonOK.Location = new System.Drawing.Point(56, 192);
 			this.buttonOK.Name = "buttonOK";
 			this.buttonOK.TabIndex = 4;
 			this.buttonOK.Text = "OK";
 			this.buttonOK.Click += new System.EventHandler(this.buttonOK_Click);
 			// 
-			// comboBox1
+			// tile1Graphic
 			// 
-			this.comboBox1.Location = new System.Drawing.Point(96, 40);
-			this.comboBox1.Name = "comboBox1";
-			this.comboBox1.Size = new System.Drawing.Size(80, 21);
-			this.comboBox1.TabIndex = 5;
+			this.tile1Graphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile1Graphic.DropDownWidth = 180;
+			this.tile1Graphic.Location = new System.Drawing.Point(64, 40);
+			this.tile1Graphic.Name = "tile1Graphic";
+			this.tile1Graphic.Size = new System.Drawing.Size(80, 21);
+			this.tile1Graphic.TabIndex = 5;
+			this.tile1Graphic.SelectedIndexChanged += new System.EventHandler(this.tile1Graphic_SelectedIndexChanged);
 			// 
-			// comboBox2
+			// tile1Var
 			// 
-			this.comboBox2.Location = new System.Drawing.Point(192, 40);
-			this.comboBox2.Name = "comboBox2";
-			this.comboBox2.Size = new System.Drawing.Size(80, 21);
-			this.comboBox2.TabIndex = 6;
+			this.tile1Var.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile1Var.Location = new System.Drawing.Point(160, 40);
+			this.tile1Var.MaxDropDownItems = 10;
+			this.tile1Var.Name = "tile1Var";
+			this.tile1Var.Size = new System.Drawing.Size(48, 21);
+			this.tile1Var.TabIndex = 6;
 			// 
-			// comboBox3
+			// tile2Var
 			// 
-			this.comboBox3.Location = new System.Drawing.Point(192, 85);
-			this.comboBox3.Name = "comboBox3";
-			this.comboBox3.Size = new System.Drawing.Size(80, 21);
-			this.comboBox3.TabIndex = 8;
+			this.tile2Var.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile2Var.Location = new System.Drawing.Point(160, 80);
+			this.tile2Var.MaxDropDownItems = 10;
+			this.tile2Var.Name = "tile2Var";
+			this.tile2Var.Size = new System.Drawing.Size(48, 21);
+			this.tile2Var.TabIndex = 8;
 			// 
-			// comboBox4
+			// tile2Graphic
 			// 
-			this.comboBox4.Location = new System.Drawing.Point(96, 85);
-			this.comboBox4.Name = "comboBox4";
-			this.comboBox4.Size = new System.Drawing.Size(80, 21);
-			this.comboBox4.TabIndex = 7;
+			this.tile2Graphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile2Graphic.DropDownWidth = 180;
+			this.tile2Graphic.Location = new System.Drawing.Point(64, 80);
+			this.tile2Graphic.Name = "tile2Graphic";
+			this.tile2Graphic.Size = new System.Drawing.Size(80, 21);
+			this.tile2Graphic.TabIndex = 7;
+			this.tile2Graphic.SelectedIndexChanged += new System.EventHandler(this.tile2Graphic_SelectedIndexChanged);
 			// 
-			// comboBox5
+			// tile4Var
 			// 
-			this.comboBox5.Location = new System.Drawing.Point(192, 175);
-			this.comboBox5.Name = "comboBox5";
-			this.comboBox5.Size = new System.Drawing.Size(80, 21);
-			this.comboBox5.TabIndex = 12;
+			this.tile4Var.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile4Var.Location = new System.Drawing.Point(160, 160);
+			this.tile4Var.MaxDropDownItems = 10;
+			this.tile4Var.Name = "tile4Var";
+			this.tile4Var.Size = new System.Drawing.Size(48, 21);
+			this.tile4Var.TabIndex = 12;
 			// 
-			// comboBox6
+			// tile4Graphic
 			// 
-			this.comboBox6.Location = new System.Drawing.Point(96, 175);
-			this.comboBox6.Name = "comboBox6";
-			this.comboBox6.Size = new System.Drawing.Size(80, 21);
-			this.comboBox6.TabIndex = 11;
+			this.tile4Graphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile4Graphic.DropDownWidth = 180;
+			this.tile4Graphic.Location = new System.Drawing.Point(64, 160);
+			this.tile4Graphic.Name = "tile4Graphic";
+			this.tile4Graphic.Size = new System.Drawing.Size(80, 21);
+			this.tile4Graphic.TabIndex = 11;
+			this.tile4Graphic.SelectedIndexChanged += new System.EventHandler(this.tile4Graphic_SelectedIndexChanged);
 			// 
-			// comboBox7
+			// tile3Var
 			// 
-			this.comboBox7.Location = new System.Drawing.Point(192, 130);
-			this.comboBox7.Name = "comboBox7";
-			this.comboBox7.Size = new System.Drawing.Size(80, 21);
-			this.comboBox7.TabIndex = 10;
+			this.tile3Var.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile3Var.Location = new System.Drawing.Point(160, 120);
+			this.tile3Var.MaxDropDownItems = 10;
+			this.tile3Var.Name = "tile3Var";
+			this.tile3Var.Size = new System.Drawing.Size(48, 21);
+			this.tile3Var.TabIndex = 10;
 			// 
-			// comboBox8
+			// tile3Graphic
 			// 
-			this.comboBox8.Location = new System.Drawing.Point(96, 130);
-			this.comboBox8.Name = "comboBox8";
-			this.comboBox8.Size = new System.Drawing.Size(80, 21);
-			this.comboBox8.TabIndex = 9;
+			this.tile3Graphic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile3Graphic.DropDownWidth = 180;
+			this.tile3Graphic.Location = new System.Drawing.Point(64, 120);
+			this.tile3Graphic.Name = "tile3Graphic";
+			this.tile3Graphic.Size = new System.Drawing.Size(80, 21);
+			this.tile3Graphic.TabIndex = 9;
+			this.tile3Graphic.SelectedIndexChanged += new System.EventHandler(this.tile3Graphic_SelectedIndexChanged);
 			// 
 			// label1
 			// 
-			this.label1.Location = new System.Drawing.Point(16, 16);
+			this.label1.Location = new System.Drawing.Point(8, 16);
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(48, 16);
 			this.label1.TabIndex = 13;
@@ -172,7 +224,7 @@ namespace NoxMapEditor
 			// 
 			// label2
 			// 
-			this.label2.Location = new System.Drawing.Point(96, 16);
+			this.label2.Location = new System.Drawing.Point(64, 16);
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(48, 16);
 			this.label2.TabIndex = 14;
@@ -180,32 +232,89 @@ namespace NoxMapEditor
 			// 
 			// label3
 			// 
-			this.label3.Location = new System.Drawing.Point(192, 16);
+			this.label3.Location = new System.Drawing.Point(160, 16);
 			this.label3.Name = "label3";
 			this.label3.Size = new System.Drawing.Size(64, 16);
 			this.label3.TabIndex = 15;
-			this.label3.Text = "Direction";
+			this.label3.Text = "Variation";
+			// 
+			// tile4Dir
+			// 
+			this.tile4Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile4Dir.Location = new System.Drawing.Point(224, 160);
+			this.tile4Dir.Name = "tile4Dir";
+			this.tile4Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile4Dir.TabIndex = 19;
+			// 
+			// tile3Dir
+			// 
+			this.tile3Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile3Dir.Location = new System.Drawing.Point(224, 120);
+			this.tile3Dir.Name = "tile3Dir";
+			this.tile3Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile3Dir.TabIndex = 18;
+			// 
+			// tile2Dir
+			// 
+			this.tile2Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile2Dir.Location = new System.Drawing.Point(224, 80);
+			this.tile2Dir.Name = "tile2Dir";
+			this.tile2Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile2Dir.TabIndex = 17;
+			// 
+			// tile1Dir
+			// 
+			this.tile1Dir.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.tile1Dir.Location = new System.Drawing.Point(224, 40);
+			this.tile1Dir.Name = "tile1Dir";
+			this.tile1Dir.Size = new System.Drawing.Size(48, 21);
+			this.tile1Dir.TabIndex = 16;
+			// 
+			// label4
+			// 
+			this.label4.Location = new System.Drawing.Point(224, 16);
+			this.label4.Name = "label4";
+			this.label4.Size = new System.Drawing.Size(64, 16);
+			this.label4.TabIndex = 20;
+			this.label4.Text = "Direction";
+			// 
+			// buttonCancel
+			// 
+			this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+			this.buttonCancel.Location = new System.Drawing.Point(152, 192);
+			this.buttonCancel.Name = "buttonCancel";
+			this.buttonCancel.TabIndex = 21;
+			this.buttonCancel.Text = "Cancel";
+			this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
 			// 
 			// BlendDialog
 			// 
+			this.AcceptButton = this.buttonOK;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.ClientSize = new System.Drawing.Size(292, 247);
+			this.CancelButton = this.buttonCancel;
+			this.ClientSize = new System.Drawing.Size(282, 223);
+			this.Controls.Add(this.buttonCancel);
+			this.Controls.Add(this.label4);
+			this.Controls.Add(this.tile4Dir);
+			this.Controls.Add(this.tile3Dir);
+			this.Controls.Add(this.tile2Dir);
+			this.Controls.Add(this.tile1Dir);
 			this.Controls.Add(this.label3);
 			this.Controls.Add(this.label2);
 			this.Controls.Add(this.label1);
-			this.Controls.Add(this.comboBox5);
-			this.Controls.Add(this.comboBox6);
-			this.Controls.Add(this.comboBox7);
-			this.Controls.Add(this.comboBox8);
-			this.Controls.Add(this.comboBox3);
-			this.Controls.Add(this.comboBox4);
-			this.Controls.Add(this.comboBox2);
-			this.Controls.Add(this.comboBox1);
+			this.Controls.Add(this.tile4Var);
+			this.Controls.Add(this.tile4Graphic);
+			this.Controls.Add(this.tile3Var);
+			this.Controls.Add(this.tile3Graphic);
+			this.Controls.Add(this.tile2Var);
+			this.Controls.Add(this.tile2Graphic);
+			this.Controls.Add(this.tile1Var);
+			this.Controls.Add(this.tile1Graphic);
 			this.Controls.Add(this.buttonOK);
-			this.Controls.Add(this.checkBox4);
-			this.Controls.Add(this.checkBox3);
-			this.Controls.Add(this.checkBox2);
-			this.Controls.Add(this.checkBox1);
+			this.Controls.Add(this.tile4Enabled);
+			this.Controls.Add(this.tile3Enabled);
+			this.Controls.Add(this.tile2Enabled);
+			this.Controls.Add(this.tile1Enabled);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
@@ -217,9 +326,73 @@ namespace NoxMapEditor
 		}
 		#endregion
 
+		private byte GetVariation(ComboBox box)
+		{
+			return box.SelectedIndex == 0 ? (byte) new Random().Next(((ThingDb.Tile) ThingDb.FloorTiles[box.SelectedIndex]).Variations) : Convert.ToByte(box.Text);
+		}
+
 		private void buttonOK_Click(object sender, System.EventArgs e)
 		{
+			Blends = new ArrayList();
+
+			if (tile1Enabled.Checked)
+				Blends.Add(new Map.Tile.Blend(
+					(byte) tile1Graphic.SelectedIndex,
+					GetVariation(tile1Var),
+					(Map.Tile.Blend.BlendDirection) dirMap[tile1Dir.SelectedIndex]));
+			if (tile2Enabled.Checked)
+				Blends.Add(new Map.Tile.Blend(
+					(byte) tile2Graphic.SelectedIndex,
+					GetVariation(tile2Var),
+					(Map.Tile.Blend.BlendDirection) dirMap[tile2Dir.SelectedIndex]));
+			if (tile3Enabled.Checked)
+				Blends.Add(new Map.Tile.Blend(
+					(byte) tile3Graphic.SelectedIndex,
+					GetVariation(tile3Var),
+					(Map.Tile.Blend.BlendDirection) dirMap[tile3Dir.SelectedIndex]));
+			if (tile4Enabled.Checked)
+				Blends.Add(new Map.Tile.Blend(
+					(byte) tile4Graphic.SelectedIndex,
+					GetVariation(tile4Var),
+					(Map.Tile.Blend.BlendDirection) dirMap[tile4Dir.SelectedIndex]));
+
 			Hide();
+		}
+
+		private void buttonCancel_Click(object sender, System.EventArgs e)
+		{
+			Hide();
+		}
+
+		private void tile1Graphic_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			repopulateVariations(tile1Var, ((ThingDb.Tile) ThingDb.FloorTiles[((ComboBox) sender).SelectedIndex]).Variations);
+		}
+
+		private void tile2Graphic_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			repopulateVariations(tile2Var, ((ThingDb.Tile) ThingDb.FloorTiles[((ComboBox) sender).SelectedIndex]).Variations);
+		}
+
+		private void tile3Graphic_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			repopulateVariations(tile3Var, ((ThingDb.Tile) ThingDb.FloorTiles[((ComboBox) sender).SelectedIndex]).Variations);
+		}
+
+		private void tile4Graphic_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			repopulateVariations(tile4Var, ((ThingDb.Tile) ThingDb.FloorTiles[((ComboBox) sender).SelectedIndex]).Variations);
+		}
+
+		private void repopulateVariations(ComboBox box, int variations)
+		{
+			int oldNdx = box.SelectedIndex;
+			box.Items.Clear();
+			box.Items.Add("Random");
+			for (int i = 0; i < variations; i++)
+				box.Items.Add(String.Format("{0}", i));
+			if (oldNdx < box.Items.Count)
+				box.SelectedIndex = oldNdx;
 		}
 	}
 }
