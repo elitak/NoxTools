@@ -302,11 +302,11 @@ namespace NoxShared
 					Variation = rdr.ReadByte();
 					unknown1 = rdr.ReadByte();
 					if (unknown1 != 0)
-						Console.WriteLine("WARNING: tile unknown byte was not 0");
+						Debug.WriteLine(String.Format("WARNING: tile unknown byte was not 0, it was {0}", unknown1), "MapRead");
 					Edge = rdr.ReadByte();
 					Dir = (Direction) rdr.ReadByte();
 					if (!Enum.IsDefined(typeof(Direction), (byte) Dir))
-						Console.WriteLine("WARNING: edgetile direction {0} is undefined", (byte) Dir);
+						Debug.WriteLine(String.Format("WARNING: edgetile direction {0} is undefined", (byte) Dir), "MapRead");
 				}
 
 				public void Write(Stream stream)
@@ -743,7 +743,6 @@ namespace NoxShared
 			public bool Destructable;
 			public bool Secret;
 			public bool Window;
-			public bool Internal;
 
 			//these unknowns follow the wall's entry in the SecretWalls section
 			// and usually (always?) have these values
@@ -782,9 +781,7 @@ namespace NoxShared
 			{
 				BinaryReader rdr = new BinaryReader(stream);
 				Location = new Point(rdr.ReadByte(), rdr.ReadByte());
-				byte fac = rdr.ReadByte();
-				Facing = (WallFacing) (fac & 0x7F);
-				Internal = (fac & 0x80) != 0;
+				Facing = (WallFacing) (rdr.ReadByte() & 0x7F);//I'm almost certain the sign bit is just garbage and does not signify anything about the wall
 				matId = rdr.ReadByte();
 				Unknown1 = rdr.ReadByte();
 				Minimap = rdr.ReadByte();
@@ -797,7 +794,7 @@ namespace NoxShared
 
 				wtr.Write((byte) Location.X);
 				wtr.Write((byte) Location.Y);
-				wtr.Write((byte) ((byte) Facing | (Internal ? 0x80 : 0)));
+				wtr.Write((byte) Facing);
 				wtr.Write((byte) matId);
 				wtr.Write((byte) Unknown1);
 				wtr.Write((byte) Minimap);
@@ -938,30 +935,63 @@ namespace NoxShared
 			}
 		}
 
-		public class Object : IComparable
+		public class Object : IComparable, ICloneable
 		{
 			public string Name;
-			public int Type;//unknown, really... seem to be only a few possible values with high frequency, usually 0x0040003C
+			public Property Properties;
+			public short Type2;
 			public int Extent;//TODO:enforce uniqueness?
 			public PointF Location;
 			public int Unknown;//always null?
 			public byte Terminator;//usually 0x00, sometimes 0xFF (e.g., Flag objects)
 			//TODO//public ArrayList Modifiers = new ArrayList();//modifiers this object has (elements are of type 'class Modifier')
-			public byte[] modbuf;
-			public ArrayList enchants;
+			public byte[] modbuf = new byte[0];
+			public ArrayList enchants = new ArrayList();
 			public byte Team;//Specified in the extra stuff that comes with 0xFF Terminator
 			public string Scr_Name;//Name used in Script Section
 			public byte inven; //Number of objects in inventory, important for object ordering
-			public ArrayList childObjects; //Objects in its inventory
-			public byte[] temp1;//Temporary buffers for FF term. stuff, unknowns 
-			public byte[] temp2;//Temporary buffers for FF term. stuff, unknowns 
+			public ArrayList childObjects = new ArrayList(); //Objects in its inventory
+			public byte[] temp1 = new byte[0];//Temporary buffers for FF term. stuff, unknowns 
+			public byte[] temp2 = new byte[0];//Temporary buffers for FF term. stuff, unknowns 
+
+			//note: there's a good chance that these are not flags at all and
+			// should be a regular enumeration
+			/*[Flags] public enum PropertyFlags : short
+			{
+				Always = 0x003C,//these three bits always seem to be set
+				HasMana = 0x0001,//this is misnamed because elevators and buttons have it. "interactable"?
+				HasAmmo = 0x0002,//should be "pickupable"? in stronghd.map, all items have this but in others most items are 0x3c
+				//wands always have 3e and bows too
+				Enemy = 0x0040//this seems to be the only bit set
+			}
+			
+			public bool HasMana
+			{
+				get {return (Properties & PropertyFlags.HasMana) != 0;}
+				set {if (value) Properties |= PropertyFlags.HasMana; else Properties &= ~PropertyFlags.HasMana;}
+			}
+
+			public bool HasAmmo
+			{
+				get {return (Properties & PropertyFlags.HasAmmo) != 0;}
+				set {if (value) Properties |= PropertyFlags.HasAmmo; else Properties &= ~PropertyFlags.HasAmmo;}
+			}*/
+
+			public enum Property : short
+			{
+				Normal = 0x003C,
+				Interact = 0x003D,
+				Pickup = 0x003E,
+				Enemy = 0x0040
+			}
 
 			public Object()
 			{
 				//default values
 				Name = "ExtentShortCylinderSmall";
 				Extent = 0;
-				Type = 0x0040003C;
+				Properties = Property.Normal;
+				Type2 = 0x0040;//always??
 				Location = new PointF(0, 0);
 			}
 
@@ -983,10 +1013,14 @@ namespace NoxShared
 				Name = (string) toc[rdr.ReadInt16()];
 				rdr.BaseStream.Seek((8 - rdr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
 				long endOfData = rdr.ReadInt64() + rdr.BaseStream.Position;
-				Type = rdr.ReadInt32();
+				Properties = (Property) rdr.ReadInt16();
+				Debug.WriteLineIf(!Enum.IsDefined(typeof(Property), Properties), String.Format("object {0} has properties 0x{1:x}", Name, (short) Properties));
+				Type2 = rdr.ReadInt16();
+				Debug.WriteLineIf(Type2 != 0x40, String.Format("object {0} has type2 0x{1:x}", Name, Type2));
 				Extent = rdr.ReadInt32();
 				Unknown = rdr.ReadInt32();//always null?
-				Unknown = 0;
+				Debug.WriteLineIf(Unknown != 0, String.Format("object {0}'s Unknown was not null! it was 0x{1:x}", Name, Unknown));
+				Unknown = 0;//FIXME? remove this Andrew unless it's here for a reason, if so, add a comment
 				Location = new PointF(rdr.ReadSingle(), rdr.ReadSingle());//x then y
 				if(Location.X > 5880 || Location.Y > 5880)
 					Location = new PointF(5870,5870);
@@ -1033,9 +1067,9 @@ namespace NoxShared
 				}
 			}
 			/// <summary>
-			/// 
+			/// Writes the object to the stream
 			/// </summary>
-			/// <param name="stream"></param>
+			/// <param name="stream">The stream to write to</param>
 			/// <param name="toc">A Mapping of string to short IDs</param>
 			public void Write(Stream stream, IDictionary toc)
 			{
@@ -1051,15 +1085,17 @@ namespace NoxShared
 						temp2 = new Byte[] {00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00,00,00,00,00};
 					xtraLength = temp1.Length + temp2.Length + 3 + Scr_Name.Length;
 				}
-				long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length) + xtraLength;//0x15 is the minumum length of an entry
-				//long dataLength = 0x15 + (modbuf==null? 0 : modbuf.Length);//0x15 is the minumum length of an entry
+				long dataLength = 0x15 + modbuf.Length + xtraLength;//0x15 is the minumum length of an entry
 				wtr.Write((long) dataLength);
-				wtr.Write((int) Type);
+				//the 0x15 is the length of these entries combined...
+				wtr.Write((short) Properties);
+				wtr.Write((short) Type2);
 				wtr.Write((int) Extent);
 				wtr.Write((int) Unknown);
 				wtr.Write((float) Location.X);
 				wtr.Write((float) Location.Y);
 				wtr.Write((byte) Terminator);
+				//... these entries make 0x15 bytes
 				if (Terminator == 0xFF)
 				{
 					wtr.Write(temp1);
@@ -1080,33 +1116,16 @@ namespace NoxShared
 				return Name.CompareTo(((Object) obj).Name);
 			}
 
-			public void CopyTo(Object obj)
+
+			public object Clone()
 			{
-				obj.Name = String.Copy(Name);
-				obj.Type = Type;
-				obj.Extent = Extent;
-				obj.Location = Location;
-				obj.Unknown = Unknown;
-				obj.Terminator = Terminator;
-				if(modbuf != null && modbuf.Length > 0)
-				{
-					obj.modbuf = new byte[modbuf.Length];
-					modbuf.CopyTo(obj.modbuf,0);
-				}
-				obj.enchants = enchants;
-				obj.Team = obj.Team;
-				if(Scr_Name != null)
-					obj.Scr_Name = String.Copy(Scr_Name);
-				if(temp1 != null && temp1.Length > 0)
-				{
-					obj.temp1 = new byte[temp1.Length];
-					temp1.CopyTo(obj.temp1,0);
-				}
-				if(temp2 != null && temp2.Length > 0)
-				{
-					obj.temp2 = new byte[temp2.Length];
-					temp2.CopyTo(obj.temp2,0);
-				}
+				Object copy = (Object) MemberwiseClone();
+				copy.modbuf = (byte[]) modbuf.Clone();
+				copy.enchants = (ArrayList) enchants.Clone();
+				copy.childObjects = (ArrayList) childObjects.Clone();
+				copy.temp1 = (byte[]) temp1.Clone();
+				copy.temp2 = (byte[]) temp2.Clone();
+				return copy;
 			}
 		}
 		
@@ -1153,6 +1172,8 @@ namespace NoxShared
 		#region Reading Methods
 		public void ReadFile()
 		{
+			Debug.WriteLine("Reading " + FileName, "MapRead");
+			Debug.Indent();
 			NoxBinaryReader rdr	= new NoxBinaryReader(File.Open(FileName, FileMode.Open), CryptApi.NoxCryptFormat.MAP);
 
 			//check to see if the file is not encrypted
@@ -1229,10 +1250,15 @@ namespace NoxShared
 					case "ObjectData":
 						ReadObjectData(rdr);
 						break;
+					default:
+						Debug.WriteLine("unhanled section");
+						break;
 				}
 			}
 
 			rdr.Close();
+			Debug.Unindent();
+			Debug.WriteLine("Read successful", "MapRead");
 		}
 
 		private Stream tocStream;
@@ -1350,26 +1376,25 @@ namespace NoxShared
 		protected void ReadScriptObject(NoxBinaryReader rdr)
 		{
 			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
-			SectHeader hed = new SectHeader("ScriptObject",2,rdr.ReadBytes(2));
+			SectHeader hed = new SectHeader("ScriptObject",2,rdr.ReadBytes(2));//always 0x0001?
 			Headers.Add(hed.name,hed);
+			short unknown = BitConverter.ToInt16(hed.header, 0);
+			Debug.WriteLineIf(unknown != 0x0001, "header for ScriptObject was not 0x0001, it was 0x" + unknown.ToString("x"));
 			
 			Scripts = new ScriptObject();
 			
 			int Sectlen = rdr.ReadInt32();
 			while(rdr.BaseStream.Position < finish)
 			{
-				if(rdr.BaseStream.Position < finish-12)
+				if(rdr.BaseStream.Position < finish-12 && new string(rdr.ReadChars(12)) == "SCRIPT03STRG")
 				{
-					if(new String(rdr.ReadChars(12)).CompareTo("SCRIPT03STRG")==0)
-					{
-						int numStr = rdr.ReadInt32();
-						Scripts.SctStr = new SortedList(numStr);
-						for(int i = 0; i < numStr; i++)
-							Scripts.SctStr.Add(i,new string(rdr.ReadChars(rdr.ReadInt32())));
-					}
-					else
-						rdr.BaseStream.Seek(-12,SeekOrigin.Current);
+					int numStr = rdr.ReadInt32();
+					Scripts.SctStr = new SortedList(numStr);
+					for(int i = 0; i < numStr; i++)
+						Scripts.SctStr.Add(i,new string(rdr.ReadChars(rdr.ReadInt32())));
 				}
+				else
+					rdr.BaseStream.Seek(-12,SeekOrigin.Current);
 				Scripts.rest = rdr.ReadBytes((int)(finish - rdr.BaseStream.Position));
 			}		
 
@@ -1411,7 +1436,6 @@ namespace NoxShared
 			SkipSection(wtr,"DebugData");
 			WriteWindowWalls(wtr);
 			SkipSection(wtr,"GroupData");
-			//SkipSection(wtr,"ScriptObject");
 			WriteScriptObject(wtr);
 			SkipSection(wtr,"AmbientData");
 			Polygons.Write(wtr.BaseStream);
@@ -1593,7 +1617,7 @@ namespace NoxShared
 			secpos = wtr.BaseStream.Position;
 			wtr.Write(sectlen);
 			// if there is a strings section
-			if(Scripts.SctStr != null && Scripts.SctStr.Count > 0)
+			if (Scripts.SctStr != null)//Eric fixed a bug here: "SCRIPTTO3STRG" should(? - see Bunker) be written even if count is 0
 			{
 				wtr.Write("SCRIPT03STRG".ToCharArray()); // tokens used to distiguish sections of the section
 				wtr.Write(Scripts.SctStr.Count); // write number of strings
