@@ -130,8 +130,14 @@
                     BuildAction = "EmbeddedResource"
                 />
                 <File
-                    RelPath = "DnsLite.cs"
-                    Link = "..\shared\DnsLite.cs"
+                    RelPath = "CryptApi.cs"
+                    Link = "..\shared\CryptApi.cs"
+                    SubType = "Code"
+                    BuildAction = "Compile"
+                />
+                <File
+                    RelPath = "DnsApi.cs"
+                    Link = "..\shared\DnsApi.cs"
                     SubType = "Code"
                     BuildAction = "Compile"
                 />
@@ -218,12 +224,6 @@
                     RelPath = "ObjectPropertiesDialog.resx"
                     DependentUpon = "ObjectPropertiesDialog.cs"
                     BuildAction = "EmbeddedResource"
-                />
-                <File
-                    RelPath = "Observer.cs"
-                    Link = "..\shared\Observer.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
                 />
                 <File
                     RelPath = "ThingDb.cs"
