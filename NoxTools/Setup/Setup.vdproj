@@ -21,6 +21,24 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_235B4F0A21C845F9A6AB4A84C206B684"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_259132CFF73A4D2393601C28130D368B"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_36885AAFDCCE4385925A780E51CC9F00"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -39,38 +57,80 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_9251850B29A544A4BF062B80388B5702"
+        "OwnerKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_9251850B29A544A4BF062B80388B5702"
+        "OwnerKey" = "8:_A626C755388F41B099697DF9656CE253"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_9251850B29A544A4BF062B80388B5702"
+        "OwnerKey" = "8:_837A69340CB54E329F43C4249C2C0F77"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_9251850B29A544A4BF062B80388B5702"
+        "OwnerKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_9251850B29A544A4BF062B80388B5702"
+        "OwnerKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_9251850B29A544A4BF062B80388B5702"
+        "OwnerKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_9935A7E11DB842E4A0412CFAC733FAB6"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_A626C755388F41B099697DF9656CE253"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "OwnerKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
         "OwnerKey" = "8:_A626C755388F41B099697DF9656CE253"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
-        "OwnerKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
         "OwnerKey" = "8:_837A69340CB54E329F43C4249C2C0F77"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
         "OwnerKey" = "8:_5A4CAF13008E47CFB7C9E502FD4EA133"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C199C72E31C44B1BAE176CB972283FB1"
-        "OwnerKey" = "8:_1BC65CB91D364DE885DBA158583C570A"
+        "MsmKey" = "8:_F28263B306E8F860B712B775E7CE9EE9"
+        "OwnerKey" = "8:_3D4ECED458B946B39CEA64FAE08CD5BD"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -90,7 +150,7 @@
         "CertificateFile" = "8:"
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
-        "InstallerBootstrapper" = "3:2"
+        "InstallerBootstrapper" = "3:1"
         }
         "Release"
         {
@@ -138,6 +198,117 @@
         }
         "File"
         {
+            "{A582A373-4685-4296-BEFE-614B80A702C3}:_235B4F0A21C845F9A6AB4A84C206B684"
+            {
+            "SourcePath" = "8:..\\NoxTools.sln"
+            "TargetName" = "8:NoxTools.sln"
+            "Tag" = "8:"
+            "Folder" = "8:_E7784CC2B6E74222902ACB43E5689709"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{A582A373-4685-4296-BEFE-614B80A702C3}:_259132CFF73A4D2393601C28130D368B"
+            {
+            "SourcePath" = "8:Setup.vdproj"
+            "TargetName" = "8:Setup.vdproj"
+            "Tag" = "8:"
+            "Folder" = "8:_CB01E79282DC49D591F65AEDAA4FC4E0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{A582A373-4685-4296-BEFE-614B80A702C3}:_36885AAFDCCE4385925A780E51CC9F00"
+            {
+            "SourcePath" = "8:..\\PlrEditor\\plr.ico"
+            "TargetName" = "8:plr.ico"
+            "Tag" = "8:"
+            "Folder" = "8:_A3A15C5942184995BECF06C87690DF3B"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{A582A373-4685-4296-BEFE-614B80A702C3}:_9935A7E11DB842E4A0412CFAC733FAB6"
+            {
+            "SourcePath" = "8:..\\gpl.txt"
+            "TargetName" = "8:gpl.txt"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{FB480208-1853-44D0-9ABD-A3B734C3FAAA}:_F28263B306E8F860B712B775E7CE9EE9"
+            {
+            "AssemblyRegister" = "3:1"
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:NoxShared, Version=0.0.0.0, Culture=neutral"
+                "ScatterAssemblies"
+                {
+                    "_F28263B306E8F860B712B775E7CE9EE9"
+                    {
+                    "Name" = "8:NoxShared.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:NoxShared.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
         }
         "FileType"
         {
@@ -154,6 +325,94 @@
             "Property" = "8:TARGETDIR"
                 "Folders"
                 {
+                    "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_E7784CC2B6E74222902ACB43E5689709"
+                    {
+                    "Name" = "8:src"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_CB68B3572A4F4FBD99B865BAF7A4547A"
+                        "Folders"
+                        {
+                            "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_203486EC44E74087873F24E31DC2DD2D"
+                            {
+                            "Name" = "8:MapEditor"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_B84B536DB8A643E784CFBFD856B59A37"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_3D594F6A41084CE6831106D97555053B"
+                            {
+                            "Name" = "8:AdminTool"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_238BED05401D46A689C4FD0ACA9145BE"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_4EB3D90513A64A679EAE2C764B2B357E"
+                            {
+                            "Name" = "8:Shared"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_FF3F02C018294E46B5CC79BE4C569687"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_5959EAC30F904EC9BFB3DDC16FC32C91"
+                            {
+                            "Name" = "8:StringEditor"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_D85B8044F12545AAAC6CF0AA8C6A048B"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_9B4B2D6252C749E89E639BB86A82E46C"
+                            {
+                            "Name" = "8:BagTool"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_9F82EB843A0C431CA380D9DDA12FD4F1"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_A3A15C5942184995BECF06C87690DF3B"
+                            {
+                            "Name" = "8:PlrEditor"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_6704CF2DB039400391243F7BD24C4DD5"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{F27BD5C5-A65D-4608-96D4-7C5DA1F76302}:_CB01E79282DC49D591F65AEDAA4FC4E0"
+                            {
+                            "Name" = "8:Setup"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_BB7D899A125F4D3F9B22B6BB8F9087AD"
+                                "Folders"
+                                {
+                                }
+                            }
+                        }
+                    }
                 }
             }
             "{78BAF5CE-F2E5-45BE-83BC-DB6AF387E941}:_4C8424B1524B4C73B42169DB18D445B2"
@@ -205,7 +464,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:NoxTools"
         "ProductCode" = "8:{449BF7A5-B161-4D9D-946F-86C8EFDFB64B}"
-        "PackageCode" = "8:{D606B29D-74E5-4293-BC7B-631DA2B06375}"
+        "PackageCode" = "8:{44A41D13-863B-44BF-AE55-5608CB58C3CE}"
         "UpgradeCode" = "8:{91450AEE-501C-4CB0-9DA4-5546DBA97C05}"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
@@ -377,7 +636,7 @@
             }
             "{478F747B-8505-45D1-9AAE-8C3B645C26E3}:_EDCE41B3FA1747FB898D14180ADDE8D9"
             {
-            "Name" = "8:Trainer"
+            "Name" = "8:Admin Tool"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -772,7 +1031,7 @@
         }
         "MergeModule"
         {
-            "{35A69C6E-5BA4-440D-803D-762B59A45393}:_C199C72E31C44B1BAE176CB972283FB1"
+            "{35A69C6E-5BA4-440D-803D-762B59A45393}:_9251850B29A544A4BF062B80388B5702"
             {
             "UseDynamicProperties" = "11:TRUE"
             "IsDependency" = "11:TRUE"
@@ -789,6 +1048,34 @@
         }
         "ProjectOutput"
         {
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_000B4D8BEC244C3BA3B84E04952D7A5A"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_4EB3D90513A64A679EAE2C764B2B357E"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:SourceFiles"
+            "OutputProjectGuid" = "8:{46C56A6C-8C45-4F2B-B7FF-93DD5C61FAAB}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
             "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_1BC65CB91D364DE885DBA158583C570A"
             {
             "SourcePath" = "8:..\\BagTool\\obj\\Debug\\NoxBagTool.exe"
@@ -817,9 +1104,37 @@
                 {
                 }
             }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_1BDCF26942374149B36085084525C358"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_5959EAC30F904EC9BFB3DDC16FC32C91"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:SourceFiles"
+            "OutputProjectGuid" = "8:{2CB6363D-6ABF-4F9F-9BD6-F301C0A18DEE}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
             "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_3D4ECED458B946B39CEA64FAE08CD5BD"
             {
-            "SourcePath" = "8:..\\Trainer\\obj\\Debug\\NoxTrainer.exe"
+            "SourcePath" = "8:..\\AdminTool\\obj\\Debug\\AdminTool.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3588E4B72A714383A3A521CCF31EBDD8"
@@ -867,6 +1182,34 @@
             "ProjectOutputGroupRegister" = "3:1"
             "OutputConfiguration" = "8:"
             "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{56AA53AC-998D-4B36-9BF1-FB14BE89AA37}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_828FA923DCA04ECB8551FB4D4EFEFE8A"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_A3A15C5942184995BECF06C87690DF3B"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:SourceFiles"
             "OutputProjectGuid" = "8:{56AA53AC-998D-4B36-9BF1-FB14BE89AA37}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
@@ -923,6 +1266,90 @@
             "ProjectOutputGroupRegister" = "3:1"
             "OutputConfiguration" = "8:"
             "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{9B0F4317-A6AC-4F6E-8ECB-E711175CFB90}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_BACD9588B27A4E3D8C14FFBF5B065251"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3D594F6A41084CE6831106D97555053B"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:SourceFiles"
+            "OutputProjectGuid" = "8:{C53FBBFA-B3A0-4FFF-8E08-59FFF0ADF5B3}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_E860B958B3A247319503AFF1A2CEE04C"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_9B4B2D6252C749E89E639BB86A82E46C"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:SourceFiles"
+            "OutputProjectGuid" = "8:{DC2C210E-5C0D-4837-A887-3AC68402D0F5}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{8062640A-2EEE-46E9-AB67-688E9A886E9F}:_F44FFE5360CE493A95F8A2DFF41CCBE2"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_203486EC44E74087873F24E31DC2DD2D"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:SourceFiles"
             "OutputProjectGuid" = "8:{9B0F4317-A6AC-4F6E-8ECB-E711175CFB90}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
