@@ -11,7 +11,8 @@ namespace NoxShared
 	{
 		private const int LOGIN_LENGTH = 0x10;
 		private const int SERIAL_LENGTH = 0x20;
-		private const int NAME_LENGTH = 2 * 0x18;
+		private const int MAX_NAME_CHARS = 24;
+		private const int NAME_LENGTH = 2 * MAX_NAME_CHARS;
 
 		[XmlIgnore] public int Team;
 		[XmlIgnore] public bool Connected;
@@ -30,11 +31,11 @@ namespace NoxShared
 			player.Number = rdr.ReadInt32();
 			rdr.BaseStream.Seek(0x18, SeekOrigin.Current);
 			player.Connected = rdr.ReadInt32() != 0;
-			player.Login = new string(rdr.ReadChars(LOGIN_LENGTH)).Split('\0')[0];
-			player.Serial = new string(rdr.ReadChars(SERIAL_LENGTH)).Split('\0')[0];
+			player.Login = new string(Encoding.ASCII.GetChars(rdr.ReadBytes(LOGIN_LENGTH))).Split('\0')[0];
+			player.Serial = new string(Encoding.ASCII.GetChars(rdr.ReadBytes(SERIAL_LENGTH))).Split('\0')[0];
 			rdr.BaseStream.Seek(0x29, SeekOrigin.Current);
 			player.Name = new string(Encoding.Unicode.GetChars(rdr.ReadBytes(NAME_LENGTH))).Split('\0')[0];
-			player.Unkickable = rdr.ReadByte() != 0;
+			player.Unkickable = rdr.ReadInt16() != 0 && player.Name.Length == MAX_NAME_CHARS;
 
 			rdr.BaseStream.Seek(0x12dc - (rdr.BaseStream.Position - startPos), SeekOrigin.Current);
 
