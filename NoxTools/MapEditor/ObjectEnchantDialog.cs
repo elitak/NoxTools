@@ -16,8 +16,6 @@ namespace NoxMapEditor
 	public class ObjectEnchantDialog : System.Windows.Forms.Form
 	{
 		protected Map.Object obj;
-		private System.Windows.Forms.Label nameText;
-		private System.Windows.Forms.Label extentText;
 		private System.Windows.Forms.ComboBox enchant1;
 		private System.Windows.Forms.ComboBox enchant2;
 		private System.Windows.Forms.ComboBox enchant3;
@@ -125,7 +123,73 @@ namespace NoxMapEditor
 																			"ProjectileSpeed3",
 																			"ProjectileSpeed4",
 																			"Replenishment1",
-																			"ContinualReplenishment1"
+																			"ContinualReplenishment1",
+																			"UserColor1",
+																			"UserColor2",
+																			"UserColor3",
+																			"UserColor4",
+																			"UserColor5",
+																			"UserColor6",
+																			"UserColor7",
+																			"UserColor8",
+																			"UserColor9",
+																			"UserColor10",
+																			"UserColor11",
+																			"UserColor12",
+																			"UserColor13",
+																			"UserColor14",
+																			"UserColor15",
+																			"UserColor16",
+																			"UserColor17",
+																			"UserColor18",
+																			"UserColor19",
+																			"UserColor20",
+																			"UserColor21",
+																			"UserColor22",
+																			"UserColor23",
+																			"UserColor24",
+																			"UserColor25",
+																			"UserColor26",
+																			"UserColor27",
+																			"UserColor28",
+																			"UserColor29",
+																			"UserColor30",
+																			"UserColor31",
+																			"UserColor32",
+																			"UserColor33",
+																			"UserMaterialColor1",
+																			"UserMaterialColor2",
+																			"UserMaterialColor3",
+																			"UserMaterialColor4",
+																			"UserMaterialColor5",
+																			"UserMaterialColor6",
+																			"UserMaterialColor7",
+																			"UserMaterialColor8",
+																			"UserMaterialColor9",
+																			"UserMaterialColor10",
+																			"UserMaterialColor11",
+																			"UserMaterialColor12",
+																			"UserMaterialColor13",
+																			"UserMaterialColor14",
+																			"UserMaterialColor15",
+																			"UserMaterialColor16",
+																			"UserMaterialColor17",
+																			"UserMaterialColor18",
+																			"UserMaterialColor19",
+																			"UserMaterialColor20",
+																			"UserMaterialColor21",
+																			"UserMaterialColor22",
+																			"UserMaterialColor23",
+																			"UserMaterialColor24",
+																			"UserMaterialColor25",
+																			"UserMaterialColor26",
+																			"UserMaterialColor27",
+																			"UserMaterialColor28",
+																			"UserMaterialColor29",
+																			"UserMaterialColor30",
+																			"UserMaterialColor31",
+																			"UserMaterialColor32",
+																			"UserMaterialColor33",
 																		});
 	
 		public string ReadString(int bytes, System.IO.BinaryReader rdr)
@@ -158,8 +222,6 @@ namespace NoxMapEditor
 			set
 			{
 				obj = value;
-				nameText.Text = obj.Name;
-				extentText.Text = obj.Extent.ToString();
 				boxMod.Text = "";
 				if (obj.modbuf != null)
 				{
@@ -242,8 +304,6 @@ namespace NoxMapEditor
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.nameText = new System.Windows.Forms.Label();
-			this.extentText = new System.Windows.Forms.Label();
 			this.enchant1 = new System.Windows.Forms.ComboBox();
 			this.enchant2 = new System.Windows.Forms.ComboBox();
 			this.enchant3 = new System.Windows.Forms.ComboBox();
@@ -253,51 +313,41 @@ namespace NoxMapEditor
 			this.cancelButton = new System.Windows.Forms.Button();
 			this.SuspendLayout();
 			// 
-			// nameText
-			// 
-			this.nameText.Location = new System.Drawing.Point(8, 8);
-			this.nameText.Name = "nameText";
-			this.nameText.Size = new System.Drawing.Size(272, 24);
-			this.nameText.TabIndex = 0;
-			// 
-			// extentText
-			// 
-			this.extentText.Location = new System.Drawing.Point(8, 40);
-			this.extentText.Name = "extentText";
-			this.extentText.Size = new System.Drawing.Size(64, 24);
-			this.extentText.TabIndex = 1;
-			// 
 			// enchant1
 			// 
-			this.enchant1.Location = new System.Drawing.Point(8, 72);
+			this.enchant1.Location = new System.Drawing.Point(8, 8);
 			this.enchant1.Name = "enchant1";
 			this.enchant1.Size = new System.Drawing.Size(112, 21);
+			this.enchant1.Sorted = true;
 			this.enchant1.TabIndex = 2;
 			// 
 			// enchant2
 			// 
-			this.enchant2.Location = new System.Drawing.Point(8, 104);
+			this.enchant2.Location = new System.Drawing.Point(8, 40);
 			this.enchant2.Name = "enchant2";
 			this.enchant2.Size = new System.Drawing.Size(112, 21);
+			this.enchant2.Sorted = true;
 			this.enchant2.TabIndex = 3;
 			// 
 			// enchant3
 			// 
-			this.enchant3.Location = new System.Drawing.Point(8, 136);
+			this.enchant3.Location = new System.Drawing.Point(8, 72);
 			this.enchant3.Name = "enchant3";
 			this.enchant3.Size = new System.Drawing.Size(112, 21);
+			this.enchant3.Sorted = true;
 			this.enchant3.TabIndex = 4;
 			// 
 			// enchant4
 			// 
-			this.enchant4.Location = new System.Drawing.Point(8, 168);
+			this.enchant4.Location = new System.Drawing.Point(8, 104);
 			this.enchant4.Name = "enchant4";
 			this.enchant4.Size = new System.Drawing.Size(112, 21);
+			this.enchant4.Sorted = true;
 			this.enchant4.TabIndex = 5;
 			// 
 			// boxMod
 			// 
-			this.boxMod.Location = new System.Drawing.Point(128, 72);
+			this.boxMod.Location = new System.Drawing.Point(128, 8);
 			this.boxMod.Multiline = true;
 			this.boxMod.Name = "boxMod";
 			this.boxMod.Size = new System.Drawing.Size(208, 120);
@@ -306,7 +356,7 @@ namespace NoxMapEditor
 			// 
 			// okButton
 			// 
-			this.okButton.Location = new System.Drawing.Point(48, 200);
+			this.okButton.Location = new System.Drawing.Point(48, 136);
 			this.okButton.Name = "okButton";
 			this.okButton.Size = new System.Drawing.Size(88, 24);
 			this.okButton.TabIndex = 7;
@@ -315,7 +365,7 @@ namespace NoxMapEditor
 			// 
 			// cancelButton
 			// 
-			this.cancelButton.Location = new System.Drawing.Point(216, 200);
+			this.cancelButton.Location = new System.Drawing.Point(216, 136);
 			this.cancelButton.Name = "cancelButton";
 			this.cancelButton.Size = new System.Drawing.Size(88, 24);
 			this.cancelButton.TabIndex = 8;
@@ -325,7 +375,8 @@ namespace NoxMapEditor
 			// ObjectEnchantDialog
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.ClientSize = new System.Drawing.Size(344, 229);
+			this.ClientSize = new System.Drawing.Size(344, 165);
+			this.ControlBox = false;
 			this.Controls.Add(this.cancelButton);
 			this.Controls.Add(this.okButton);
 			this.Controls.Add(this.boxMod);
@@ -333,8 +384,8 @@ namespace NoxMapEditor
 			this.Controls.Add(this.enchant3);
 			this.Controls.Add(this.enchant2);
 			this.Controls.Add(this.enchant1);
-			this.Controls.Add(this.extentText);
-			this.Controls.Add(this.nameText);
+			this.MaximumSize = new System.Drawing.Size(352, 192);
+			this.MinimumSize = new System.Drawing.Size(352, 192);
 			this.Name = "ObjectEnchantDialog";
 			this.Text = "Object Enchants";
 			this.ResumeLayout(false);
@@ -344,11 +395,7 @@ namespace NoxMapEditor
 
 		private void okButton_Click(object sender, System.EventArgs e)
 		{
-			if(((ThingDb.Thing)ThingDb.Things[obj.Name]).Init == "ModifierInit")
-			{
-
 				System.IO.MemoryStream stream = new System.IO.MemoryStream();
-
 				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
 				
 				if(objEnchants.Contains(enchant1.Text))
@@ -389,9 +436,8 @@ namespace NoxMapEditor
 				foreach (Match match in bytes.Matches(boxMod.Text))
 					wtr.Write(Convert.ToByte(match.Value, 16));
 				obj.modbuf = stream.ToArray();
-			}
-			else
-				obj.modbuf = null;
+				if(obj.modbuf.GetLength(0) == 0)
+					obj.modbuf = new byte[] { 0x00, 0x00};
 			Close();
 		}
 

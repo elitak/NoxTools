@@ -63,7 +63,6 @@ namespace NoxMapEditor
 		private System.Windows.Forms.GroupBox wallGroup;
 		private System.Windows.Forms.GroupBox objectGroup;
 		private System.Windows.Forms.Panel wallSelectPanel;
-		private System.Windows.Forms.MenuItem enchantItem;
 
 		public MapView()
 		{
@@ -450,7 +449,6 @@ namespace NoxMapEditor
 			this.contextMenuDelete = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
 			this.contextMenuProperties = new System.Windows.Forms.MenuItem();
-			this.enchantItem = new System.Windows.Forms.MenuItem();
 			this.statusBar1 = new System.Windows.Forms.StatusBar();
 			this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
 			this.vScrollBar1 = new System.Windows.Forms.VScrollBar();
@@ -492,8 +490,7 @@ namespace NoxMapEditor
 			this.contextMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
 																						 this.contextMenuDelete,
 																						 this.menuItem3,
-																						 this.contextMenuProperties,
-																						 this.enchantItem});
+																						 this.contextMenuProperties});
 			// 
 			// contextMenuDelete
 			// 
@@ -511,12 +508,6 @@ namespace NoxMapEditor
 			this.contextMenuProperties.Index = 2;
 			this.contextMenuProperties.Text = "Properties";
 			this.contextMenuProperties.Click += new System.EventHandler(this.contextMenuProperties_Click);
-			// 
-			// enchantItem
-			// 
-			this.enchantItem.Index = 3;
-			this.enchantItem.Text = "Enchants";
-			this.enchantItem.Click += new System.EventHandler(this.enchantItem_Click);
 			// 
 			// statusBar1
 			// 
@@ -712,37 +703,6 @@ namespace NoxMapEditor
 		private void checkboxGrid_CheckedChanged(object sender, System.EventArgs e)
 		{
 			mapPanel.Invalidate();
-		}
-
-		private void enchantItem_Click(object sender, System.EventArgs e)
-		{
-			if(((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Init=="ModifierInit")
-			{
-				enchantDlg = new ObjectEnchantDialog();
-				enchantDlg.Object = SelectedObject;
-				enchantDlg.ShowDialog();
-			}
-			else if((((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
-			{
-				doorDlg = new DoorProperties();
-				doorDlg.Object = SelectedObject;
-				doorDlg.ShowDialog();
-			}
-			else
-				System.Windows.Forms.MessageBox.Show("This object does not accept enchants.","Not compatible");
-			
-			mapPanel.Invalidate();
-		}
-
-		private void contextMenu1_Popup(object sender, System.EventArgs e)
-		{
-			if (SelectedObject != null)
-			{
-				if ((((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
-					enchantItem.Text = "Door Prop.";
-				if (!((((ThingDb.Thing)ThingDb.Things[SelectedObject.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR))
-					enchantItem.Text = "Enchants";
-			}
 		}
 
 		protected BlendDialog blendDialog = new BlendDialog();

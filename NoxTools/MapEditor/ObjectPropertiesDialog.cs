@@ -33,6 +33,10 @@ namespace NoxMapEditor
 					while (rdr.BaseStream.Position < rdr.BaseStream.Length)
 						boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
 				}
+				if(((ThingDb.Thing)ThingDb.Things[obj.Name]).Init=="ModifierInit")
+					enchantButton.Enabled = true;
+				else if((((ThingDb.Thing)ThingDb.Things[obj.Name]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
+					lockButton.Enabled = true;
 			}
 		}
 		private System.Windows.Forms.Label label1;
@@ -45,6 +49,8 @@ namespace NoxMapEditor
 		private System.Windows.Forms.Label label4;
 		private System.Windows.Forms.TextBox extentBox;
 		private System.Windows.Forms.ComboBox nameBox;
+		private System.Windows.Forms.Button enchantButton;
+		private System.Windows.Forms.Button lockButton;
 		private System.Windows.Forms.TextBox boxMod;
 
 		public ObjectPropertiesDialog()
@@ -71,6 +77,8 @@ namespace NoxMapEditor
 			this.extentBox = new System.Windows.Forms.TextBox();
 			this.nameBox = new System.Windows.Forms.ComboBox();
 			this.boxMod = new System.Windows.Forms.TextBox();
+			this.enchantButton = new System.Windows.Forms.Button();
+			this.lockButton = new System.Windows.Forms.Button();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -157,6 +165,7 @@ namespace NoxMapEditor
 			this.nameBox.Name = "nameBox";
 			this.nameBox.Size = new System.Drawing.Size(120, 21);
 			this.nameBox.TabIndex = 11;
+			this.nameBox.SelectedIndexChanged += new System.EventHandler(this.nameBox_SelectedIndexChanged);
 			// 
 			// boxMod
 			// 
@@ -167,17 +176,37 @@ namespace NoxMapEditor
 			this.boxMod.TabIndex = 12;
 			this.boxMod.Text = "";
 			// 
+			// enchantButton
+			// 
+			this.enchantButton.Enabled = false;
+			this.enchantButton.Location = new System.Drawing.Point(192, 16);
+			this.enchantButton.Name = "enchantButton";
+			this.enchantButton.TabIndex = 13;
+			this.enchantButton.Text = "Enchants";
+			this.enchantButton.Click += new System.EventHandler(this.enchantButton_Click);
+			// 
+			// lockButton
+			// 
+			this.lockButton.Enabled = false;
+			this.lockButton.Location = new System.Drawing.Point(192, 48);
+			this.lockButton.Name = "lockButton";
+			this.lockButton.TabIndex = 14;
+			this.lockButton.Text = "Locks";
+			this.lockButton.Click += new System.EventHandler(this.lockButton_Click);
+			// 
 			// ObjectPropertiesDialog
 			// 
 			this.AcceptButton = this.buttonOK;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.CancelButton = this.buttonCancel;
-			this.ClientSize = new System.Drawing.Size(186, 223);
+			this.ClientSize = new System.Drawing.Size(274, 223);
+			this.Controls.Add(this.lockButton);
+			this.Controls.Add(this.enchantButton);
 			this.Controls.Add(this.boxMod);
-			this.Controls.Add(this.nameBox);
 			this.Controls.Add(this.extentBox);
 			this.Controls.Add(this.yBox);
 			this.Controls.Add(this.xBox);
+			this.Controls.Add(this.nameBox);
 			this.Controls.Add(this.label4);
 			this.Controls.Add(this.label3);
 			this.Controls.Add(this.label2);
@@ -220,6 +249,40 @@ namespace NoxMapEditor
 			else
 				obj.modbuf = null;
 			this.Visible = false;
+		}
+
+		private void enchantButton_Click(object sender, System.EventArgs e)
+		{
+			ObjectEnchantDialog enchantDlg = new ObjectEnchantDialog();
+			enchantDlg.Object = obj;
+			enchantDlg.ShowDialog();
+			if (obj.modbuf != null)
+			{
+				System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
+				while (rdr.BaseStream.Position < rdr.BaseStream.Length)
+					boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
+			}
+		}
+
+		private void lockButton_Click(object sender, System.EventArgs e)
+		{
+			DoorProperties doorDlg = new DoorProperties();
+			doorDlg.Object = obj;
+			doorDlg.ShowDialog();
+			if (obj.modbuf != null)
+			{
+				System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
+				while (rdr.BaseStream.Position < rdr.BaseStream.Length)
+					boxMod.Text += String.Format("{0:x2} ", rdr.ReadByte());
+			}
+		}
+
+		private void nameBox_SelectedIndexChanged(object sender, System.EventArgs e)
+		{
+			if(((ThingDb.Thing)ThingDb.Things[nameBox.Text]).Init=="ModifierInit")
+				enchantButton.Enabled = true;
+			else if((((ThingDb.Thing)ThingDb.Things[nameBox.Text]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
+				lockButton.Enabled = true;
 		}
 	}
 }
