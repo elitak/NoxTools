@@ -311,6 +311,10 @@ namespace NoxMapEditor
 		private void mapPanel_MouseUp(object sender, MouseEventArgs e)
 		{
 			Point pointClicked = new Point(hScrollBar1.Value+e.X, vScrollBar1.Value+e.Y);
+			
+			if(DrawGrid)
+				pointClicked = new Point((int)Math.Round((decimal)(pointClicked.X/squareSize))*squareSize,(int)Math.Round((decimal)(pointClicked.Y/squareSize))*23);
+			
 			if (dragging && SelectedObject != null)
 			{
 				SelectedObject.Location = pointClicked;
