@@ -1,0 +1,13 @@
+NXZ
+floormap read, write, draw, edit somehow
+object properties from right click menu
+  object modifiers
+
+add maptype flagball?
+examine thing.bin, perhaps has enumeration codes+real names for wall materials et al.?
+draw grid, color scheme?
+use 1 T-junction icon and rotate it?
+what is that sign bit on the wall material byte for?
+clean up read/write, all objects should read/write themselves from streams
+some extents are wrong?
+xml the wall description strings
