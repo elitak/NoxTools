@@ -21,13 +21,17 @@ namespace NoxShared
 		private static Stack stack = new Stack();
 		private static StreamWriter log = new StreamWriter("ConsoleLog.txt", true, Encoding.UTF8);
 
+		public static bool TimeStamp = true;
+		public static bool Echo = true;
+
 		public static void WriteLine(string format, params object[] args)
 		{
-			string timestamp = String.Format("[{0:yyyy-MM-dd HH:mm:ss}]", DateTime.Now);
-			string line = timestamp + "  " + String.Format(format, args);
+			string timestamp = String.Format("[{0:yyyy-MM-dd HH:mm:ss}] ", DateTime.Now);
+			string line = (TimeStamp ? timestamp : "") + String.Format(format, args);
 			stack.Push(line);
 			log.WriteLine(line);
 			log.Flush();
+			if (Echo) System.Console.WriteLine(line);
 			if (LineWritten != null) LineWritten(null, new ConsoleEventArgs(line));
 		}
 
