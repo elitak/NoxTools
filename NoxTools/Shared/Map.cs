@@ -147,8 +147,9 @@ namespace NoxShared
 				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;//order matters!
 
 				unknown = rdr.ReadInt16();//dont know what this is for
-				//Summary = new string(rdr.ReadChars((int) SectionLength.TITLE));
-				//Summary = Summary.Substring(0, Summary.IndexOf('\0'));
+				//the ReadStrings below are equivalent to lines like these two:
+				//  Summary = new string(rdr.ReadChars((int) SectionLength.TITLE));
+				//  Summary = Summary.Substring(0, Summary.IndexOf('\0'));
 				Summary = rdr.ReadString((int) SectionLength.TITLE);
 				Description = rdr.ReadString((int) SectionLength.DESCRIPTION);
 				Version = rdr.ReadString((int) SectionLength.VERSION);
@@ -159,7 +160,9 @@ namespace NoxShared
 				rdr.ReadBytes((int) SectionLength.EMPTY);
 				Copyright = rdr.ReadString((int) SectionLength.COPYRIGHT);
 				Date = rdr.ReadString((int) SectionLength.DATE);
-				Type = (MapType) rdr.ReadUInt32();//TODO: quest maps have an extra section after this part and no min/max recommended players
+				//TODO: quest maps have an extra section after this part and no min/max recommended players
+				//TODO/FIXME: mapinfo does not read map type properly for Conflict.map
+				Type = (MapType) rdr.ReadUInt32();
 				RecommendedMin = rdr.ReadByte();
 				RecommendedMax = rdr.ReadByte();
 				Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (MapInfo) WARNING: section length is incorrect");
@@ -634,7 +637,7 @@ namespace NoxShared
 			public PointF Location;
 			public int Unknown;//always null?
 			public byte Terminator;//usually 0x00, sometimes 0xFF (e.g., Flag objects)
-			public ArrayList Modifiers = new ArrayList();//modifiers this object has (elements are of type 'class Modifier')
+			//TODO//public ArrayList Modifiers = new ArrayList();//modifiers this object has (elements are of type 'class Modifier')
 			public byte[] modbuf;
 
 			public Object()
