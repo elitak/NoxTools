@@ -70,8 +70,24 @@ namespace NoxMapEditor
 		public MapView()
 		{
 			InitializeComponent();
+
+			//form designer doesn't like my flickerfreepanel, so put initialization here instead
+			mapPanel = new FlickerFreePanel();
+			mapPanel.BorderStyle = BorderStyle.Fixed3D;
+			mapPanel.ContextMenu = contextMenu1;
+			mapPanel.Dock = DockStyle.Fill;
+			mapPanel.Location = new Point(0, 0);
+			mapPanel.Name = "mapPanel";
+			mapPanel.Size = new Size(1024, 768);
+			mapPanel.TabIndex = 0;
+			mapPanel.MouseUp += new MouseEventHandler(this.mapPanel_MouseUp);
+			mapPanel.Paint += new PaintEventHandler(this.mapPanel_Paint);
+			mapPanel.MouseMove += new MouseEventHandler(this.mapPanel_MouseMove);
+			mapPanel.MouseDown += new MouseEventHandler(this.mapPanel_MouseDown);
+			Controls.Add(mapPanel);
+
 			wallSelector1 = new WallSelector();
-			this.wallSelectPanel.Controls.Add(wallSelector1);
+			wallSelectPanel.Controls.Add(wallSelector1);
 			wallSelector1.Parent = this;
 
 			hScrollBar1.Value = (hScrollBar1.Maximum - hScrollBar1.Minimum) / 2;
@@ -202,6 +218,8 @@ namespace NoxMapEditor
 							e.Graphics.DrawString("?", new Font("Arial", 12), new SolidBrush(Color.Red), nCorner);
 							break;
 					}
+
+					e.Graphics.DrawString(wall.Minimap.ToString(), new Font("Arial", 10), new SolidBrush(Color.Red), x, y);
 				}
 			}
 
@@ -258,8 +276,7 @@ namespace NoxMapEditor
 					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
 					if(pt.X % 2 == pt.Y % 2 && Map.WallMap[pt] == null)
 					{
-						Map.Wall newWall = new Map.Wall(pt, wallSelector1.SelectedFacing, wallSelector1.SelectedMaterial);
-						Map.WallMap.Add(pt,newWall);
+						Map.WallMap.Add(pt, wallSelector1.NewWall(pt));
 					}
 					else
 					{
@@ -325,7 +342,7 @@ namespace NoxMapEditor
 						tile = new Map.Tile(
 							new Point(pt.X-2,pt.Y),
 							(byte) tileGraphic.SelectedIndex,
-							0,
+							6,
 							blendDialog.Blends
 							);
 						if((Map.Tile) Map.FloorMap[tile.Location]==null)
@@ -333,7 +350,7 @@ namespace NoxMapEditor
 						tile = new Map.Tile(
 							new Point(pt.X-1,pt.Y+1),
 							(byte) tileGraphic.SelectedIndex,
-							1,
+							7,
 							blendDialog.Blends
 							);
 						if((Map.Tile) Map.FloorMap[tile.Location]==null)
@@ -341,7 +358,7 @@ namespace NoxMapEditor
 						tile = new Map.Tile(
 							new Point(pt.X,pt.Y-2),
 							(byte) tileGraphic.SelectedIndex,
-							6,
+							0,
 							blendDialog.Blends
 							);
 						if((Map.Tile) Map.FloorMap[tile.Location]==null)
@@ -357,7 +374,7 @@ namespace NoxMapEditor
 						tile = new Map.Tile(
 							new Point(pt.X,pt.Y+2),
 							(byte) tileGraphic.SelectedIndex,
-							2,
+							8,
 							blendDialog.Blends
 							);
 						if((Map.Tile) Map.FloorMap[tile.Location]==null)
@@ -365,7 +382,7 @@ namespace NoxMapEditor
 						tile = new Map.Tile(
 							new Point(pt.X+1,pt.Y-1),
 							(byte) tileGraphic.SelectedIndex,
-							7,
+							1,
 							blendDialog.Blends
 							);
 						if((Map.Tile) Map.FloorMap[tile.Location]==null)
@@ -373,7 +390,7 @@ namespace NoxMapEditor
 						tile = new Map.Tile(
 							new Point(pt.X+2,pt.Y),
 							(byte) tileGraphic.SelectedIndex,
-							8,
+							2,
 							blendDialog.Blends
 							);
 						if((Map.Tile) Map.FloorMap[tile.Location]==null)
@@ -390,12 +407,24 @@ namespace NoxMapEditor
 					else
 					{
 						Map.FloorMap.Remove(pt);
+						if (threeFloorBox.Checked)
+						{
+							Map.FloorMap.Remove(new Point(pt.X - 1, pt.Y - 1));
+							Map.FloorMap.Remove(new Point(pt.X - 2, pt.Y));
+							Map.FloorMap.Remove(new Point(pt.X - 1, pt.Y + 1));
+							Map.FloorMap.Remove(new Point(pt.X, pt.Y - 2));
+							Map.FloorMap.Remove(new Point(pt.X, pt.Y + 2));
+							Map.FloorMap.Remove(new Point(pt.X + 1, pt.Y - 1));
+							Map.FloorMap.Remove(new Point(pt.X + 2, pt.Y));
+							Map.FloorMap.Remove(new Point(pt.X + 1, pt.Y + 1));
+						}
 					}
 				}
 				mapPanel.Invalidate();
 			}
 		}
 
+		//TODO: fix status bar so it doesnt truncate...
 		private void mapPanel_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
 		{
 			Map.Wall wall = (Map.Wall)Map.WallMap[new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize)];
@@ -410,15 +439,15 @@ namespace NoxMapEditor
 			{
 				statusBar1.Text += "  Tile:";
 				statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}", tile.Graphic, tile.Variation);
-				if (tile.Blends.Count > 0)
+				if (tile.EdgeTiles.Count > 0)
 				{
-					statusBar1.Text += String.Format(" EdgeTiles({0}):", tile.Blends.Count);
-					foreach (Map.Tile.Blend blend in tile.Blends)
-						statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}-{2}", blend.Graphic, blend.Variation, blend.Direction);
+					statusBar1.Text += String.Format(" Edges({0}):", tile.EdgeTiles.Count);
+					foreach (Map.Tile.EdgeTile edge in tile.EdgeTiles)
+						statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}-{2}-{3}", ThingDb.FloorTileNames[edge.Graphic], edge.Variation, edge.Dir, ThingDb.EdgeTileNames[edge.Edge]);
 				}
 			}
 
-			if (SelectedObject != null)
+			if (SelectedObject != null && CurrentMode == Mode.SELECT)
 				statusBar1.Text += String.Format(" SelectedObject={0}", SelectedObject.Name);
 		}
 
@@ -526,7 +555,6 @@ namespace NoxMapEditor
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.mapPanel = new NoxMapEditor.MapView.FlickerFreePanel();
 			this.contextMenu1 = new System.Windows.Forms.ContextMenu();
 			this.contextMenuDelete = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
@@ -538,6 +566,7 @@ namespace NoxMapEditor
 			this.objectGroup = new System.Windows.Forms.GroupBox();
 			this.selectButton = new System.Windows.Forms.Button();
 			this.newObjectButton = new System.Windows.Forms.Button();
+			this.defaultButt = new System.Windows.Forms.Button();
 			this.floorGroup = new System.Windows.Forms.GroupBox();
 			this.threeFloorBox = new System.Windows.Forms.CheckBox();
 			this.buttonBlend = new System.Windows.Forms.Button();
@@ -549,26 +578,11 @@ namespace NoxMapEditor
 			this.buttonSecret = new System.Windows.Forms.Button();
 			this.destructableButton = new System.Windows.Forms.Button();
 			this.windowsButton = new System.Windows.Forms.Button();
-			this.defaultButt = new System.Windows.Forms.Button();
 			this.groupBox1.SuspendLayout();
 			this.objectGroup.SuspendLayout();
 			this.floorGroup.SuspendLayout();
 			this.wallGroup.SuspendLayout();
 			this.SuspendLayout();
-			// 
-			// mapPanel
-			// 
-			this.mapPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-			this.mapPanel.ContextMenu = this.contextMenu1;
-			this.mapPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.mapPanel.Location = new System.Drawing.Point(0, 0);
-			this.mapPanel.Name = "mapPanel";
-			this.mapPanel.Size = new System.Drawing.Size(1024, 768);
-			this.mapPanel.TabIndex = 0;
-			this.mapPanel.MouseUp += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseUp);
-			this.mapPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.mapPanel_Paint);
-			this.mapPanel.MouseMove += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseMove);
-			this.mapPanel.MouseDown += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseDown);
 			// 
 			// contextMenu1
 			// 
@@ -645,7 +659,7 @@ namespace NoxMapEditor
 			this.objectGroup.Controls.Add(this.selectButton);
 			this.objectGroup.Controls.Add(this.newObjectButton);
 			this.objectGroup.Controls.Add(this.defaultButt);
-			this.objectGroup.Location = new System.Drawing.Point(8, 480);
+			this.objectGroup.Location = new System.Drawing.Point(8, 512);
 			this.objectGroup.Name = "objectGroup";
 			this.objectGroup.Size = new System.Drawing.Size(112, 96);
 			this.objectGroup.TabIndex = 24;
@@ -670,6 +684,15 @@ namespace NoxMapEditor
 			this.newObjectButton.Text = "Create";
 			this.newObjectButton.Click += new System.EventHandler(this.newObjectButton_Click);
 			// 
+			// defaultButt
+			// 
+			this.defaultButt.Location = new System.Drawing.Point(24, 40);
+			this.defaultButt.Name = "defaultButt";
+			this.defaultButt.Size = new System.Drawing.Size(56, 23);
+			this.defaultButt.TabIndex = 25;
+			this.defaultButt.Text = "Defaults";
+			this.defaultButt.Click += new System.EventHandler(this.defaultButt_Click);
+			// 
 			// floorGroup
 			// 
 			this.floorGroup.Controls.Add(this.threeFloorBox);
@@ -677,7 +700,7 @@ namespace NoxMapEditor
 			this.floorGroup.Controls.Add(this.tileVar);
 			this.floorGroup.Controls.Add(this.tileGraphic);
 			this.floorGroup.Controls.Add(this.floorButton);
-			this.floorGroup.Location = new System.Drawing.Point(8, 328);
+			this.floorGroup.Location = new System.Drawing.Point(8, 360);
 			this.floorGroup.Name = "floorGroup";
 			this.floorGroup.Size = new System.Drawing.Size(112, 144);
 			this.floorGroup.TabIndex = 22;
@@ -686,10 +709,11 @@ namespace NoxMapEditor
 			// 
 			// threeFloorBox
 			// 
-			this.threeFloorBox.Location = new System.Drawing.Point(80, 80);
+			this.threeFloorBox.Location = new System.Drawing.Point(72, 16);
 			this.threeFloorBox.Name = "threeFloorBox";
-			this.threeFloorBox.Size = new System.Drawing.Size(16, 24);
+			this.threeFloorBox.Size = new System.Drawing.Size(48, 24);
 			this.threeFloorBox.TabIndex = 22;
+			this.threeFloorBox.Text = "3x3";
 			// 
 			// buttonBlend
 			// 
@@ -697,7 +721,7 @@ namespace NoxMapEditor
 			this.buttonBlend.Name = "buttonBlend";
 			this.buttonBlend.Size = new System.Drawing.Size(56, 24);
 			this.buttonBlend.TabIndex = 19;
-			this.buttonBlend.Text = "Blends";
+			this.buttonBlend.Text = "Edges";
 			this.buttonBlend.Click += new System.EventHandler(this.buttonBlend_Click);
 			// 
 			// tileVar
@@ -707,7 +731,7 @@ namespace NoxMapEditor
 			this.tileVar.Location = new System.Drawing.Point(8, 80);
 			this.tileVar.MaxDropDownItems = 10;
 			this.tileVar.Name = "tileVar";
-			this.tileVar.Size = new System.Drawing.Size(56, 21);
+			this.tileVar.Size = new System.Drawing.Size(64, 21);
 			this.tileVar.TabIndex = 21;
 			// 
 			// tileGraphic
@@ -722,7 +746,7 @@ namespace NoxMapEditor
 			// 
 			// floorButton
 			// 
-			this.floorButton.Location = new System.Drawing.Point(24, 16);
+			this.floorButton.Location = new System.Drawing.Point(8, 16);
 			this.floorButton.Name = "floorButton";
 			this.floorButton.Size = new System.Drawing.Size(56, 23);
 			this.floorButton.TabIndex = 8;
@@ -737,7 +761,7 @@ namespace NoxMapEditor
 			this.wallGroup.Controls.Add(this.windowsButton);
 			this.wallGroup.Location = new System.Drawing.Point(8, 16);
 			this.wallGroup.Name = "wallGroup";
-			this.wallGroup.Size = new System.Drawing.Size(112, 304);
+			this.wallGroup.Size = new System.Drawing.Size(112, 336);
 			this.wallGroup.TabIndex = 23;
 			this.wallGroup.TabStop = false;
 			this.wallGroup.Text = "Walls";
@@ -746,12 +770,12 @@ namespace NoxMapEditor
 			// 
 			this.wallSelectPanel.Location = new System.Drawing.Point(16, 16);
 			this.wallSelectPanel.Name = "wallSelectPanel";
-			this.wallSelectPanel.Size = new System.Drawing.Size(80, 208);
+			this.wallSelectPanel.Size = new System.Drawing.Size(80, 240);
 			this.wallSelectPanel.TabIndex = 19;
 			// 
 			// buttonSecret
 			// 
-			this.buttonSecret.Location = new System.Drawing.Point(24, 272);
+			this.buttonSecret.Location = new System.Drawing.Point(24, 304);
 			this.buttonSecret.Name = "buttonSecret";
 			this.buttonSecret.Size = new System.Drawing.Size(56, 23);
 			this.buttonSecret.TabIndex = 18;
@@ -760,7 +784,7 @@ namespace NoxMapEditor
 			// 
 			// destructableButton
 			// 
-			this.destructableButton.Location = new System.Drawing.Point(24, 248);
+			this.destructableButton.Location = new System.Drawing.Point(24, 280);
 			this.destructableButton.Name = "destructableButton";
 			this.destructableButton.Size = new System.Drawing.Size(56, 23);
 			this.destructableButton.TabIndex = 7;
@@ -769,21 +793,12 @@ namespace NoxMapEditor
 			// 
 			// windowsButton
 			// 
-			this.windowsButton.Location = new System.Drawing.Point(24, 224);
+			this.windowsButton.Location = new System.Drawing.Point(24, 256);
 			this.windowsButton.Name = "windowsButton";
 			this.windowsButton.Size = new System.Drawing.Size(56, 23);
 			this.windowsButton.TabIndex = 6;
 			this.windowsButton.Text = "Windows";
 			this.windowsButton.Click += new System.EventHandler(this.windowsButton_Click);
-			// 
-			// defaultButt
-			// 
-			this.defaultButt.Location = new System.Drawing.Point(24, 40);
-			this.defaultButt.Name = "defaultButt";
-			this.defaultButt.Size = new System.Drawing.Size(56, 23);
-			this.defaultButt.TabIndex = 25;
-			this.defaultButt.Text = "Defaults";
-			this.defaultButt.Click += new System.EventHandler(this.defaultButt_Click);
 			// 
 			// MapView
 			// 
@@ -791,7 +806,6 @@ namespace NoxMapEditor
 			this.Controls.Add(this.vScrollBar1);
 			this.Controls.Add(this.groupBox1);
 			this.Controls.Add(this.statusBar1);
-			this.Controls.Add(this.mapPanel);
 			this.Name = "MapView";
 			this.Size = new System.Drawing.Size(1024, 768);
 			this.groupBox1.ResumeLayout(false);
