@@ -6,12 +6,10 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Globalization;
+using System.Windows.Forms;//for messageboxes only
 
 namespace NoxShared
 {
-	/// <summary>
-	/// Summary description for ThingDb.
-	/// </summary>
 	public class ThingDb
 	{
 		public enum ThingToken : uint
@@ -961,68 +959,70 @@ namespace NoxShared
 
 		static ThingDb()
 		{
+			RegistryKey installPathKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Westwood\\Nox");
+			if (installPathKey == null)
+			{
+				MessageBox.Show("Could not find Nox's install path in the registry. Reinstall Nox to fix this.", "Error");
+				return;
+			}
+			string noxPath = (string) installPathKey.GetValue("InstallPath");
+			string filePath = noxPath.Substring(0, noxPath.LastIndexOf("\\")+1) + "thing.bin";
+			NoxBinaryReader rdr = null;
 			try
 			{
-				RegistryKey installPathKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("SOFTWARE\\Westwood\\Nox");
-				if (installPathKey == null)
-				{
-					System.Windows.Forms.MessageBox.Show("Could not find Nox's install path in the registry. Reinstall Nox to fix this.", "Error");
-					return;
-				}
-				string noxPath = (string) installPathKey.GetValue("InstallPath");
-				string filePath = noxPath.Substring(0, noxPath.LastIndexOf("\\")+1) + "thing.bin";
-				NoxBinaryReader rdr = new NoxBinaryReader(File.OpenRead(filePath), CryptApi.NoxCryptFormat.THING);
-
-				object obj;
-				ThingToken token;
-				uint floorId = 0, edgeId = 0, wallId = 0;
-				while((obj=NextToken(rdr)) != null)
-				{
-					token = (ThingToken) obj;
-					if (token == ThingToken.FLOR)
-					{
-						Tile tile = new Tile(rdr.BaseStream);
-						tile.Id = floorId++;
-						FloorTiles.Add(tile);
-					}
-					else if (token == ThingToken.EDGE)
-					{
-						Tile tile = new Tile(rdr.BaseStream);
-						tile.Id = edgeId++;
-						EdgeTiles.Add(tile);
-					}
-					else if (token == ThingToken.WALL)
-					{
-						Wall wall = new Wall(rdr.BaseStream);
-						wall.Id = wallId++;
-						Walls.Add(wall);
-					}
-					else if (token == ThingToken.AUD)
-						ReadEntries(rdr);
-					else if (token == ThingToken.AVNT)
-					{
-						Avnt avnt = new Avnt(rdr.BaseStream);
-						Avnts.Add(avnt.Name, avnt);
-					}
-					else if (token == ThingToken.SPEL)
-						ReadEntries(rdr);
-					else if (token == ThingToken.ABIL)
-						ReadEntries(rdr);
-					else if (token == ThingToken.IMAG)
-						ReadEntries(rdr);
-					else if (token == ThingToken.THNG)
-					{
-						Thing thing = new Thing(rdr.BaseStream);
-						if (Things[thing.Name] == null)//there are a few duplicates, but they seem to be identical
-							Things.Add(thing.Name, thing);
-					}
-					else
-						throw new ApplicationException("Encountered unkown token while reading thing.bin");
-				}
+				rdr = new NoxBinaryReader(File.OpenRead(filePath), CryptApi.NoxCryptFormat.THING);
 			}
 			catch (FileNotFoundException)
 			{
-				System.Windows.Forms.MessageBox.Show("Could not access thing.bin in the Nox game directory.", "Error");
+				MessageBox.Show("Could not access thing.bin in the Nox game directory.", "Error");
+				return;
+			}
+
+			object obj;
+			ThingToken token;
+			uint floorId = 0, edgeId = 0, wallId = 0;
+			while((obj=NextToken(rdr)) != null)
+			{
+				token = (ThingToken) obj;
+				if (token == ThingToken.FLOR)
+				{
+					Tile tile = new Tile(rdr.BaseStream);
+					tile.Id = floorId++;
+					FloorTiles.Add(tile);
+				}
+				else if (token == ThingToken.EDGE)
+				{
+					Tile tile = new Tile(rdr.BaseStream);
+					tile.Id = edgeId++;
+					EdgeTiles.Add(tile);
+				}
+				else if (token == ThingToken.WALL)
+				{
+					Wall wall = new Wall(rdr.BaseStream);
+					wall.Id = wallId++;
+					Walls.Add(wall);
+				}
+				else if (token == ThingToken.AUD)
+					ReadEntries(rdr);
+				else if (token == ThingToken.AVNT)
+				{
+					Avnt avnt = new Avnt(rdr.BaseStream);
+					Avnts.Add(avnt.Name, avnt);
+				}
+				else if (token == ThingToken.SPEL)
+					ReadEntries(rdr);
+				else if (token == ThingToken.ABIL)
+					ReadEntries(rdr);
+				else if (token == ThingToken.IMAG)
+					ReadEntries(rdr);
+				else if (token == ThingToken.THNG)
+				{
+					Thing thing = new Thing(rdr.BaseStream);
+					if (Things[thing.Name] == null)//there are a few duplicates, but they seem to be identical
+						Things.Add(thing.Name, thing);
+				}
+				else
+					throw new ApplicationException("Encountered unkown token while reading thing.bin");
 			}
 		}
 
