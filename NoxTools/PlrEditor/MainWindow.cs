@@ -13,7 +13,7 @@ namespace PlrEditor
 	/// <summary>
 	/// Summary description for Form1.
 	/// </summary>
-	public class MainWindow : System.Windows.Forms.Form, IObserver
+	public class MainWindow : System.Windows.Forms.Form
 	{
 		protected PlayerFile player;
 
@@ -95,7 +95,6 @@ namespace PlrEditor
 		public MainWindow()
 		{
 			player = new PlayerFile();
-			player.AddObserver(this);
 			InitializeComponent();
 			MyInitializeComponent();
 		}
@@ -941,28 +940,6 @@ namespace PlrEditor
 			Application.Run(new MainWindow());
 		}
 
-		public void Update(IObservable sender, object arg)
-		{
-			PlayerFile plr = (PlayerFile) sender;
-
-			nameBox.Text = plr.Name;
-
-			//colors
-			colorBoxHair.BackColor = plr.HairColor;
-			colorBoxSkin.BackColor = plr.SkinColor;
-			colorBoxBeard.BackColor = plr.BeardColor;
-			colorBoxMustache.BackColor = plr.MustacheColor;
-			colorBoxSideburns.BackColor = plr.SideburnsColor;
-
-			colorBoxPants.BackColor = plr.PantsColor;
-			colorBoxShirt.BackColor = plr.ShirtColor;
-			colorBoxShirtTrim.BackColor = plr.ShirtTrimColor;
-			colorBoxShoes.BackColor = plr.ShoesColor;
-			colorBoxShoesTrim.BackColor = plr.ShoesTrimColor;
-
-			classBox.SelectedIndex = (int) plr.Class;
-		}
-
 		private void menuItemOpen_Click(object sender, System.EventArgs e)
 		{
 			OpenFileDialog fd = new OpenFileDialog();
@@ -974,8 +951,25 @@ namespace PlrEditor
 			if (System.IO.File.Exists(fd.FileName))
 			{
 				player = new PlayerFile();
-				player.AddObserver(this);
 				player.Load(fd.FileName);
+
+				//Update the GUI
+				nameBox.Text = player.Name;
+
+				//colors
+				colorBoxHair.BackColor = player.HairColor;
+				colorBoxSkin.BackColor = player.SkinColor;
+				colorBoxBeard.BackColor = player.BeardColor;
+				colorBoxMustache.BackColor = player.MustacheColor;
+				colorBoxSideburns.BackColor = player.SideburnsColor;
+
+				colorBoxPants.BackColor = player.PantsColor;
+				colorBoxShirt.BackColor = player.ShirtColor;
+				colorBoxShirtTrim.BackColor = player.ShirtTrimColor;
+				colorBoxShoes.BackColor = player.ShoesColor;
+				colorBoxShoesTrim.BackColor = player.ShoesTrimColor;
+
+				classBox.SelectedIndex = (int) player.Class;
 			}
 		}
 

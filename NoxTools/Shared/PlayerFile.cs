@@ -12,7 +12,7 @@ namespace NoxShared
 	/// <summary>
 	/// PlayerFile represents the player data contained within a .plr file. This class handles the decryption/encryption when given a filename via the constructor.
 	/// </summary>
-	public class PlayerFile : Observable
+	public class PlayerFile
 	{
 		protected string filename;
 
@@ -111,7 +111,6 @@ namespace NoxShared
 
 			System.Diagnostics.Debug.Assert(rdr.BaseStream.Position == rdr.BaseStream.Length, "Wrong number of total bytes read.");
 			rdr.Close();
-			if(FileType == PlrFileType.MULTI)NotifyObservers();
 		}
 
 		protected void ReadSpellset(BinaryReader rdr)

@@ -159,11 +159,6 @@
                     BuildAction = "Compile"
                 />
                 <File
-                    RelPath = "Observer.cs"
-                    SubType = "Code"
-                    BuildAction = "Compile"
-                />
-                <File
                     RelPath = "Player.cs"
                     SubType = "Code"
                     BuildAction = "Compile"

@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace NoxShared
 {
-	public class StringDb : Observable
+	public class StringDb
 	{
 		public class NoxStringEncoding : Encoding
 		{
