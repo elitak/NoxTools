@@ -798,6 +798,8 @@ namespace NoxShared
 			protected short tocUnknown;
 			protected short dataUnknown;
 
+			public ArrayList extents = new ArrayList();
+
 			/// <summary>
 			/// Constructs the Object table using the given streams.
 			/// </summary>
@@ -812,10 +814,16 @@ namespace NoxShared
 			{
 			}
 
+			public override int Add(object obj)
+			{
+				extents.Add(((Object)obj).Extent);
+				return base.Add (obj);
+			}
+
+
 			public void Read(Stream toc, Stream data)
 			{
 				BinaryReader rdr;
-
 				//first construct the toc
 				rdr = new BinaryReader(toc);
 				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
@@ -918,6 +926,7 @@ namespace NoxShared
 			//TODO//public ArrayList Modifiers = new ArrayList();//modifiers this object has (elements are of type 'class Modifier')
 			public byte[] modbuf;
 			public ArrayList enchants;
+			public byte Team;//Specified in the extra stuff that comes with 0xFF Terminator
 
 			public Object()
 			{
@@ -1010,6 +1019,23 @@ namespace NoxShared
 			public int CompareTo(object obj)
 			{
 				return Name.CompareTo(((Object) obj).Name);
+			}
+
+			public void CopyTo(Object obj)
+			{
+				obj.Name = String.Copy(Name);
+				obj.Type = Type;
+				obj.Extent = Extent;
+				obj.Location = Location;
+				obj.Unknown = Unknown;
+				obj.Terminator = Terminator;
+				if(modbuf != null && modbuf.Length > 0)
+				{
+					obj.modbuf = new byte[modbuf.Length];
+					modbuf.CopyTo(obj.modbuf,0);
+				}
+				obj.enchants = enchants;
+				obj.Team = obj.Team;
 			}
 		}
 		
