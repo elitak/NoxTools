@@ -17,11 +17,9 @@ namespace NoxShared
 	{
 		// ----PUBLIC MEMBERS----
 		public MapInfo Info;
-		public Hashtable WallMap;
+		public SortedList WallMap;
 		public bool Encrypted; //default true if map will be encrypted upon saving
-		public int num_Windows;//number of windows in map
-		public int num_Destructable;//number of destructable walls in map
-		public Hashtable FloorMap;
+		public SortedList FloorMap;
 		public ObjectTable Objects;//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
 
 		// ----PROTECTED MEMBERS----
@@ -75,6 +73,7 @@ namespace NoxShared
 				BinaryReader rdr = new BinaryReader(new MemoryStream(data));
 
 				CheckSum = 0;
+				rdr.BaseStream.Seek(LENGTH, SeekOrigin.Current);//skip header
 				while (rdr.BaseStream.Position < rdr.BaseStream.Length)
 					CheckSum += 29 * rdr.ReadUInt32();
 			}
@@ -227,7 +226,20 @@ namespace NoxShared
 			}
 		}
 
-		public class TilePair
+		protected class LocationComparer : IComparer
+		{
+			public int Compare(object x, object y)
+			{
+				Point lhs = (Point) x, rhs = (Point) y;
+				if (lhs.Y != rhs.Y)
+					return lhs.Y - rhs.Y;
+				else
+					return lhs.X - rhs.X;
+			}
+		}
+
+
+		public class TilePair : IComparable
 		{
 			public Point Location;
 			public bool OneTileOnly
@@ -298,6 +310,15 @@ namespace NoxShared
 					Right.Write(stream);
 				if (Left != null)
 					Left.Write(stream);
+			}
+
+			public int CompareTo(object obj)
+			{
+				TilePair rhs = (TilePair) obj;
+				if (Location.Y != rhs.Location.Y)
+					return Location.Y - rhs.Location.Y;
+				else
+					return Location.X - rhs.Location.X;
 			}
 
 			public class Tile
@@ -429,7 +450,7 @@ namespace NoxShared
 			}
 		}
 
-		public class Wall
+		public class Wall : IComparable
 		{
 			public enum WallFacing : byte
 			{
@@ -461,6 +482,12 @@ namespace NoxShared
 			public bool Destructable;
 			public bool Secret;
 			public bool Window;
+
+			//these unknowns follow the wall's entry in the SecretWalls section
+			// and usually (always?) have these values
+			//    (initialized here so they are the default for new walls)
+			public int Secret_u1 = 0x00000003;
+			public int Secret_u2 = 0x00000100;
 
 			public string Material
 			{
@@ -507,11 +534,20 @@ namespace NoxShared
 				wtr.Write((byte) Minimap);
 				wtr.Write((byte) Unknown2);
 			}
+
+			public int CompareTo(object obj)
+			{
+				Wall rhs = (Wall) obj;
+				if (Location.Y != rhs.Location.Y)
+					return Location.Y - rhs.Location.Y;
+				else
+					return Location.X - rhs.Location.X;
+			}
 		}
 
 		public class ObjectTable : ArrayList
 		{
-			protected Hashtable toc = new Hashtable();
+			protected SortedList toc = new SortedList();
 			protected short tocUnknown;
 			protected short dataUnknown;
 
@@ -573,7 +609,8 @@ namespace NoxShared
 				BinaryWriter wtr = new BinaryWriter(stream);
 
 				//before we start writing, we need to build a new toc
-				toc = new Hashtable();
+				Sort();
+				toc = new SortedList();
 				short id = 1;
 				foreach (Object obj in this)
 					if (toc[obj.Name] == null)
@@ -589,12 +626,8 @@ namespace NoxShared
 
 				wtr.Write((short) toc.Count);
 
-				//sort the object names alphabetically...
-				ArrayList keys = new ArrayList(toc.Keys);
-				keys.Sort();
-
 				//and write them
-				foreach (string key in keys)
+				foreach (string key in toc.Keys)
 				{
 					wtr.Write((short) toc[key]);
 					wtr.Write(key);
@@ -619,8 +652,6 @@ namespace NoxShared
 
 				wtr.Write((short) 0);//write the null Name terminator
 
-				//wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
-
 				//rewrite the length now that we can find it
 				length = wtr.BaseStream.Position - (startPos + 8);
 				wtr.Seek((int) startPos,SeekOrigin.Begin);
@@ -629,7 +660,7 @@ namespace NoxShared
 			}
 		}
 
-		public class Object
+		public class Object : IComparable
 		{
 			public string Name;
 			public int Type;//unknown, really... seem to be only a few possible values with high frequency, usually 0x0040003C
@@ -727,6 +758,11 @@ namespace NoxShared
 				if(modbuf != null)
 					wtr.Write(modbuf);
 			}
+
+			public int CompareTo(object obj)
+			{
+				return Name.CompareTo(((Object) obj).Name);
+			}
 		}
 		
 		public class Modifier
@@ -746,8 +782,8 @@ namespace NoxShared
 		// ----CONSTRUCTORS----
 		public Map()
 		{
-			WallMap = new Hashtable();
-			FloorMap = new Hashtable();
+			WallMap = new SortedList(new LocationComparer());
+			FloorMap = new SortedList(new LocationComparer());
 			Headers = new Hashtable();
 			Info = new MapInfo();
 			Objects = new ObjectTable();//dummy table
@@ -800,8 +836,7 @@ namespace NoxShared
 						ReadFloorMap(rdr);
 						break;
 					case "SecretWalls":
-						//TODO
-						SkipSection(rdr,"SecretWalls");
+						ReadSecretWalls(rdr);
 						break;
 					case "DestructableWalls":
 						ReadDestructableWalls(rdr);
@@ -925,23 +960,20 @@ namespace NoxShared
 			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (FloorMap) ERROR: bad section length");
 		}
 		
+		//TODO: make WallMap class that extends SortedList to clean this wall reading/writing up
 		protected void ReadDestructableWalls(NoxBinaryReader rdr)
 		{
-			int x, y;
-			Wall wall;
 			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
 			
-			//rdr.ReadBytes(0x4);//unknown (a header)
 			SectHeader hed = new SectHeader("DestructableWalls",2,rdr.ReadBytes(2));
 			Headers.Add(hed.name,hed);
 
-			num_Destructable = rdr.ReadInt16();
-			int num = num_Destructable;
+			int num = rdr.ReadInt16();
 			while (rdr.BaseStream.Position < finish)
 			{
-				x = rdr.ReadInt32();
-				y = rdr.ReadInt32();
-				wall = (Wall) WallMap[new Point(x,y)];
+				int x = rdr.ReadInt32();
+				int y = rdr.ReadInt32();
+				Wall wall = (Wall) WallMap[new Point(x,y)];
 				wall.Destructable = true;
 				num--;
 			}
@@ -951,26 +983,48 @@ namespace NoxShared
 
 		protected void ReadWindowWalls(NoxBinaryReader rdr)
 		{
-			int x, y, num;
-			Wall wall;
 			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
 
 			SectHeader hed = new SectHeader("WindowWalls",2,rdr.ReadBytes(2));
 			Headers.Add(hed.name,hed);
 
-			num = rdr.ReadInt16();//the number of window walls
-			num_Windows = num;
+			int num = rdr.ReadInt16();//the number of window walls
 			
 			while (rdr.BaseStream.Position < finish)
 			{
-				x = rdr.ReadInt32();
-				y = rdr.ReadInt32();
-				wall = (Wall) WallMap[new Point(x,y)];
+				int x = rdr.ReadInt32();
+				int y = rdr.ReadInt32();
+				Wall wall = (Wall) WallMap[new Point(x,y)];
 				wall.Window = true;
 				num--;
 			}
 			Debug.Assert(num == 0, "NoxMap (WindowWalls) ERROR: bad header");
 			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (WindowWalls) ERROR: bad section length");
+		}
+
+		protected void ReadSecretWalls(NoxBinaryReader rdr)
+		{
+			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
+
+			SectHeader hed = new SectHeader("SecretWalls",2,rdr.ReadBytes(2));
+			Headers.Add(hed.name,hed);
+
+			int num = rdr.ReadInt16();//the number of window walls
+			
+			while (rdr.BaseStream.Position < finish)
+			{
+				int x = rdr.ReadInt32();
+				int y = rdr.ReadInt32();
+				Wall wall = (Wall) WallMap[new Point(x,y)];
+				wall.Secret = true;
+				wall.Secret_u1 = rdr.ReadInt32();
+				wall.Secret_u2 = rdr.ReadInt32();
+				rdr.ReadBytes(7);//7 nulls
+				num--;
+			}
+
+			Debug.Assert(num == 0, "NoxMap (SecretWalls) ERROR: bad wall count");
+			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (SecretWalls) ERROR: bad section length");
 		}
 
 		//Just a utility method to skip sections, remove this when all sections are being read properly.
@@ -1004,7 +1058,7 @@ namespace NoxShared
 			Info.Write(wtr.BaseStream);
 			WriteWallMap(wtr);
 			WriteFloorMap(wtr);
-			SkipSection(wtr,"SecretWalls");
+			WriteSecretWalls(wtr);
 			WriteDestructableWalls(wtr);
 			SkipSection(wtr,"WayPoints");
 			SkipSection(wtr,"DebugData");
@@ -1051,9 +1105,7 @@ namespace NoxShared
 			pos = wtr.BaseStream.Position;
 			wtr.Write(length);
 			wtr.Write(hed.header);
-		
-			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
-			//   seems to be based on x, y. figure it out and then enforce it here.
+
 			foreach (TilePair tilePair in FloorMap.Values)
 				tilePair.Write(wtr.BaseStream);
 
@@ -1113,14 +1165,46 @@ namespace NoxShared
 			wtr.Write(hed.header);
 			wtr.Write((Int16)0);
 
-			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
-			//   seems to be based on x, y. figure it out and then enforce it here.
 			Int16 count = 0;
 			foreach (Wall wall in WallMap.Values)
 				if(wall.Destructable)
 				{
 					wtr.Write((uint) wall.Location.X);
 					wtr.Write((uint) wall.Location.Y);
+					count++;
+				}
+
+			//rewrite the length
+			length = wtr.BaseStream.Position - (pos+8);
+			wtr.Seek((int)pos,SeekOrigin.Begin);
+			wtr.Write(length);
+			wtr.Seek((int)hed.length,SeekOrigin.Current);
+			wtr.Write((Int16)count);
+			wtr.Seek(0,SeekOrigin.End);
+		}
+
+		private void WriteSecretWalls(NoxBinaryWriter wtr)
+		{
+			string str = "SecretWalls";
+			SectHeader hed = (SectHeader) Headers[str];
+			wtr.Write(str + "\0");
+			long length = 0;
+			long pos;
+			wtr.SkipToNextBoundary();
+			pos = wtr.BaseStream.Position;
+			wtr.Write(length);
+			wtr.Write(hed.header);
+			wtr.Write((Int16)0);
+
+			Int16 count = 0;
+			foreach (Wall wall in WallMap.Values)
+				if(wall.Secret)
+				{
+					wtr.Write((uint) wall.Location.X);
+					wtr.Write((uint) wall.Location.Y);
+					wtr.Write((uint) wall.Secret_u1);
+					wtr.Write((uint) wall.Secret_u2);
+					wtr.Write(new byte[7]);//7 nulls
 					count++;
 				}
 
@@ -1145,8 +1229,6 @@ namespace NoxShared
 			wtr.Write(length);
 			wtr.Write(hed.header);
 
-			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
-			//   seems to be based on x, y. figure it out and then enforce it here.
 			foreach (Wall wall in WallMap.Values)
 				wall.Write(wtr.BaseStream);
 			wtr.Write((byte) 0xFF);//wallmap terminates with this byte
