@@ -5,6 +5,7 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using System.Globalization;
 
 namespace NoxShared
 {
@@ -476,6 +477,7 @@ namespace NoxShared
 
 		public class Thing
 		{
+			//these field names must remain as is!! Read() uses reflection to initialize them
 			public string Name;
 			public uint Speed;
 			public uint Health;
@@ -719,12 +721,6 @@ namespace NoxShared
 				rdr.ReadInt32();//"THNG"
 				Name = rdr.ReadString();
 
-				/*
-				int test;
-				if (Name == "PortcullisOrnate1")
-					test = 0;
-				*/
-
 				while (true)
 				{
 					byte nextByte = rdr.ReadByte();
@@ -764,7 +760,7 @@ namespace NoxShared
 						//TODO: actually store this animation
 						Debug.Assert(rdr.BaseStream.Position == finishPos);
 					}
-						//skip, length, State entries
+					//skip, length, State entries
 					else if (line == "AnimateStateDraw"
 						|| line == "PlayerDraw"
 						|| line == "MonsterDraw"
@@ -848,6 +844,7 @@ namespace NoxShared
 
 			public void Parse(string line)
 			{
+				CultureInfo culture = CultureInfo.CreateSpecificCulture("en-US");
 				Regex regex = new Regex("(?<field>.*)( = )(?<value>.*)", RegexOptions.IgnoreCase);
 				string fldString = regex.Match(line).Groups["field"].Value;
 				string valString = regex.Match(line).Groups["value"].Value;
@@ -902,13 +899,13 @@ namespace NoxShared
 					else if (field.FieldType == typeof(String))
 						val = valString;
 					else if (field.FieldType == typeof(Int32))
-						val = Int32.Parse(valString);
+						val = Convert.ToInt32(valString, culture);
 					else if (field.FieldType == typeof(UInt32))
-						val = UInt32.Parse(valString);
+						val = Convert.ToUInt32(valString, culture);
 					else if (field.FieldType == typeof(Byte))
-						val = Byte.Parse(valString);
+						val = Convert.ToByte(valString, culture);
 					else if (field.FieldType == typeof(Single))
-						val = Single.Parse(valString);
+						val = Convert.ToSingle(valString, culture);
 
 					if (val != null)
 						field.SetValue(this, val);
