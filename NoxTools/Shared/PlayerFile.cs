@@ -10,10 +10,9 @@ using NoxShared.NoxType;
 namespace NoxShared
 {
 	/// <summary>
-	/// NoxPlayer represents the player data contained within a .plr file. This class handles the decryption/encryption when given a filename via the constructor.
+	/// PlayerFile represents the player data contained within a .plr file. This class handles the decryption/encryption when given a filename via the constructor.
 	/// </summary>
-
-	public class Player : Observable
+	public class PlayerFile : Observable
 	{
 		protected string filename;
 
@@ -49,12 +48,12 @@ namespace NoxShared
 			CON = 0x02
 		}
 
-		public Player()
+		public PlayerFile()
 		{
 			spellset = new ArrayList();
 		}
 
-		public Player(string filename) : this()
+		public PlayerFile(string filename) : this()
 		{
 			Load(filename);
 		}
