@@ -425,15 +425,9 @@ namespace NoxShared
 				wtr.Write((uint) u2);
 			}
 
-			//lousy checksum algorithm, TODO: replace with crc32 or something similar
 			public void GenerateChecksum(byte[] data)
 			{
-				BinaryReader rdr = new BinaryReader(new MemoryStream(data));
-
-				CheckSum = 0;
-				rdr.BaseStream.Seek(LENGTH, SeekOrigin.Current);//skip header
-				while (rdr.BaseStream.Position < rdr.BaseStream.Length)
-					CheckSum += 29 * rdr.ReadUInt32();
+				CheckSum = Crc32.Calculate(data);
 			}
 		}
 
@@ -731,7 +725,7 @@ namespace NoxShared
 			// and usually (always?) have these values
 			//    (initialized here so they are the default for new walls)
 			public int Secret_u1 = 0x00000003;
-			public int Secret_u2 = 0x00000100;
+			public int Secret_u2 = 0x00000106;
 
 			public string Material
 			{
