@@ -33,18 +33,6 @@ namespace NoxMapEditor
 			MAKE_FLOOR
 		};
 		public Mode CurrentMode;
-
-		protected class FlickerFreePanel : Panel
-		{
-			public FlickerFreePanel() : base()
-			{
-				SetStyle(ControlStyles.DoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
-			}
-		}
-
-		private System.Windows.Forms.StatusBar statusBar1;
-		private System.Windows.Forms.VScrollBar vScrollBar1;
-		private System.Windows.Forms.HScrollBar hScrollBar1;
 		private System.Windows.Forms.GroupBox groupBox1;
 		private System.Windows.Forms.Button selectButton;
 		private System.Windows.Forms.Button newObjectButton;
@@ -58,7 +46,7 @@ namespace NoxMapEditor
 		private System.Windows.Forms.Button floorButton;
 		private System.Windows.Forms.ComboBox tileGraphic;
 		private System.Windows.Forms.Button buttonSecret;
-		private NoxMapEditor.MapView.FlickerFreePanel mapPanel;
+		
 		private System.Windows.Forms.Button buttonBlend;
 		private System.Windows.Forms.ComboBox tileVar;
 		private System.Windows.Forms.GroupBox floorGroup;
@@ -72,489 +60,17 @@ namespace NoxMapEditor
 		private System.Windows.Forms.Button buttonPolygonNew;
 		private System.Windows.Forms.ComboBox listPolygons;
 		private System.Windows.Forms.Button buttonPolygonDelete;
+		private System.Windows.Forms.StatusBarPanel statusWall;
+		private System.Windows.Forms.StatusBarPanel statusTile;
+		private System.Windows.Forms.StatusBarPanel statusObject;
+		private System.Windows.Forms.StatusBar statusBar;
+		private System.Windows.Forms.StatusBarPanel statusLocation;
+		private System.Windows.Forms.Panel scrollPanel;
 		private System.Windows.Forms.Panel wallSelectPanel;
 
-		public MapView()
-		{
-			InitializeComponent();
+		protected class FlickerFreePanel : Panel {public FlickerFreePanel() : base() {SetStyle(ControlStyles.DoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);}}
+		private System.Windows.Forms.Panel mapPanel;
 
-			//form designer doesn't like my flickerfreepanel, so put initialization here instead
-			mapPanel = new FlickerFreePanel();
-			mapPanel.BorderStyle = BorderStyle.Fixed3D;
-			mapPanel.ContextMenu = contextMenu1;
-			mapPanel.Dock = DockStyle.Fill;
-			mapPanel.Location = new Point(0, 0);
-			mapPanel.Name = "mapPanel";
-			mapPanel.Size = new Size(1024, 768);
-			mapPanel.TabIndex = 0;
-			mapPanel.MouseUp += new MouseEventHandler(this.mapPanel_MouseUp);
-			mapPanel.Paint += new PaintEventHandler(this.mapPanel_Paint);
-			mapPanel.MouseMove += new MouseEventHandler(this.mapPanel_MouseMove);
-			mapPanel.MouseDown += new MouseEventHandler(this.mapPanel_MouseDown);
-			Controls.Add(mapPanel);
-
-			wallSelector1 = new WallSelector();
-			wallSelectPanel.Controls.Add(wallSelector1);
-			wallSelector1.Parent = this;
-
-			hScrollBar1.Value = (hScrollBar1.Maximum - hScrollBar1.Minimum) / 2;
-			vScrollBar1.Value = (vScrollBar1.Maximum - vScrollBar1.Minimum) / 2;
-
-			tileGraphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
-			//set default values
-			tileGraphic.SelectedIndex = 0;
-			tileVar.SelectedIndex = 0;
-
-			Map = new Map();//dummy map
-			currentButton = selectButton;
-			CurrentMode = Mode.SELECT;
-		}
-
-		private void mapPanel_Paint(object sender, PaintEventArgs e)
-		{
-			if (Map == null)
-				return;
-
-			//black out the panel to start out
-			Size size = mapPanel.Size;
-			e.Graphics.FillRectangle(new SolidBrush(Color.Black), new Rectangle(new Point(0, 0), size));
-			Point pos = new Point(hScrollBar1.Value, vScrollBar1.Value);
-			//draw grid
-			if (DrawGrid)
-			{
-				Pen pen = new Pen(Color.Gray, gridThickness);
-				//draw the grid sloppily (an extra screen's worth of lines along either axis)
-				for (int x = -squareSize*(size.Width/squareSize) - squareSize/2 - pos.X % (2*squareSize); x < 2*size.Width; x += 2*squareSize)
-				{
-					int y = -3*squareSize/2 - pos.Y % (2*squareSize);
-					e.Graphics.DrawLine(pen, new Point(x, y), new Point(y, x));
-					e.Graphics.DrawLine(pen, new Point(x, y), new Point(size.Width + x, size.Width + y));
-				}
-			}
-			if (CurrentMode == Mode.MAKE_FLOOR)//only draw the floor when editing it
-			{
-				//draw floor
-				foreach (Map.Tile tile in Map.FloorMap.Values)
-				{
-					Pen pen = new Pen(Color.Yellow, 1);
-					int x = tile.Location.X * squareSize - hScrollBar1.Value;
-					int y = tile.Location.Y * squareSize - vScrollBar1.Value;
-					if (x >= 0 && x < size.Width && y >= 0 && y < size.Height)	
-					{
-						PointF nwCorner, neCorner, seCorner, swCorner, center;
-						center = new PointF(x + squareSize/2f, y + (3/2f)*squareSize);
-						nwCorner = new PointF(x - squareSize/2f, y + (3/2f)*squareSize);
-						neCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y - squareSize);
-						swCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y + squareSize);
-						seCorner = new PointF(neCorner.X + squareSize, neCorner.Y + squareSize);
-						e.Graphics.DrawPolygon(pen, new PointF[] {nwCorner, neCorner, seCorner, swCorner});
-						e.Graphics.DrawEllipse(pen, center.X, center.Y, 2, 2);
-					}
-				}
-			}
-
-			//draw walls
-			foreach (Map.Wall wall in Map.WallMap.Values)
-			{
-				Point pt = wall.Location;
-				if (pt.X*squareSize >= hScrollBar1.Value && pt.X*squareSize < size.Width+hScrollBar1.Value && pt.Y*squareSize >= vScrollBar1.Value && pt.Y*squareSize < size.Height+vScrollBar1.Value)	
-				{
-					Pen pen;
-					int x = pt.X * squareSize - hScrollBar1.Value, y = pt.Y * squareSize - vScrollBar1.Value;
-					if (wall.Destructable)
-						pen = new Pen(Color.Red, wallThickness);
-					else if (wall.Window)
-						pen = new Pen(Color.Orange, wallThickness);
-					else if (wall.Secret)
-						pen = new Pen(Color.Green, wallThickness);
-					else if (wall.Internal)
-						pen = new Pen(Color.Cyan, wallThickness);
-					else
-						pen = new Pen(Color.White, wallThickness);
-					PointF center = new PointF(x + squareSize/2f, y + squareSize/2f);
-					Point nCorner = new Point(x, y);
-					Point sCorner = new Point(x + squareSize, y + squareSize);
-					Point wCorner = new Point(x + squareSize, y);
-					Point eCorner = new Point(x, y + squareSize);
-					switch (wall.Facing)
-					{
-						case Map.Wall.WallFacing.NORTH:
-							e.Graphics.DrawLine(pen, wCorner, eCorner);
-							break;
-						case Map.Wall.WallFacing.WEST:
-							e.Graphics.DrawLine(pen, nCorner, sCorner);
-							break;
-						case Map.Wall.WallFacing.CROSS:
-							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall
-							e.Graphics.DrawLine(pen, nCorner, sCorner);//south wall
-							break;
-						case Map.Wall.WallFacing.NORTH_T:
-							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall
-							e.Graphics.DrawLine(pen, center, sCorner);//tail towards south
-							break;
-						case Map.Wall.WallFacing.SOUTH_T:
-							e.Graphics.DrawLine(pen, wCorner, eCorner);//north wall
-							e.Graphics.DrawLine(pen, center, nCorner);//tail towards north
-							break;
-						case Map.Wall.WallFacing.WEST_T:
-							e.Graphics.DrawLine(pen, nCorner, sCorner);//west wall
-							e.Graphics.DrawLine(pen, center, eCorner);//tail towards east
-							break;
-						case Map.Wall.WallFacing.EAST_T:
-							e.Graphics.DrawLine(pen, nCorner, sCorner);//west wall
-							e.Graphics.DrawLine(pen, center, wCorner);//tail towards west
-							break;
-						case Map.Wall.WallFacing.NE_CORNER:
-							e.Graphics.DrawLine(pen, center, eCorner);
-							e.Graphics.DrawLine(pen, center, sCorner);
-							break;
-						case Map.Wall.WallFacing.NW_CORNER:
-							e.Graphics.DrawLine(pen, center, wCorner);
-							e.Graphics.DrawLine(pen, center, sCorner);
-							break;
-						case Map.Wall.WallFacing.SW_CORNER:
-							e.Graphics.DrawLine(pen, center, nCorner);
-							e.Graphics.DrawLine(pen, center, wCorner);
-							break;
-						case Map.Wall.WallFacing.SE_CORNER:
-							e.Graphics.DrawLine(pen, center, nCorner);
-							e.Graphics.DrawLine(pen, center, eCorner);
-							break;
-						default:
-							e.Graphics.DrawRectangle(pen, x, y, squareSize, squareSize);
-							e.Graphics.DrawString("?", new Font("Arial", 12), new SolidBrush(Color.Red), nCorner);
-							break;
-					}
-
-					e.Graphics.DrawString(wall.Minimap.ToString(), new Font("Arial", 10), new SolidBrush(Color.Red), x, y);
-				}
-			}
-
-			//draw objects
-			foreach (Map.Object oe in Map.Objects)
-			{
-				PointF ptf = oe.Location;
-				if (ptf.X >= hScrollBar1.Value && ptf.X < size.Width+hScrollBar1.Value && ptf.Y >= vScrollBar1.Value && ptf.Y < size.Height+vScrollBar1.Value)	
-				{
-					Pen pen;
-					float x = ptf.X - hScrollBar1.Value, y = ptf.Y - vScrollBar1.Value;
-					
-					PointF center = new PointF(x, y);
-					PointF topLeft = new PointF(center.X - objectSelectionRadius, center.Y - objectSelectionRadius);
-					if (SelectedObject != null && ((Map.Object) SelectedObject).Location.Equals(oe.Location))
-						pen = new Pen(Color.Green, 1);
-					else
-						pen = new Pen(Color.Blue, 1);
-					e.Graphics.DrawEllipse(pen, new RectangleF(topLeft, new Size(2*objectSelectionRadius, 2*objectSelectionRadius)));
-					e.Graphics.DrawString(oe.Extent.ToString(),new Font("Arial", 10), new SolidBrush(Color.Purple), topLeft);
-				}
-			}
-			//draw polygons
-			foreach (Map.Polygon poly in Map.Polygons)
-			{
-				Pen pen = new Pen(Color.PaleGreen, 1);
-				ArrayList points = new ArrayList();
-				foreach (PointF pt in poly.Points)
-					points.Add(new PointF(pt.X-hScrollBar1.Value, pt.Y - vScrollBar1.Value));
-				points.Add(points[0]);//complete the loop
-				e.Graphics.DrawLines(pen, (PointF[]) points.ToArray(typeof(PointF)));
-			}
-		} 
-		private void ScrollBarChanged(object sender, System.EventArgs e)
-		{
-			mapPanel.Invalidate();
-		}
-
-		private void mapPanel_MouseDown(object sender, MouseEventArgs e)
-		{
-			Point pointClicked = new Point(hScrollBar1.Value + e.X, vScrollBar1.Value + e.Y);
-			if (e.Button.Equals(MouseButtons.Left) && e.Clicks == 1)//if single left click
-			{
-				if (CurrentMode == Mode.SELECT)
-				{
-					//dragging = Map.SelectObject(pointClicked) == SelectedObject;//only start "dragging" if this object has already been selected
-					if (SelectObject(pointClicked) == SelectedObject)
-						dragging = true;
-					else
-						SelectedObject = SelectObject(pointClicked);
-				}
-				else if (CurrentMode == Mode.MAKE_WALL)
-				{
-					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
-					if(pt.X % 2 == pt.Y % 2 && Map.WallMap[pt] == null)
-					{
-						Map.WallMap.Add(pt, wallSelector1.NewWall(pt));
-					}
-					else
-					{
-						Map.WallMap.Remove(pt);
-					}
-				}
-				else if (CurrentMode == Mode.MAKE_OBJECT)
-				{
-					Map.Object obj = new Map.Object();
-					DefaultObject.CopyTo(obj);
-					obj.Location = pointClicked;
-					obj.Extent = DefaultObject.Extent + 1;
-					while(Map.Objects.extents.Contains(obj.Extent))
-						obj.Extent++;
-					Map.Objects.Add(obj);
-				}
-				else if (CurrentMode == Mode.MAKE_WINDOW)
-				{
-					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
-					Map.Wall wall = (Map.Wall)Map.WallMap[pt];
-					if(wall != null)
-						wall.Window = !wall.Window;
-				}
-				else if (CurrentMode == Mode.MAKE_DESTRUCTABLE)
-				{
-					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
-					Map.Wall wall = (Map.Wall)Map.WallMap[pt];
-					if(wall != null)
-						wall.Destructable = !wall.Destructable;
-				}
-
-				else if (CurrentMode == Mode.MAKE_SECRET)
-				{
-					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize);
-					Map.Wall wall = (Map.Wall)Map.WallMap[pt];
-					if(wall != null)
-						wall.Secret = !wall.Secret;
-				}
-				else if (CurrentMode == Mode.MAKE_FLOOR)
-				{
-					Point pt = new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value-squareSize)/squareSize);
-					Map.Tile tile = (Map.Tile) Map.FloorMap[pt];
-					if(tile == null && pt.X % 2 == pt.Y % 2 && !threeFloorBox.Checked)
-					{
-						tile = new Map.Tile(
-							pt,
-							(byte) tileGraphic.SelectedIndex,
-							GetVariation(tileVar),
-							blendDialog.Blends
-							);
-						Map.FloorMap.Add(pt, tile);
-					}
-					else if(tile==null && pt.X % 2 == pt.Y % 2)
-					{
-						tile = new Map.Tile(
-							new Point(pt.X-1,pt.Y-1),
-							(byte) tileGraphic.SelectedIndex,
-							3,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							new Point(pt.X-2,pt.Y),
-							(byte) tileGraphic.SelectedIndex,
-							6,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							new Point(pt.X-1,pt.Y+1),
-							(byte) tileGraphic.SelectedIndex,
-							7,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							new Point(pt.X,pt.Y-2),
-							(byte) tileGraphic.SelectedIndex,
-							0,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							pt,
-							(byte) tileGraphic.SelectedIndex,
-							4,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							new Point(pt.X,pt.Y+2),
-							(byte) tileGraphic.SelectedIndex,
-							8,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							new Point(pt.X+1,pt.Y-1),
-							(byte) tileGraphic.SelectedIndex,
-							1,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							new Point(pt.X+2,pt.Y),
-							(byte) tileGraphic.SelectedIndex,
-							2,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-						tile = new Map.Tile(
-							new Point(pt.X+1,pt.Y+1),
-							(byte) tileGraphic.SelectedIndex,
-							5,
-							blendDialog.Blends
-							);
-						if((Map.Tile) Map.FloorMap[tile.Location]==null)
-							Map.FloorMap.Add(tile.Location, tile);
-					}
-					else
-					{
-						Map.FloorMap.Remove(pt);
-						if (threeFloorBox.Checked)
-						{
-							Map.FloorMap.Remove(new Point(pt.X - 1, pt.Y - 1));
-							Map.FloorMap.Remove(new Point(pt.X - 2, pt.Y));
-							Map.FloorMap.Remove(new Point(pt.X - 1, pt.Y + 1));
-							Map.FloorMap.Remove(new Point(pt.X, pt.Y - 2));
-							Map.FloorMap.Remove(new Point(pt.X, pt.Y + 2));
-							Map.FloorMap.Remove(new Point(pt.X + 1, pt.Y - 1));
-							Map.FloorMap.Remove(new Point(pt.X + 2, pt.Y));
-							Map.FloorMap.Remove(new Point(pt.X + 1, pt.Y + 1));
-						}
-					}
-				}
-				mapPanel.Invalidate();
-			}
-		}
-
-		//TODO: fix status bar so it doesnt truncate...
-		private void mapPanel_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
-		{
-			Map.Wall wall = (Map.Wall)Map.WallMap[new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value)/squareSize)];
-			Map.Tile tile = (Map.Tile)Map.FloorMap[new Point((e.X+hScrollBar1.Value)/squareSize,(e.Y+vScrollBar1.Value-squareSize)/squareSize)];
-
-			statusBar1.Text = "";
-			statusBar1.Text += String.Format("X={0} Y={1}", e.X + hScrollBar1.Value, e.Y + vScrollBar1.Value);
-
-			if (wall != null)
-				statusBar1.Text += String.Format("  Wall Material=\"{0}\"", wall.Material);
-			if (tile != null && CurrentMode == Mode.MAKE_FLOOR)
-			{
-				statusBar1.Text += "  Tile:";
-				statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}", tile.Graphic, tile.Variation);
-				if (tile.EdgeTiles.Count > 0)
-				{
-					statusBar1.Text += String.Format(" Edges({0}):", tile.EdgeTiles.Count);
-					foreach (Map.Tile.EdgeTile edge in tile.EdgeTiles)
-						statusBar1.Text += String.Format(" \"{0}\"-0x{1:x2}-{2}-{3}", ThingDb.FloorTileNames[edge.Graphic], edge.Variation, edge.Dir, ThingDb.EdgeTileNames[edge.Edge]);
-				}
-			}
-
-			if (SelectedObject != null && CurrentMode == Mode.SELECT)
-				statusBar1.Text += String.Format(" SelectedObject={0}", SelectedObject.Name);
-		}
-
-		private void selectButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.SELECT;//set new mode
-			currentButton = (Button) sender;//update current button
-			mapPanel.Invalidate();
-		}
-		private void newObjectButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_OBJECT;//set new mode
-			currentButton = (Button) sender;//update current button
-			mapPanel.Invalidate();
-		}
-
-		private void destructableButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_DESTRUCTABLE;//set new mode
-			currentButton = (Button) sender;//update current button	
-			mapPanel.Invalidate();
-		}
-
-		private void windowsButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_WINDOW;//set new mode
-			currentButton = (Button) sender;//update current button	
-			mapPanel.Invalidate();
-		}
-
-		private void buttonSecret_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_SECRET;//set new mode
-			currentButton = (Button) sender;//update current button	
-			mapPanel.Invalidate();
-		}
-
-		private void floorButton_Click(object sender, System.EventArgs e)
-		{
-			CurrentMode = Mode.MAKE_FLOOR;//set new mode
-			currentButton = (Button) sender;//update current button	
-			mapPanel.Invalidate();
-		}
-
-		private void contextMenuDelete_Click(object sender, System.EventArgs e)
-		{
-			if(SelectedObject != null)
-			{
-				Map.Objects.Remove(SelectedObject);
-				mapPanel.Invalidate();
-			}
-		}
-		protected ObjectPropertiesDialog propDlg;
-		protected ObjectEnchantDialog enchantDlg;
-		protected DoorProperties doorDlg;
-		private void contextMenuProperties_Click(object sender, EventArgs e)
-		{
-			propDlg = new ObjectPropertiesDialog();
-			propDlg.Object = SelectedObject;
-			propDlg.ShowDialog();
-			mapPanel.Invalidate();
-		}
-
-		private bool dragging;
-		private void mapPanel_MouseUp(object sender, MouseEventArgs e)
-		{
-			Point pointClicked = new Point(hScrollBar1.Value+e.X, vScrollBar1.Value+e.Y);
-			
-			if(DrawGrid)
-				pointClicked = new Point((int)Math.Round((decimal)(pointClicked.X/squareSize))*squareSize,(int)Math.Round((decimal)(pointClicked.Y/squareSize))*23);
-			
-			if (dragging && SelectedObject != null)
-			{
-				SelectedObject.Location = pointClicked;
-				dragging = false;
-			}
-
-			mapPanel.Invalidate();
-		}
-
-		public Map.Object SelectObject(Point pt)
-		{
-			double closestDistance = Double.MaxValue;
-			Map.Object closest = null;
-
-			foreach (Map.Object obj in Map.Objects)
-			{
-				double distance = Math.Sqrt(Math.Pow(pt.X - obj.Location.X, 2) + Math.Pow(pt.Y - obj.Location.Y, 2));
-
-				if (distance < (double) objectSelectionRadius && distance < closestDistance)
-				{
-					closestDistance = distance;
-					closest = obj;
-				}
-			}
-
-			return closest;
-		}
-
-		
 		#region Component Designer generated code
 		/// <summary> 
 		/// Required method for Designer support - do not modify 
@@ -566,9 +82,11 @@ namespace NoxMapEditor
 			this.contextMenuDelete = new System.Windows.Forms.MenuItem();
 			this.menuItem3 = new System.Windows.Forms.MenuItem();
 			this.contextMenuProperties = new System.Windows.Forms.MenuItem();
-			this.statusBar1 = new System.Windows.Forms.StatusBar();
-			this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
-			this.vScrollBar1 = new System.Windows.Forms.VScrollBar();
+			this.statusBar = new System.Windows.Forms.StatusBar();
+			this.statusLocation = new System.Windows.Forms.StatusBarPanel();
+			this.statusWall = new System.Windows.Forms.StatusBarPanel();
+			this.statusTile = new System.Windows.Forms.StatusBarPanel();
+			this.statusObject = new System.Windows.Forms.StatusBarPanel();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
 			this.objectGroup = new System.Windows.Forms.GroupBox();
 			this.selectButton = new System.Windows.Forms.Button();
@@ -591,11 +109,18 @@ namespace NoxMapEditor
 			this.buttonEditPolygon = new System.Windows.Forms.Button();
 			this.buttonPoints = new System.Windows.Forms.Button();
 			this.listPolygons = new System.Windows.Forms.ComboBox();
+			this.mapPanel = new FlickerFreePanel();
+			this.scrollPanel = new System.Windows.Forms.Panel();
+			((System.ComponentModel.ISupportInitialize)(this.statusLocation)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.statusWall)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.statusTile)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.statusObject)).BeginInit();
 			this.groupBox1.SuspendLayout();
 			this.objectGroup.SuspendLayout();
 			this.floorGroup.SuspendLayout();
 			this.wallGroup.SuspendLayout();
 			this.groupPolygons.SuspendLayout();
+			this.scrollPanel.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// contextMenu1
@@ -622,38 +147,42 @@ namespace NoxMapEditor
 			this.contextMenuProperties.Text = "Properties";
 			this.contextMenuProperties.Click += new System.EventHandler(this.contextMenuProperties_Click);
 			// 
-			// statusBar1
+			// statusBar
 			// 
-			this.statusBar1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((System.Byte)(0)));
-			this.statusBar1.Location = new System.Drawing.Point(0, 746);
-			this.statusBar1.Name = "statusBar1";
-			this.statusBar1.Size = new System.Drawing.Size(1024, 22);
-			this.statusBar1.SizingGrip = false;
-			this.statusBar1.TabIndex = 1;
+			this.statusBar.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((System.Byte)(0)));
+			this.statusBar.Location = new System.Drawing.Point(0, 578);
+			this.statusBar.Name = "statusBar";
+			this.statusBar.Panels.AddRange(new System.Windows.Forms.StatusBarPanel[] {
+																						 this.statusLocation,
+																						 this.statusWall,
+																						 this.statusTile,
+																						 this.statusObject});
+			this.statusBar.ShowPanels = true;
+			this.statusBar.Size = new System.Drawing.Size(800, 22);
+			this.statusBar.SizingGrip = false;
+			this.statusBar.TabIndex = 1;
 			// 
-			// hScrollBar1
+			// statusLocation
 			// 
-			this.hScrollBar1.Dock = System.Windows.Forms.DockStyle.Bottom;
-			this.hScrollBar1.LargeChange = 230;
-			this.hScrollBar1.Location = new System.Drawing.Point(128, 730);
-			this.hScrollBar1.Maximum = 5888;
-			this.hScrollBar1.Name = "hScrollBar1";
-			this.hScrollBar1.Size = new System.Drawing.Size(880, 16);
-			this.hScrollBar1.SmallChange = 23;
-			this.hScrollBar1.TabIndex = 2;
-			this.hScrollBar1.ValueChanged += new System.EventHandler(this.ScrollBarChanged);
+			this.statusLocation.MinWidth = 0;
+			this.statusLocation.ToolTipText = "Location";
 			// 
-			// vScrollBar1
+			// statusWall
 			// 
-			this.vScrollBar1.Dock = System.Windows.Forms.DockStyle.Right;
-			this.vScrollBar1.LargeChange = 230;
-			this.vScrollBar1.Location = new System.Drawing.Point(1008, 0);
-			this.vScrollBar1.Maximum = 5888;
-			this.vScrollBar1.Name = "vScrollBar1";
-			this.vScrollBar1.Size = new System.Drawing.Size(16, 746);
-			this.vScrollBar1.SmallChange = 23;
-			this.vScrollBar1.TabIndex = 3;
-			this.vScrollBar1.ValueChanged += new System.EventHandler(this.ScrollBarChanged);
+			this.statusWall.MinWidth = 0;
+			this.statusWall.ToolTipText = "Wall Info";
+			// 
+			// statusTile
+			// 
+			this.statusTile.MinWidth = 0;
+			this.statusTile.ToolTipText = "Tile Info";
+			this.statusTile.Width = 400;
+			// 
+			// statusObject
+			// 
+			this.statusObject.MinWidth = 0;
+			this.statusObject.ToolTipText = "Object Info";
+			this.statusObject.Width = 300;
 			// 
 			// groupBox1
 			// 
@@ -664,7 +193,7 @@ namespace NoxMapEditor
 			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
 			this.groupBox1.Location = new System.Drawing.Point(0, 0);
 			this.groupBox1.Name = "groupBox1";
-			this.groupBox1.Size = new System.Drawing.Size(128, 746);
+			this.groupBox1.Size = new System.Drawing.Size(248, 578);
 			this.groupBox1.TabIndex = 4;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Tools";
@@ -674,7 +203,7 @@ namespace NoxMapEditor
 			this.objectGroup.Controls.Add(this.selectButton);
 			this.objectGroup.Controls.Add(this.newObjectButton);
 			this.objectGroup.Controls.Add(this.defaultButt);
-			this.objectGroup.Location = new System.Drawing.Point(8, 512);
+			this.objectGroup.Location = new System.Drawing.Point(128, 168);
 			this.objectGroup.Name = "objectGroup";
 			this.objectGroup.Size = new System.Drawing.Size(112, 96);
 			this.objectGroup.TabIndex = 24;
@@ -715,7 +244,7 @@ namespace NoxMapEditor
 			this.floorGroup.Controls.Add(this.tileVar);
 			this.floorGroup.Controls.Add(this.tileGraphic);
 			this.floorGroup.Controls.Add(this.floorButton);
-			this.floorGroup.Location = new System.Drawing.Point(8, 360);
+			this.floorGroup.Location = new System.Drawing.Point(128, 16);
 			this.floorGroup.Name = "floorGroup";
 			this.floorGroup.Size = new System.Drawing.Size(112, 144);
 			this.floorGroup.TabIndex = 22;
@@ -822,7 +351,7 @@ namespace NoxMapEditor
 			this.groupPolygons.Controls.Add(this.buttonEditPolygon);
 			this.groupPolygons.Controls.Add(this.buttonPoints);
 			this.groupPolygons.Controls.Add(this.listPolygons);
-			this.groupPolygons.Location = new System.Drawing.Point(8, 616);
+			this.groupPolygons.Location = new System.Drawing.Point(128, 272);
 			this.groupPolygons.Name = "groupPolygons";
 			this.groupPolygons.Size = new System.Drawing.Size(112, 104);
 			this.groupPolygons.TabIndex = 5;
@@ -876,23 +405,371 @@ namespace NoxMapEditor
 			this.listPolygons.TabIndex = 23;
 			this.listPolygons.Click += new System.EventHandler(this.listPolygons_Click);
 			// 
+			// mapPanel
+			// 
+			this.mapPanel.Location = new System.Drawing.Point(0, 0);
+			this.mapPanel.Name = "mapPanel";
+			this.mapPanel.Size = new System.Drawing.Size(5888, 5888);
+			this.mapPanel.TabIndex = 5;
+			this.mapPanel.MouseUp += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseUp);
+			this.mapPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.mapPanel_Paint);
+			this.mapPanel.MouseMove += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseMove);
+			this.mapPanel.MouseDown += new System.Windows.Forms.MouseEventHandler(this.mapPanel_MouseDown);
+			// 
+			// scrollPanel
+			// 
+			this.scrollPanel.AutoScroll = true;
+			this.scrollPanel.Controls.Add(this.mapPanel);
+			this.scrollPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.scrollPanel.Location = new System.Drawing.Point(248, 0);
+			this.scrollPanel.Name = "scrollPanel";
+			this.scrollPanel.Size = new System.Drawing.Size(552, 578);
+			this.scrollPanel.TabIndex = 6;
+			// 
 			// MapView
 			// 
-			this.Controls.Add(this.hScrollBar1);
-			this.Controls.Add(this.vScrollBar1);
+			this.Controls.Add(this.scrollPanel);
 			this.Controls.Add(this.groupBox1);
-			this.Controls.Add(this.statusBar1);
+			this.Controls.Add(this.statusBar);
 			this.Name = "MapView";
-			this.Size = new System.Drawing.Size(1024, 768);
+			this.Size = new System.Drawing.Size(800, 600);
+			((System.ComponentModel.ISupportInitialize)(this.statusLocation)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.statusWall)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.statusTile)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.statusObject)).EndInit();
 			this.groupBox1.ResumeLayout(false);
 			this.objectGroup.ResumeLayout(false);
 			this.floorGroup.ResumeLayout(false);
 			this.wallGroup.ResumeLayout(false);
 			this.groupPolygons.ResumeLayout(false);
+			this.scrollPanel.ResumeLayout(false);
 			this.ResumeLayout(false);
 
 		}
 		#endregion
+
+		public MapView()
+		{
+			InitializeComponent();
+
+			//form designer doesn't like my flickerfreepanel, so put initialization here instead
+			/*mapPanel = new FlickerFreePanel();
+			mapPanel.BorderStyle = BorderStyle.Fixed3D;
+			mapPanel.ContextMenu = contextMenu1;
+			mapPanel.Dock = DockStyle.Fill;
+			mapPanel.Location = new Point(0, 0);
+			mapPanel.Name = "mapPanel";
+			mapPanel.Size = new Size(1024, 768);
+			mapPanel.TabIndex = 0;
+			mapPanel.MouseUp += new MouseEventHandler(this.mapPanel_MouseUp);
+			mapPanel.Paint += new PaintEventHandler(this.mapPanel_Paint);
+			mapPanel.MouseMove += new MouseEventHandler(this.mapPanel_MouseMove);
+			mapPanel.MouseDown += new MouseEventHandler(this.mapPanel_MouseDown);
+			Controls.Add(mapPanel);*/
+
+			wallSelector1 = new WallSelector();
+			wallSelectPanel.Controls.Add(wallSelector1);
+			wallSelector1.Parent = this;
+
+			tileGraphic.Items.AddRange(ThingDb.FloorTileNames.ToArray());
+			//set default values
+			tileGraphic.SelectedIndex = 0;
+			tileVar.SelectedIndex = 0;
+
+			Map = new Map();//dummy map
+			currentButton = selectButton;
+			CurrentMode = Mode.SELECT;
+		}
+
+		private void ScrollBarChanged(object sender, System.EventArgs e)
+		{
+			mapPanel.Invalidate();
+		}
+
+		private void mapPanel_MouseDown(object sender, MouseEventArgs e)
+		{
+			Point pt = new Point(e.X, e.Y);
+			Point tilePt = GetNearestTilePoint(pt);
+			if (e.Button.Equals(MouseButtons.Left) && e.Clicks == 1)//if single left click
+			{
+				if (CurrentMode == Mode.SELECT)
+				{
+					//dragging = Map.SelectObject(pointClicked) == SelectedObject;//only start "dragging" if this object has already been selected
+					if (SelectObject(pt) == SelectedObject)
+						dragging = true;
+					else
+						SelectedObject = SelectObject(pt);
+				}
+				else if (CurrentMode == Mode.MAKE_WALL)
+				{
+					if(Map.WallMap[tilePt] == null)
+					{
+						Map.WallMap.Add(tilePt, wallSelector1.NewWall(tilePt));
+					}
+					else
+					{
+						Map.WallMap.Remove(tilePt);
+					}
+				}
+				else if (CurrentMode == Mode.MAKE_OBJECT)
+				{
+					Map.Object obj = (NoxShared.Map.Object) DefaultObject.Clone();
+					obj.Location = pt;
+					obj.Extent = DefaultObject.Extent + 1;
+					while(Map.Objects.extents.Contains(obj.Extent))
+						obj.Extent++;
+					Map.Objects.Add(obj);
+				}
+				else if (CurrentMode == Mode.MAKE_WINDOW)
+				{
+					Map.Wall wall = (Map.Wall)Map.WallMap[tilePt];
+					if(wall != null)
+						wall.Window = !wall.Window;
+				}
+				else if (CurrentMode == Mode.MAKE_DESTRUCTABLE)
+				{
+					Map.Wall wall = (Map.Wall)Map.WallMap[tilePt];
+					if(wall != null)
+						wall.Destructable = !wall.Destructable;
+				}
+
+				else if (CurrentMode == Mode.MAKE_SECRET)
+				{
+					Map.Wall wall = (Map.Wall)Map.WallMap[tilePt];
+					if(wall != null)
+						wall.Secret = !wall.Secret;
+				}
+				else if (CurrentMode == Mode.MAKE_FLOOR)
+				{
+					tilePt.Offset(0, -1);
+					Map.Tile tile = (Map.Tile) Map.FloorMap[tilePt];
+					if(tile == null && !threeFloorBox.Checked)
+					{
+						tile = new Map.Tile(
+							tilePt,
+							(byte) tileGraphic.SelectedIndex,
+							GetVariation(tileVar),
+							blendDialog.Blends
+							);
+						Map.FloorMap.Add(tilePt, tile);
+					}
+					else if(tile == null)
+					{
+						tile = new Map.Tile(
+							new Point(tilePt.X-1,tilePt.Y-1),
+							(byte) tileGraphic.SelectedIndex,
+							3,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(tilePt.X-2,tilePt.Y),
+							(byte) tileGraphic.SelectedIndex,
+							6,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(tilePt.X-1,tilePt.Y+1),
+							(byte) tileGraphic.SelectedIndex,
+							7,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(tilePt.X,tilePt.Y-2),
+							(byte) tileGraphic.SelectedIndex,
+							0,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							tilePt,
+							(byte) tileGraphic.SelectedIndex,
+							4,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(tilePt.X,tilePt.Y+2),
+							(byte) tileGraphic.SelectedIndex,
+							8,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(tilePt.X+1,tilePt.Y-1),
+							(byte) tileGraphic.SelectedIndex,
+							1,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(tilePt.X+2,tilePt.Y),
+							(byte) tileGraphic.SelectedIndex,
+							2,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+						tile = new Map.Tile(
+							new Point(tilePt.X+1,tilePt.Y+1),
+							(byte) tileGraphic.SelectedIndex,
+							5,
+							blendDialog.Blends
+							);
+						if((Map.Tile) Map.FloorMap[tile.Location]==null)
+							Map.FloorMap.Add(tile.Location, tile);
+					}
+					else
+					{
+						Map.FloorMap.Remove(tilePt);
+						if (threeFloorBox.Checked)
+						{
+							Map.FloorMap.Remove(new Point(tilePt.X - 1, tilePt.Y - 1));
+							Map.FloorMap.Remove(new Point(tilePt.X - 2, tilePt.Y));
+							Map.FloorMap.Remove(new Point(tilePt.X - 1, tilePt.Y + 1));
+							Map.FloorMap.Remove(new Point(tilePt.X, tilePt.Y - 2));
+							Map.FloorMap.Remove(new Point(tilePt.X, tilePt.Y + 2));
+							Map.FloorMap.Remove(new Point(tilePt.X + 1, tilePt.Y - 1));
+							Map.FloorMap.Remove(new Point(tilePt.X + 2, tilePt.Y));
+							Map.FloorMap.Remove(new Point(tilePt.X + 1, tilePt.Y + 1));
+						}
+					}
+				}
+				mapPanel.Invalidate();
+			}
+		}
+
+		private void mapPanel_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
+		{
+			Point pt = GetNearestTilePoint(new Point(e.X, e.Y));
+			Map.Wall wall = (Map.Wall) Map.WallMap[pt];
+			Map.Tile tile = (Map.Tile) Map.FloorMap[new Point(pt.X, pt.Y - 1)];
+
+			statusWall.Text = statusTile.Text = statusObject.Text = "";
+			statusLocation.Text = String.Format("X={0} Y={1}", e.X, e.Y);
+
+			if (wall != null)
+				statusWall.Text = String.Format("{0}", wall.Material);
+
+			if (tile != null)
+			{
+				statusTile.Text += String.Format("{0}-0x{1:x2}", tile.Graphic, tile.Variation);
+				if (tile.EdgeTiles.Count > 0)
+				{
+					statusTile.Text += String.Format(" Edges({0}):", tile.EdgeTiles.Count);
+					foreach (Map.Tile.EdgeTile edge in tile.EdgeTiles)
+						statusTile.Text += String.Format(" {0}-0x{1:x2}-{2}-{3}", ThingDb.FloorTileNames[edge.Graphic], edge.Variation, edge.Dir, ThingDb.EdgeTileNames[edge.Edge]);
+				}
+			}
+
+			if (SelectedObject != null)
+				statusObject.Text = String.Format("{0}", SelectedObject.Name);
+		}
+
+		private void selectButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.SELECT;//set new mode
+			currentButton = (Button) sender;//update current button
+			mapPanel.Invalidate();
+		}
+		private void newObjectButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_OBJECT;//set new mode
+			currentButton = (Button) sender;//update current button
+			mapPanel.Invalidate();
+		}
+
+		private void destructableButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_DESTRUCTABLE;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
+		private void windowsButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_WINDOW;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
+		private void buttonSecret_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_SECRET;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
+		private void floorButton_Click(object sender, System.EventArgs e)
+		{
+			CurrentMode = Mode.MAKE_FLOOR;//set new mode
+			currentButton = (Button) sender;//update current button	
+			mapPanel.Invalidate();
+		}
+
+		private void contextMenuDelete_Click(object sender, System.EventArgs e)
+		{
+			if(SelectedObject != null)
+			{
+				Map.Objects.Remove(SelectedObject);
+				mapPanel.Invalidate();
+			}
+		}
+		protected ObjectPropertiesDialog propDlg;
+		protected ObjectEnchantDialog enchantDlg;
+		protected DoorProperties doorDlg;
+		private void contextMenuProperties_Click(object sender, EventArgs e)
+		{
+			propDlg = new ObjectPropertiesDialog();
+			propDlg.Object = SelectedObject;
+			if (propDlg.ShowDialog() == DialogResult.OK)//modifications will be effected when ok is pressed
+				mapPanel.Invalidate();
+		}
+
+		private bool dragging;
+		private void mapPanel_MouseUp(object sender, MouseEventArgs e)
+		{
+			Point pointClicked = new Point(e.X, e.Y);
+			
+			if(DrawGrid)
+				pointClicked = new Point((int)Math.Round((decimal)(pointClicked.X/squareSize))*squareSize,(int)Math.Round((decimal)(pointClicked.Y/squareSize))*23);
+			
+			if (dragging && SelectedObject != null)
+			{
+				SelectedObject.Location = pointClicked;
+				dragging = false;
+			}
+
+			mapPanel.Invalidate();
+		}
+
+		public Map.Object SelectObject(Point pt)
+		{
+			double closestDistance = Double.MaxValue;
+			Map.Object closest = null;
+
+			foreach (Map.Object obj in Map.Objects)
+			{
+				double distance = Math.Sqrt(Math.Pow(pt.X - obj.Location.X, 2) + Math.Pow(pt.Y - obj.Location.Y, 2));
+
+				if (distance < (double) objectSelectionRadius && distance < closestDistance)
+				{
+					closestDistance = distance;
+					closest = obj;
+				}
+			}
+
+			return closest;
+		}
 
 		private void checkboxGrid_CheckedChanged(object sender, System.EventArgs e)
 		{
@@ -967,6 +844,197 @@ namespace NoxMapEditor
 			listPolygons.Items.Clear();
 			foreach (Map.Polygon poly in Map.Polygons)
 				listPolygons.Items.Add(poly.Name);
+		}
+
+		//FIXME: use e.ClipRectangle to limit drawing
+		private void mapPanel_Paint(object sender, System.Windows.Forms.PaintEventArgs e)
+		{
+			if (Map == null)
+				return;
+
+			Graphics g = e.Graphics;
+
+			//black out the panel to start out
+			Size size = mapPanel.Size;
+			g.FillRectangle(new SolidBrush(Color.Black), new Rectangle(new Point(0, 0), size));
+
+			//draw grid
+			if (DrawGrid)
+			{
+				Pen pen = new Pen(Color.Gray, gridThickness);
+				//draw the grid sloppily (an extra screen's worth of lines along either axis)
+				for (int x = -squareSize*(size.Width/squareSize) - squareSize/2 % (2*squareSize); x < 2*size.Width; x += 2*squareSize)
+				{
+					int y = -3*squareSize/2 % (2*squareSize);
+					g.DrawLine(pen, new Point(x, y), new Point(y, x));
+					g.DrawLine(pen, new Point(x, y), new Point(size.Width + x, size.Width + y));
+				}
+			}
+
+			//draw floor
+			if (CurrentMode == Mode.MAKE_FLOOR)//only draw the floor when editing it
+			{
+				foreach (Map.Tile tile in Map.FloorMap.Values)
+				{
+					Pen pen = new Pen(Color.Yellow, 1);
+					int x = tile.Location.X * squareSize;
+					int y = tile.Location.Y * squareSize;
+					if (x >= e.ClipRectangle.Left && x < e.ClipRectangle.Right
+						&& y >= e.ClipRectangle.Top && y < e.ClipRectangle.Bottom)	
+					{
+						PointF nwCorner, neCorner, seCorner, swCorner, center;
+						center = new PointF(x + squareSize/2f, y + (3/2f)*squareSize);
+						nwCorner = new PointF(x - squareSize/2f, y + (3/2f)*squareSize);
+						neCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y - squareSize);
+						swCorner = new PointF(nwCorner.X + squareSize, nwCorner.Y + squareSize);
+						seCorner = new PointF(neCorner.X + squareSize, neCorner.Y + squareSize);
+						g.DrawPolygon(pen, new PointF[] {nwCorner, neCorner, seCorner, swCorner});
+						g.DrawEllipse(pen, center.X, center.Y, 2, 2);
+					}
+				}
+			}
+
+			//draw walls
+			foreach (Map.Wall wall in Map.WallMap.Values)
+			{
+				Point pt = wall.Location;
+				Pen pen;
+				int x = pt.X * squareSize, y = pt.Y * squareSize;
+				if (wall.Destructable)
+					pen = new Pen(Color.Red, wallThickness);
+				else if (wall.Window)
+					pen = new Pen(Color.Orange, wallThickness);
+				else if (wall.Secret)
+					pen = new Pen(Color.Green, wallThickness);
+				else
+					pen = new Pen(Color.White, wallThickness);
+				PointF center = new PointF(x + squareSize/2f, y + squareSize/2f);
+				Point nCorner = new Point(x, y);
+				Point sCorner = new Point(x + squareSize, y + squareSize);
+				Point wCorner = new Point(x + squareSize, y);
+				Point eCorner = new Point(x, y + squareSize);
+				switch (wall.Facing)
+				{
+					case Map.Wall.WallFacing.NORTH:
+						g.DrawLine(pen, wCorner, eCorner);
+						break;
+					case Map.Wall.WallFacing.WEST:
+						g.DrawLine(pen, nCorner, sCorner);
+						break;
+					case Map.Wall.WallFacing.CROSS:
+						g.DrawLine(pen, wCorner, eCorner);//north wall
+						g.DrawLine(pen, nCorner, sCorner);//south wall
+						break;
+					case Map.Wall.WallFacing.NORTH_T:
+						g.DrawLine(pen, wCorner, eCorner);//north wall
+						g.DrawLine(pen, center, sCorner);//tail towards south
+						break;
+					case Map.Wall.WallFacing.SOUTH_T:
+						g.DrawLine(pen, wCorner, eCorner);//north wall
+						g.DrawLine(pen, center, nCorner);//tail towards north
+						break;
+					case Map.Wall.WallFacing.WEST_T:
+						g.DrawLine(pen, nCorner, sCorner);//west wall
+						g.DrawLine(pen, center, eCorner);//tail towards east
+						break;
+					case Map.Wall.WallFacing.EAST_T:
+						g.DrawLine(pen, nCorner, sCorner);//west wall
+						g.DrawLine(pen, center, wCorner);//tail towards west
+						break;
+					case Map.Wall.WallFacing.NE_CORNER:
+						g.DrawLine(pen, center, eCorner);
+						g.DrawLine(pen, center, sCorner);
+						break;
+					case Map.Wall.WallFacing.NW_CORNER:
+						g.DrawLine(pen, center, wCorner);
+						g.DrawLine(pen, center, sCorner);
+						break;
+					case Map.Wall.WallFacing.SW_CORNER:
+						g.DrawLine(pen, center, nCorner);
+						g.DrawLine(pen, center, wCorner);
+						break;
+					case Map.Wall.WallFacing.SE_CORNER:
+						g.DrawLine(pen, center, nCorner);
+						g.DrawLine(pen, center, eCorner);
+						break;
+					default:
+						g.DrawRectangle(pen, x, y, squareSize, squareSize);
+						g.DrawString("?", new Font("Arial", 12), new SolidBrush(Color.Red), nCorner);
+						break;
+				}
+
+				g.DrawString(wall.Minimap.ToString(), new Font("Arial", 10), new SolidBrush(Color.Red), x, y);
+			}
+
+			//draw objects
+			foreach (Map.Object oe in Map.Objects)
+			{
+				PointF ptf = oe.Location;
+				Pen pen;
+				float x = ptf.X, y = ptf.Y;
+				
+				PointF center = new PointF(x, y);
+				PointF topLeft = new PointF(center.X - objectSelectionRadius, center.Y - objectSelectionRadius);
+				if (SelectedObject != null && ((Map.Object) SelectedObject).Location.Equals(oe.Location))
+					pen = new Pen(Color.Green, 1);
+				else
+					pen = new Pen(Color.Blue, 1);
+				g.DrawEllipse(pen, new RectangleF(topLeft, new Size(2*objectSelectionRadius, 2*objectSelectionRadius)));
+				g.DrawString(oe.Extent.ToString(),new Font("Arial", 10), new SolidBrush(Color.Purple), topLeft);
+			}
+
+			//draw polygons
+			foreach (Map.Polygon poly in Map.Polygons)
+			{
+				Pen pen = new Pen(Color.PaleGreen, 1);
+				ArrayList points = new ArrayList();
+				foreach (PointF pt in poly.Points)
+					points.Add(new PointF(pt.X, pt.Y));
+				points.Add(points[0]);//complete the loop
+				g.DrawLines(pen, (PointF[]) points.ToArray(typeof(PointF)));
+			}
+		}
+
+		private Point GetNearestTilePoint(Point pt)
+		{
+			//pt.Offset(0, -squareSize);
+			Point tl = new Point((pt.X/squareSize)*squareSize, (pt.Y/squareSize)*squareSize);
+			if (tl.X/squareSize % 2 == tl.Y/squareSize % 2)
+				return new Point(tl.X/squareSize, tl.Y/squareSize);
+			else
+			{
+				Point left = new Point(tl.X, tl.Y + squareSize/2);
+				Point right = new Point(tl.X + squareSize, tl.Y + squareSize/2);
+				Point top = new Point(tl.X + squareSize/2, tl.Y);
+				Point bottom = new Point(tl.X + squareSize/2, tl.Y + squareSize);
+				Point closest = left;
+				foreach (Point point in new Point[] {left, right, top, bottom})
+					if (Distance(point, pt) < Distance(closest, pt))
+						closest = point;
+
+				if (closest == left)
+					return new Point(tl.X/squareSize - 1, tl.Y/squareSize);
+				else if (closest == right)
+					return new Point(tl.X/squareSize + 1, tl.Y/squareSize);
+				else if (closest == top)
+					return new Point(tl.X/squareSize, tl.Y/squareSize - 1);
+				else
+					return new Point(tl.X/squareSize, tl.Y/squareSize + 1);
+
+				/*
+				Point tr = new Point(tl.X + squareSize, tl.Y);
+				Point bl = new Point(tl.X, tl.Y + squareSize);
+				if (Math.Sqrt(Math.Pow(pt.X - tr.X, 2) + Math.Pow(pt.Y - tr.Y, 2))
+					< Math.Sqrt(Math.Pow(pt.X - bl.X, 2) + Math.Pow(pt.Y - bl.Y, 2)))
+					return new Point(tr.X/squareSize, tr.Y/squareSize);
+				else
+					return new Point(bl.X/squareSize, bl.Y/squareSize);*/
+			}
+		}
+
+		private int Distance(Point a, Point b)
+		{
+			return (int) Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
 		}
 	}
 }
