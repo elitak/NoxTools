@@ -27,6 +27,9 @@ namespace NoxMapEditor
 				extentBox.Text = obj.Extent.ToString();
 				teamBox.Text = obj.Team.ToString();
 				scrNameBox.Text = obj.Scr_Name;
+				scrNameBox.Enabled = false;
+				teamBox.Enabled = false;
+				xtraBox.Checked = (obj.Terminator > 0);
 				//print out the bytes in hex
 				boxMod.Text = "";
 				if (obj.modbuf != null)
@@ -247,6 +250,7 @@ namespace NoxMapEditor
 			this.xtraBox.Size = new System.Drawing.Size(80, 16);
 			this.xtraBox.TabIndex = 20;
 			this.xtraBox.Text = "Xtra Bytes";
+			this.xtraBox.CheckedChanged += new System.EventHandler(this.xtraBox_CheckedChanged);
 			// 
 			// ObjectPropertiesDialog
 			// 
@@ -351,6 +355,20 @@ namespace NoxMapEditor
 				enchantButton.Enabled = true;
 			else if((((ThingDb.Thing)ThingDb.Things[nameBox.Text]).Class & ThingDb.Thing.ClassFlags.DOOR)==ThingDb.Thing.ClassFlags.DOOR)
 				lockButton.Enabled = true;
+		}
+
+		private void xtraBox_CheckedChanged(object sender, System.EventArgs e)
+		{
+			if(xtraBox.Checked)
+			{
+				scrNameBox.Enabled = true;
+				teamBox.Enabled = true;
+			}
+			else
+			{
+				scrNameBox.Enabled = false;
+				teamBox.Enabled = false;
+			}	
 		}
 	}
 }
