@@ -60,8 +60,7 @@ namespace NoxShared
 				rdr.ReadInt32();
 				rdr.ReadInt32();
 				if (Type == TileType.Floor) rdr.ReadInt32(); else rdr.ReadInt16();
-				int something;
-				while((something  = rdr.ReadInt32()) != (int) ThingToken.END)
+				while(rdr.ReadInt32() != (int) ThingToken.END)//TODO: don't know what these represent
 					Variations++;
 			}
 
@@ -968,7 +967,7 @@ namespace NoxShared
 				}
 				string noxPath = (string) installPathKey.GetValue("InstallPath");
 				string filePath = noxPath.Substring(0, noxPath.LastIndexOf("\\")+1) + "thing.bin";
-				NoxBinaryReader rdr = new NoxBinaryReader(File.OpenRead(filePath), NoxType.NoxCryptFormat.THING);
+				NoxBinaryReader rdr = new NoxBinaryReader(File.OpenRead(filePath), CryptApi.NoxCryptFormat.THING);
 
 				object obj;
 				ThingToken token;
@@ -1017,7 +1016,7 @@ namespace NoxShared
 						throw new ApplicationException("Encountered unkown token while reading thing.bin");
 				}
 			}
-			catch (FileNotFoundException ex)
+			catch (FileNotFoundException)
 			{
 				System.Windows.Forms.MessageBox.Show("Could not access thing.bin in the Nox game directory.", "Error");
 			}
@@ -1069,7 +1068,7 @@ namespace NoxShared
 					rdr.BaseStream.Seek(-4, SeekOrigin.Current);
 					return Enum.Parse(typeof(ThingToken), token);
 				}
-				catch (ArgumentException ex)
+				catch (ArgumentException)
 				{
 					return null;
 				}
