@@ -19,8 +19,9 @@ namespace NoxShared
 		public MapInfo Info;
 		public SortedList WallMap;
 		public bool Encrypted; //default true if map will be encrypted upon saving
-		public SortedList FloorMap;
+		public TileMap FloorMap;
 		public ObjectTable Objects;//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
+		public PolygonList Polygons = new PolygonList();
 
 		// ----PROTECTED MEMBERS----
 		protected MapHeader Header;
@@ -28,6 +29,348 @@ namespace NoxShared
 		protected Hashtable Headers;//contains the headers for each section or the complete section
 
 		#region Inner Classes and Enumerations
+
+		public class PolygonList : ArrayList
+		{
+			protected short termCount;//seems to control amount of useless data at the end???
+			public ArrayList Points = new ArrayList();
+
+			public PolygonList() {}
+			public PolygonList(Stream stream)
+			{
+				Read(stream);
+			}
+
+			protected void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
+
+				termCount = rdr.ReadInt16();
+				
+				int numPoints = rdr.ReadInt32();
+				while (numPoints-- > 0)
+				{
+					rdr.ReadInt32();//the point number. NOTE: I'm assuming they are in ascending order!!
+					Points.Add(new PointF(rdr.ReadSingle(), rdr.ReadSingle()));
+				}
+
+				int numPolygons = rdr.ReadInt32();
+				while (numPolygons-- > 0)
+					Add(new Polygon(rdr.BaseStream, this));
+
+				//TODO: figure this out?? really weird...
+				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
+				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
+				if (termCount == 0x0003) stream.Seek(-4, SeekOrigin.Current);
+
+				Debug.Assert(rdr.BaseStream.Position == finish, "(Map, Polygons) Bad read length.");
+			}
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+				wtr.Write("Polygons\0");
+				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
+				wtr.Write((long) 0);//dummy length value
+				long startPos = wtr.BaseStream.Position;
+				
+				wtr.Write((short) termCount);
+
+				//rebuild point list
+				Points.Clear();
+				foreach (Polygon poly in this)
+					foreach (PointF pt in poly.Points)
+						if (!Points.Contains(pt))
+							Points.Add(pt);
+
+				//TODO: sort this before writing?
+				wtr.Write((int) Points.Count);
+				foreach (PointF pt in Points)
+				{
+					wtr.Write((int) (Points.IndexOf(pt)+1));
+					wtr.Write((float) pt.X);
+					wtr.Write((float) pt.Y);
+				}
+
+				wtr.Write((int) this.Count);
+				foreach (Polygon poly in this)
+					poly.Write(wtr.BaseStream);
+
+				//TODO: figure this out?? really weird...
+				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
+				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
+				if (termCount == 0x0003) stream.Seek(-4, SeekOrigin.Current);
+
+				//rewrite the length now that we can find it
+				long length = wtr.BaseStream.Position - startPos;
+				wtr.Seek((int) startPos - 8, SeekOrigin.Begin);
+				wtr.Write((long) length);
+				wtr.Seek((int) length, SeekOrigin.Current);
+			}
+		}
+
+		public class Polygon
+		{
+			public string Name;
+			public int u1;
+			public ArrayList Points = new ArrayList();
+			protected byte[] endbuf;
+			protected PolygonList list;
+
+			public Polygon(Stream stream, PolygonList list)
+			{
+				this.list = list;
+				Read(stream);
+			}
+
+			protected void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+
+				Name = rdr.ReadString();
+				u1 = rdr.ReadInt32(); //maybe a float?
+
+				short ptCount = rdr.ReadInt16();
+				while (ptCount-- > 0)
+					Points.Add(list.Points[rdr.ReadInt32()-1]);
+
+				endbuf = rdr.ReadBytes(0x18);//always "01 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00"?
+			}
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+				wtr.Write(Name);
+				wtr.Write((int) u1);
+				wtr.Write((short) Points.Count);
+				foreach (PointF pt in Points)
+					wtr.Write((int) (list.Points.IndexOf(pt)+1));
+				wtr.Write(endbuf);
+			}
+		}
+
+		public class Tile
+		{
+			public Point Location;
+			protected byte graphicId;
+			public byte Variation;
+			public ArrayList Blends = new ArrayList();
+
+			public string Graphic
+			{
+				get
+				{
+					return ((ThingDb.Tile) ThingDb.FloorTiles[graphicId]).Name;
+				}
+			}
+
+			public Tile(byte graphic, byte variation)
+			{
+				graphicId = graphic; Variation = variation;
+			}
+
+			public Tile(byte graphic, byte variation, ArrayList blends) : this(graphic, variation)
+			{
+				Blends = blends;
+			}
+
+			public Tile(Point loc, byte graphic, byte variation) : this(graphic, variation)
+			{
+				Location = loc;
+			}
+
+			public Tile(Stream stream)
+			{
+				Read(stream);
+			}
+
+			public void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				graphicId = rdr.ReadByte();
+				Variation = (byte) rdr.ReadByte();
+				rdr.ReadBytes(3);//these are always null for first tilePair of a blending group (?)
+				for (int numBlends = rdr.ReadByte(); numBlends > 0; numBlends--)
+					Blends.Add(new Blend(rdr.BaseStream));
+			}
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write((byte )graphicId);
+				wtr.Write((byte) Variation);
+				wtr.Write(new byte[3]);//3 nulls
+				wtr.Write((byte) Blends.Count);
+				foreach(Blend blend in Blends)
+					blend.Write(stream);
+			}
+
+			public class Blend//maybe derive from tile?
+			{
+				protected byte graphicId;
+				public byte Variation;
+				public byte unknown1; //Always 00(?)
+				public byte unknown2; //Always 10(?)
+				public BlendDirection Direction;
+
+				public string Graphic
+				{
+					get
+					{
+						return ((ThingDb.Tile) ThingDb.FloorTiles[graphicId]).Name;//FIXME
+					}
+				}
+
+				public enum BlendDirection : byte
+				{
+					SW = 0x00,
+					WEST = 0x01,
+					WEST_2 = 0x02,
+					WEST_3 = 0x03,
+					NW = 0x04,
+					SOUTH = 0x05,
+					SOUTH_7 = 0x07,
+					SOUTH_9 = 0x09,
+					NORTH = 0x06,
+					NORTH_8 = 0x08,
+					NORTH_A = 0x0A,
+					SE = 0x0B,
+					EAST = 0x0C,
+					EAST_D = 0x0D,
+					EAST_E = 0x0E,
+					NE = 0x0F
+					//TODO: figure out what's up with the differnt directions
+					//  also: beyond 0x0F... do they occur in WW maps?
+					// fix status bar so it doesnt truncate...
+					// is "EdgeTile" a misnomer for blends? -- what are the EDGE thingdb entries for? where/when/how are they indexed? appended to end of floortiles maybe? prob. not
+				}
+
+				public Blend(byte graphic,byte variation, byte unk1, byte unk2, byte dir)
+				{
+					graphicId = graphic; Variation = variation; unknown1 = unk1; unknown2 = unk2; Direction = (BlendDirection) dir;
+				}
+
+				public Blend(Stream stream)
+				{
+					Read(stream);
+				}
+
+				public void Read(Stream stream)
+				{
+					BinaryReader rdr = new BinaryReader(stream);
+
+					graphicId = rdr.ReadByte();
+					Variation = rdr.ReadByte();
+					unknown1 = rdr.ReadByte();
+					unknown2 = rdr.ReadByte();
+					Direction = (BlendDirection) rdr.ReadByte();
+				}
+
+				public void Write(Stream stream)
+				{
+					BinaryWriter wtr = new BinaryWriter(stream);
+
+					wtr.Write((byte) graphicId);
+					wtr.Write((byte) Variation);
+					wtr.Write((byte) unknown1);
+					wtr.Write((byte) unknown2);
+					wtr.Write((byte) Direction);
+				}
+			}
+		}
+
+		public class TileMap : SortedList
+		{
+			protected byte[] header;
+
+			public TileMap() : base(new LocationComparer()) {}
+
+			public TileMap(Stream stream) : this()
+			{
+				Read(stream);
+			}
+
+			protected void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				ArrayList tilePairs = new ArrayList();
+				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
+
+				header = rdr.ReadBytes(0x12);
+
+				while (true)//we'll get an 0xFF for both x and y to signal end of section
+				{
+					byte y = rdr.ReadByte();
+					byte x = rdr.ReadByte();
+
+					if (y == 0xFF && x == 0xFF)
+						break;
+
+					rdr.BaseStream.Seek(-2, SeekOrigin.Current);//rewind back to beginning of current entry
+					TilePair tilePair = new TilePair(rdr.BaseStream);
+					if (!tilePairs.Contains(tilePair))//do not add duplicates (there should not be duplicate entries in a file anyway)
+						tilePairs.Add(tilePair);
+				}
+
+				Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (FloorMap) ERROR: bad section length");
+
+				foreach (TilePair tp in tilePairs)
+				{
+					if (tp.Left != null) this.Add(tp.Left.Location, tp.Left);
+					if (tp.Right != null) this.Add(tp.Right.Location, tp.Right);
+				}
+			}
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write("FloorMap\0");
+				long length = 0;
+				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
+				long pos = wtr.BaseStream.Position;
+				wtr.Write(length);
+				wtr.Write(header);
+
+				//generate the TilePairs...
+				ArrayList tilePairs = new ArrayList();
+				SortedList tiles = (SortedList) this.Clone();
+				while (tiles.Count > 0)
+				{
+					Tile left = null, right = null;
+					Tile tile1 = (Tile) tiles.GetByIndex(0);
+					if (tile1.Location.X % 2 == 1)//we got a right tile. the right tile will always come before it's left tile
+					{
+						right = tile1;
+						Tile tile2 = (Tile) tiles[new Point(tile1.Location.X - 1, tile1.Location.Y + 1)];
+						if (tile2 != null)
+							left = tile2;
+						tilePairs.Add(new TilePair((byte) ((right.Location.X-1)/2), (byte) ((right.Location.Y+1)/2), left, right));
+					}
+					else //assume that this tile is a single since the ordering would have forced the right tile to be handled first
+					{
+						left = tile1;
+						tilePairs.Add(new TilePair((byte) (left.Location.X/2), (byte) (left.Location.Y/2), left, right));
+					}
+					if (left != null) tiles.Remove(left.Location);
+					if (right != null) tiles.Remove(right.Location);
+				}
+
+				//... and write them
+				foreach (TilePair tilePair in tilePairs)
+					tilePair.Write(wtr.BaseStream);
+
+				wtr.Write((ushort) 0xFFFF);//terminating x and y
+						
+				//rewrite the length now that we can find it
+				length = wtr.BaseStream.Position - (pos + 8);
+				wtr.Seek((int) pos, SeekOrigin.Begin);
+				wtr.Write(length);
+				wtr.Seek((int) length, SeekOrigin.Current);
+			}
+		}
 
 		protected class MapHeader
 		{
@@ -287,6 +630,9 @@ namespace NoxShared
 					Right = new Tile(stream);
 					Left = new Tile(stream);
 				}
+				
+				if (Left != null) Left.Location = new Point(Location.X * 2, Location.Y * 2);
+				if (Right != null) Right.Location = new Point(Location.X * 2 + 1, Location.Y * 2 - 1);
 			}
 
 			public void Write(Stream stream)
@@ -321,132 +667,9 @@ namespace NoxShared
 					return Location.X - rhs.Location.X;
 			}
 
-			public class Tile
+			public override bool Equals(object obj)
 			{
-				protected byte graphicId;
-				public byte Variation;
-				public ArrayList EdgeTiles = new ArrayList();
-
-				public string Graphic
-				{
-					get
-					{
-						return ((ThingDb.Tile) ThingDb.FloorTiles[graphicId]).Name;
-					}
-				}
-
-				public Tile(byte graphic, byte variation)
-				{
-					graphicId = graphic; Variation = variation;
-				}
-
-				public Tile(byte graphic, byte variation, ArrayList edgeTiles) : this(graphic, variation)
-				{
-					EdgeTiles = edgeTiles;
-				}
-
-				public Tile(Stream stream)
-				{
-					Read(stream);
-				}
-
-				public void Read(Stream stream)
-				{
-					BinaryReader rdr = new BinaryReader(stream);
-					graphicId = rdr.ReadByte();
-					Variation = (byte) rdr.ReadByte();
-					rdr.ReadBytes(3);//these are always null for first tilePair of a blending group (?)
-					for (int numBlends = rdr.ReadByte(); numBlends > 0; numBlends--)
-					{
-						EdgeTile edge = new EdgeTile(rdr.BaseStream);
-						EdgeTiles.Add(edge);
-					}
-				}
-
-				public void Write(Stream stream)
-				{
-					BinaryWriter wtr = new BinaryWriter(stream);
-
-					wtr.Write((byte )graphicId);
-					wtr.Write((byte) Variation);
-					wtr.Write(new byte[3]);//3 nulls
-					wtr.Write((byte) EdgeTiles.Count);
-					foreach(EdgeTile edge in EdgeTiles)
-						edge.Write(stream);
-				}
-
-				public class EdgeTile//maybe derive from tile?
-				{
-					protected byte graphicId;
-					public byte Variation;
-					public byte unknown1; //Always 00(?)
-					public byte unknown2; //Always 10(?)
-					public EdgeTileDirection Direction;
-
-					public string Graphic
-					{
-						get
-						{
-							return ((ThingDb.Tile) ThingDb.FloorTiles[graphicId]).Name;//FIXME
-						}
-					}
-
-					public enum EdgeTileDirection : byte
-					{
-						SW = 0x00,
-						WEST = 0x01,
-						WEST_2 = 0x02,
-						WEST_3 = 0x03,
-						NW = 0x04,
-						SOUTH = 0x05,
-						SOUTH_7 = 0x07,
-						SOUTH_9 = 0x09,
-						NORTH = 0x06,
-						NORTH_8 = 0x08,
-						NORTH_A = 0x0A,
-						SE = 0x0B,
-						EAST = 0x0C,
-						EAST_D = 0x0D,
-						EAST_E = 0x0E,
-						NE = 0x0F
-						//TODO: figure out what's up with the differnt directions
-						//  also: beyond 0x0F... do they occur in WW maps?
-						// fix status bar so it doesnt truncate...
-						// is "EdgeTile" a misnomer for blends? -- what are the EDGE thingdb entries for? where/when/how are they indexed? appended to end of floortiles maybe? prob. not
-					}
-
-					public EdgeTile(byte graphic,byte variation, byte unk1, byte unk2, byte dir)
-					{
-						graphicId = graphic; Variation = variation; unknown1 = unk1; unknown2 = unk2; Direction = (EdgeTileDirection) dir;
-					}
-
-					public EdgeTile(Stream stream)
-					{
-						Read(stream);
-					}
-
-					public void Read(Stream stream)
-					{
-						BinaryReader rdr = new BinaryReader(stream);
-
-						graphicId = rdr.ReadByte();
-						Variation = rdr.ReadByte();
-						unknown1 = rdr.ReadByte();
-						unknown2 = rdr.ReadByte();
-						Direction = (EdgeTileDirection) rdr.ReadByte();
-					}
-
-					public void Write(Stream stream)
-					{
-						BinaryWriter wtr = new BinaryWriter(stream);
-
-						wtr.Write((byte) graphicId);
-						wtr.Write((byte) Variation);
-						wtr.Write((byte) unknown1);
-						wtr.Write((byte) unknown2);
-						wtr.Write((byte) Direction);
-					}
-				}
+				return obj is TilePair && CompareTo(obj) == 0;
 			}
 		}
 
@@ -482,6 +705,7 @@ namespace NoxShared
 			public bool Destructable;
 			public bool Secret;
 			public bool Window;
+			public bool Internal;
 
 			//these unknowns follow the wall's entry in the SecretWalls section
 			// and usually (always?) have these values
@@ -497,19 +721,9 @@ namespace NoxShared
 				}
 			}
 
-			/// <summary>
-			/// Use this constructor when reading the entry and all values are supplied.
-			/// </summary>
-			/// <param name="x"></param>
-			/// <param name="y"></param>
-			/// <param name="facing"></param>
-			/// <param name="mat"></param>
-			/// <param name="mini"></param>
-			/// <param name="u1"></param>
-			/// <param name="u2"></param>
-			public Wall(byte x, byte y, byte facing, byte mat, byte u1, byte mini, byte u2) : this(new Point(x, y), facing, mat)
+			public Wall(Stream stream)
 			{
-				Minimap = mini; Unknown1 = u1; Unknown2 = u2;
+				Read(stream);
 			}
 
 			public Wall(Point loc, byte facing, byte mat) : this(loc, (WallFacing) facing, mat)
@@ -522,13 +736,26 @@ namespace NoxShared
 				Minimap = 0x64; Unknown1 = 0x00; Unknown2 = 0x01; Destructable = false; Secret = false; Window = false;//defaults
 			}
 
+			protected void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				Location = new Point(rdr.ReadByte(), rdr.ReadByte());
+				byte fac = rdr.ReadByte();
+				Facing = (WallFacing) (fac & 0x7F);
+				Internal = (fac & 0x80) != 0;
+				matId = rdr.ReadByte();
+				Unknown1 = rdr.ReadByte();
+				Minimap = rdr.ReadByte();
+				Unknown2 = rdr.ReadByte();
+			}
+
 			public void Write(Stream stream)
 			{
 				BinaryWriter wtr = new BinaryWriter(stream);
 
 				wtr.Write((byte) Location.X);
 				wtr.Write((byte) Location.Y);
-				wtr.Write((byte) Facing);
+				wtr.Write((byte) ((byte) Facing | (Internal ? 0x80 : 0)));
 				wtr.Write((byte) matId);
 				wtr.Write((byte) Unknown1);
 				wtr.Write((byte) Minimap);
@@ -784,7 +1011,7 @@ namespace NoxShared
 		public Map()
 		{
 			WallMap = new SortedList(new LocationComparer());
-			FloorMap = new SortedList(new LocationComparer());
+			FloorMap = new TileMap();
 			Headers = new Hashtable();
 			Info = new MapInfo();
 			Objects = new ObjectTable();//dummy table
@@ -834,7 +1061,7 @@ namespace NoxShared
 						ReadWallMap(rdr);
 						break;
 					case "FloorMap":
-						ReadFloorMap(rdr);
+						FloorMap = new TileMap(rdr.BaseStream);
 						break;
 					case "SecretWalls":
 						ReadSecretWalls(rdr);
@@ -867,8 +1094,7 @@ namespace NoxShared
 						SkipSection(rdr,"AmbientData");
 						break;
 					case "Polygons":
-						//TODO
-						SkipSection(rdr,"Polygons");
+						Polygons = new PolygonList(rdr.BaseStream);
 						break;
 					case "MapIntro":
 						//TODO
@@ -927,38 +1153,13 @@ namespace NoxShared
 
 			while ((x = rdr.ReadByte()) != 0xFF && (y = rdr.ReadByte()) != 0xFF)//we'll get an 0xFF for x to signal end of section
 			{
-				if (WallMap[new Point(x,y)] == null)//do not add duplicates (there should not be duplicate entries in a file anyway)
-				{
-					Wall wall = new Wall(x, y, rdr.ReadByte(), rdr.ReadByte(), rdr.ReadByte(), rdr.ReadByte(), rdr.ReadByte());
-					WallMap.Add(wall.Location, wall);
-				}
+				rdr.BaseStream.Seek(-2, SeekOrigin.Current);
+				Wall wall = new Wall(rdr.BaseStream);
+				//NOTE: not checking for duplicates (there should never be any)
+				WallMap.Add(wall.Location, wall);
 			}
 			
 			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (WallMap) ERROR: bad section length");
-		}
-
-		protected void ReadFloorMap(NoxBinaryReader rdr)
-		{
-			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;//order matters here!
-			
-			SectHeader hed = new SectHeader("FloorMap",12,rdr.ReadBytes(0x12));
-			Headers.Add(hed.name,hed);	
-			while (true)//we'll get an 0xFF for both x and y to signal end of section
-			{
-				byte y = rdr.ReadByte();
-				byte x = rdr.ReadByte();
-
-				if (y == 0xFF && x == 0xFF)
-					break;
-				else
-					rdr.BaseStream.Seek(-2, SeekOrigin.Current);//rewind back to beginning of current entry
-
-				TilePair tilePair = new TilePair(rdr.BaseStream);
-
-				if (FloorMap[tilePair.Location] == null)//do not add duplicates (there should not be duplicate entries in a file anyway)
-					FloorMap.Add(tilePair.Location, tilePair);
-			}
-			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (FloorMap) ERROR: bad section length");
 		}
 		
 		//TODO: make WallMap class that extends SortedList to clean this wall reading/writing up
@@ -1058,7 +1259,7 @@ namespace NoxShared
 			Header.Write(wtr.BaseStream);
 			Info.Write(wtr.BaseStream);
 			WriteWallMap(wtr);
-			WriteFloorMap(wtr);
+			FloorMap.Write(wtr.BaseStream);
 			WriteSecretWalls(wtr);
 			WriteDestructableWalls(wtr);
 			SkipSection(wtr,"WayPoints");
@@ -1067,7 +1268,7 @@ namespace NoxShared
 			SkipSection(wtr,"GroupData");
 			SkipSection(wtr,"ScriptObject");
 			SkipSection(wtr,"AmbientData");
-			SkipSection(wtr,"Polygons");
+			Polygons.Write(wtr.BaseStream);
 			SkipSection(wtr,"MapIntro");
 			SkipSection(wtr,"ScriptData");
 			Objects.Write(wtr.BaseStream);
@@ -1093,30 +1294,6 @@ namespace NoxShared
 				fileWtr = new NoxBinaryWriter(fStr, NoxType.NoxCryptFormat.NONE);
 			fileWtr.Write(mapData.ToArray());
 			fileWtr.Close();
-		}
-
-		protected void WriteFloorMap(NoxBinaryWriter wtr)
-		{
-			string str = "FloorMap";
-			SectHeader hed = (SectHeader) Headers[str];
-			wtr.Write(str + "\0");
-			long length = 0;
-			long pos;
-			wtr.SkipToNextBoundary();
-			pos = wtr.BaseStream.Position;
-			wtr.Write(length);
-			wtr.Write(hed.header);
-
-			foreach (TilePair tilePair in FloorMap.Values)
-				tilePair.Write(wtr.BaseStream);
-
-			wtr.Write((ushort) 0xFFFF);//terminating x and y
-						
-			//rewrite the length now that we can find it
-			length = wtr.BaseStream.Position - (pos + 8);
-			wtr.Seek((int) pos, SeekOrigin.Begin);
-			wtr.Write(length);
-			wtr.Seek(0, SeekOrigin.End);
 		}
 
 		private void WriteWindowWalls(NoxBinaryWriter wtr)
