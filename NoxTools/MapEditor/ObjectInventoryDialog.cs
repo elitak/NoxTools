@@ -94,8 +94,13 @@ namespace NoxMapEditor
 			this.ClientSize = new System.Drawing.Size(292, 269);
 			this.Controls.Add(this.addButton);
 			this.Controls.Add(this.objectsList);
+			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+			this.MaximizeBox = false;
+			this.MinimizeBox = false;
 			this.Name = "ObjectInventoryDialog";
-			this.Text = "ObjectInventoryDialog";
+			this.ShowInTaskbar = false;
+			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+			this.Text = "Inventory";
 			this.ResumeLayout(false);
 
 		}

@@ -192,8 +192,7 @@ namespace NoxMapEditor
 																			"UserMaterialColor29",
 																			"UserMaterialColor30",
 																			"UserMaterialColor31",
-																			"UserMaterialColor32",
-																			"UserMaterialColor33",
+																			"UserMaterialColor32"
 																		});
 	
 		public string ReadString(int bytes, System.IO.BinaryReader rdr)
@@ -229,7 +228,7 @@ namespace NoxMapEditor
 				temp2 = new Byte[] {00, 00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00};
 				obj = value;
 				endMod = "";
-				if (obj.modbuf != null)
+				if (obj.modbuf.Length >= 4)
 				{
 					System.IO.BinaryReader rdr = new System.IO.BinaryReader(new System.IO.MemoryStream(obj.modbuf));
 					string mod = null;
@@ -361,18 +360,20 @@ namespace NoxMapEditor
 			// 
 			// okButton
 			// 
-			this.okButton.Location = new System.Drawing.Point(48, 136);
+			this.okButton.DialogResult = System.Windows.Forms.DialogResult.OK;
+			this.okButton.Location = new System.Drawing.Point(52, 136);
 			this.okButton.Name = "okButton";
-			this.okButton.Size = new System.Drawing.Size(88, 24);
+			this.okButton.Size = new System.Drawing.Size(51, 24);
 			this.okButton.TabIndex = 7;
 			this.okButton.Text = "Ok";
 			this.okButton.Click += new System.EventHandler(this.okButton_Click);
 			// 
 			// cancelButton
 			// 
-			this.cancelButton.Location = new System.Drawing.Point(216, 136);
+			this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+			this.cancelButton.Location = new System.Drawing.Point(124, 136);
 			this.cancelButton.Name = "cancelButton";
-			this.cancelButton.Size = new System.Drawing.Size(88, 24);
+			this.cancelButton.Size = new System.Drawing.Size(51, 24);
 			this.cancelButton.TabIndex = 8;
 			this.cancelButton.Text = "Cancel";
 			this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
@@ -397,8 +398,10 @@ namespace NoxMapEditor
 			// 
 			// ObjectEnchantDialog
 			// 
+			this.AcceptButton = this.okButton;
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.ClientSize = new System.Drawing.Size(344, 165);
+			this.CancelButton = this.cancelButton;
+			this.ClientSize = new System.Drawing.Size(226, 165);
 			this.ControlBox = false;
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.teamBox);
@@ -408,9 +411,10 @@ namespace NoxMapEditor
 			this.Controls.Add(this.enchant3);
 			this.Controls.Add(this.enchant2);
 			this.Controls.Add(this.enchant1);
-			this.MaximumSize = new System.Drawing.Size(352, 192);
-			this.MinimumSize = new System.Drawing.Size(352, 192);
+			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
 			this.Name = "ObjectEnchantDialog";
+			this.ShowInTaskbar = false;
+			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
 			this.Text = "Object Enchants";
 			this.ResumeLayout(false);
 
@@ -421,7 +425,7 @@ namespace NoxMapEditor
 		{
 			System.IO.MemoryStream stream = new System.IO.MemoryStream();
 			System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
-			if(teamBox.Text != "")
+			if (teamBox.Text != "")
 			{
 				obj.Terminator = 0xFF;
 				obj.Team = Byte.Parse(teamBox.Text);
@@ -431,7 +435,7 @@ namespace NoxMapEditor
 			}
 			else
 				obj.Terminator = 0x00;
-			if(objEnchants.Contains(enchant1.Text))
+			if (objEnchants.Contains(enchant1.Text))
 			{
 				wtr.Write((byte)enchant1.Text.Length);
 				wtr.Write(enchant1.Text.ToCharArray());
@@ -440,7 +444,7 @@ namespace NoxMapEditor
 			else
 				wtr.Write('\0');
 			
-			if(objEnchants.Contains(enchant2.Text))
+			if (objEnchants.Contains(enchant2.Text))
 			{
 				wtr.Write((byte)(enchant2.Text.Length));
 				wtr.Write(enchant2.Text.ToCharArray());
@@ -448,7 +452,7 @@ namespace NoxMapEditor
 			}
 			else
 				wtr.Write('\0');
-			if(objEnchants.Contains(enchant3.Text))
+			if (objEnchants.Contains(enchant3.Text))
 			{
 				wtr.Write((byte)(enchant3.Text.Length));
 				wtr.Write(enchant3.Text.ToCharArray());
@@ -456,7 +460,7 @@ namespace NoxMapEditor
 			}
 			else
 				wtr.Write('\0');
-			if(objEnchants.Contains(enchant4.Text))
+			if (objEnchants.Contains(enchant4.Text))
 			{
 				wtr.Write((byte)(enchant4.Text.Length));
 				wtr.Write(enchant4.Text.ToCharArray());
@@ -469,8 +473,8 @@ namespace NoxMapEditor
 			foreach (Match match in bytes.Matches(endMod))
 				wtr.Write(Convert.ToByte(match.Value, 16));
 			obj.modbuf = stream.ToArray();
-			if(obj.modbuf.GetLength(0) == 0)
-				obj.modbuf = new byte[] { 0x00, 0x00};
+			if(obj.modbuf.Length == 0)
+				obj.modbuf = new byte[] {0x00, 0x00};
 			Close();
 		}
 
