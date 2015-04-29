@@ -24,11 +24,10 @@ namespace NoxMapEditor
 		private System.Windows.Forms.ComboBox enchant3;
 		private System.Windows.Forms.ComboBox enchant4;
 		private System.Windows.Forms.Button okButton;
-		private System.Windows.Forms.Button cancelButton;
-		private System.Windows.Forms.Label label1;
-		private System.Windows.Forms.TextBox teamBox;
-		
-		public static ArrayList objEnchants = new ArrayList(new String[]{
+
+        private System.Windows.Forms.Button cancelButton;
+
+        public static ArrayList objEnchants = new ArrayList(new String[]{
 																			"WeaponPower1",
 																			"WeaponPower2",
 																			"WeaponPower3",
@@ -236,13 +235,6 @@ namespace NoxMapEditor
 					byte fByte;
 					char[] buffer;
 					obj.enchants = new ArrayList();
-					if(obj.Terminator == 0xFF)
-					{
-						temp1 = rdr.ReadBytes(5);
-						obj.Team = rdr.ReadByte();
-						temp2 = rdr.ReadBytes(17);
-						teamBox.Text = obj.Team.ToString();
-					}
 					if(((ThingDb.Thing)ThingDb.Things[obj.Name]).Init == "ModifierInit")
 					{
 						pos = rdr.BaseStream.Position;
@@ -316,125 +308,81 @@ namespace NoxMapEditor
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.enchant1 = new System.Windows.Forms.ComboBox();
-			this.enchant2 = new System.Windows.Forms.ComboBox();
-			this.enchant3 = new System.Windows.Forms.ComboBox();
-			this.enchant4 = new System.Windows.Forms.ComboBox();
-			this.okButton = new System.Windows.Forms.Button();
-			this.cancelButton = new System.Windows.Forms.Button();
-			this.teamBox = new System.Windows.Forms.TextBox();
-			this.label1 = new System.Windows.Forms.Label();
-			this.SuspendLayout();
-			// 
-			// enchant1
-			// 
-			this.enchant1.Location = new System.Drawing.Point(8, 8);
-			this.enchant1.Name = "enchant1";
-			this.enchant1.Size = new System.Drawing.Size(112, 21);
-			this.enchant1.Sorted = true;
-			this.enchant1.TabIndex = 2;
-			// 
-			// enchant2
-			// 
-			this.enchant2.Location = new System.Drawing.Point(8, 40);
-			this.enchant2.Name = "enchant2";
-			this.enchant2.Size = new System.Drawing.Size(112, 21);
-			this.enchant2.Sorted = true;
-			this.enchant2.TabIndex = 3;
-			// 
-			// enchant3
-			// 
-			this.enchant3.Location = new System.Drawing.Point(8, 72);
-			this.enchant3.Name = "enchant3";
-			this.enchant3.Size = new System.Drawing.Size(112, 21);
-			this.enchant3.Sorted = true;
-			this.enchant3.TabIndex = 4;
-			// 
-			// enchant4
-			// 
-			this.enchant4.Location = new System.Drawing.Point(8, 104);
-			this.enchant4.Name = "enchant4";
-			this.enchant4.Size = new System.Drawing.Size(112, 21);
-			this.enchant4.Sorted = true;
-			this.enchant4.TabIndex = 5;
-			// 
-			// okButton
-			// 
-			this.okButton.DialogResult = System.Windows.Forms.DialogResult.OK;
-			this.okButton.Location = new System.Drawing.Point(52, 136);
-			this.okButton.Name = "okButton";
-			this.okButton.Size = new System.Drawing.Size(51, 24);
-			this.okButton.TabIndex = 7;
-			this.okButton.Text = "Ok";
-			this.okButton.Click += new System.EventHandler(this.okButton_Click);
-			// 
-			// cancelButton
-			// 
-			this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.cancelButton.Location = new System.Drawing.Point(124, 136);
-			this.cancelButton.Name = "cancelButton";
-			this.cancelButton.Size = new System.Drawing.Size(51, 24);
-			this.cancelButton.TabIndex = 8;
-			this.cancelButton.Text = "Cancel";
-			this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
-			// 
-			// teamBox
-			// 
-			this.teamBox.Location = new System.Drawing.Point(192, 8);
-			this.teamBox.MaxLength = 1;
-			this.teamBox.Name = "teamBox";
-			this.teamBox.Size = new System.Drawing.Size(24, 20);
-			this.teamBox.TabIndex = 9;
-			this.teamBox.Text = "";
-			// 
-			// label1
-			// 
-			this.label1.Location = new System.Drawing.Point(144, 8);
-			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(40, 23);
-			this.label1.TabIndex = 10;
-			this.label1.Text = "Team:";
-			this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-			// 
-			// ObjectEnchantDialog
-			// 
-			this.AcceptButton = this.okButton;
-			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.CancelButton = this.cancelButton;
-			this.ClientSize = new System.Drawing.Size(226, 165);
-			this.ControlBox = false;
-			this.Controls.Add(this.label1);
-			this.Controls.Add(this.teamBox);
-			this.Controls.Add(this.cancelButton);
-			this.Controls.Add(this.okButton);
-			this.Controls.Add(this.enchant4);
-			this.Controls.Add(this.enchant3);
-			this.Controls.Add(this.enchant2);
-			this.Controls.Add(this.enchant1);
-			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-			this.Name = "ObjectEnchantDialog";
-			this.ShowInTaskbar = false;
-			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Object Enchants";
-			this.ResumeLayout(false);
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ObjectEnchantDialog));
+            this.enchant1 = new System.Windows.Forms.ComboBox();
+            this.enchant2 = new System.Windows.Forms.ComboBox();
+            this.enchant3 = new System.Windows.Forms.ComboBox();
+            this.enchant4 = new System.Windows.Forms.ComboBox();
+            this.okButton = new System.Windows.Forms.Button();
+            this.cancelButton = new System.Windows.Forms.Button();
+            this.SuspendLayout();
+// 
+// enchant1
+// 
+            this.enchant1.FormattingEnabled = true;
+            resources.ApplyResources(this.enchant1, "enchant1");
+            this.enchant1.Name = "enchant1";
+            this.enchant1.Sorted = true;
+// 
+// enchant2
+// 
+            this.enchant2.FormattingEnabled = true;
+            resources.ApplyResources(this.enchant2, "enchant2");
+            this.enchant2.Name = "enchant2";
+            this.enchant2.Sorted = true;
+// 
+// enchant3
+// 
+            this.enchant3.FormattingEnabled = true;
+            resources.ApplyResources(this.enchant3, "enchant3");
+            this.enchant3.Name = "enchant3";
+            this.enchant3.Sorted = true;
+// 
+// enchant4
+// 
+            this.enchant4.FormattingEnabled = true;
+            resources.ApplyResources(this.enchant4, "enchant4");
+            this.enchant4.Name = "enchant4";
+            this.enchant4.Sorted = true;
+// 
+// okButton
+// 
+            this.okButton.DialogResult = System.Windows.Forms.DialogResult.OK;
+            resources.ApplyResources(this.okButton, "okButton");
+            this.okButton.Name = "okButton";
+            this.okButton.Click += new System.EventHandler(this.okButton_Click);
+// 
+// cancelButton
+// 
+            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            resources.ApplyResources(this.cancelButton, "cancelButton");
+            this.cancelButton.Name = "cancelButton";
+            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+// 
+// ObjectEnchantDialog
+// 
+            this.AcceptButton = this.okButton;
+            resources.ApplyResources(this, "$this");
+            this.CancelButton = this.cancelButton;
+            this.ControlBox = false;
+            this.Controls.Add(this.cancelButton);
+            this.Controls.Add(this.okButton);
+            this.Controls.Add(this.enchant4);
+            this.Controls.Add(this.enchant3);
+            this.Controls.Add(this.enchant2);
+            this.Controls.Add(this.enchant1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Name = "ObjectEnchantDialog";
+            this.ShowInTaskbar = false;
+            this.ResumeLayout(false);
 
-		}
+        }
 		#endregion
 
 		private void okButton_Click(object sender, System.EventArgs e)
 		{
 			System.IO.MemoryStream stream = new System.IO.MemoryStream();
 			System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(stream);
-			if (teamBox.Text != "")
-			{
-				obj.Terminator = 0xFF;
-				obj.Team = Byte.Parse(teamBox.Text);
-				wtr.Write(temp1);
-				wtr.Write((byte)obj.Team);
-				wtr.Write(temp2);
-			}
-			else
-				obj.Terminator = 0x00;
 			if (objEnchants.Contains(enchant1.Text))
 			{
 				wtr.Write((byte)enchant1.Text.Length);

@@ -27,6 +27,9 @@ namespace NoxBagTool
 		{
 			try
 			{
+				System.Diagnostics.Debug.Listeners.Add(new System.Diagnostics.TextWriterTraceListener("Debug.log"));
+				System.Diagnostics.Debug.AutoFlush = true;
+				System.Diagnostics.Debug.WriteLine(String.Format("Started at {0:yyyy-MM-dd HH:mm:ss}", DateTime.Now));
 				RegistryKey key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Westwood\\Nox");
 				if (key == null)
 				{
@@ -43,8 +46,8 @@ namespace NoxBagTool
 				MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
 				throw ex;
 			}
-			//Bag bag = new VideoBag("C:\\Westwood\\Nox\\Video.bag");
-			//bag = new AudioBag("C:\\Westwood\\Nox\\Audio.bag");
+			//Bag bag = new VideoBag("c:\\Westwood\\Nox\\Video.bag");
+			//bag = new AudioBag("c:\\Westwood\\Nox\\Audio.bag");
 
 			InitializeComponent();
 		}

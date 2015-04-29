@@ -1,40 +1,538 @@
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Collections;
 using System.Drawing;
 using System.Diagnostics;
+using System.Collections.Generic;
 
-using NoxShared.NoxType;
+using System.Text;
 
 namespace NoxShared
 {
 	public class Map
 	{
 		// ----PUBLIC MEMBERS----
-		public MapInfo Info;
-		public SortedList WallMap;
+		public MapInfo Info = new MapInfo();
 
 		public bool Encrypted = true;//whether map will be encrypted upon saving
 		//encrypt file unless this is explicitly set to false
 		//  OR we find upon loading that the file was originally unencrypted
 
-		public TileMap FloorMap;
-		public ObjectTable Objects;//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
+		public FloorMap Tiles = new FloorMap();
+		public ObjectTable Objects = new ObjectTable();//contains objects, why would we reference them by location? -- TODO: enforce uniqueness of PointF key? <-- rethink this. Should this be a map at all? if so, we need to allow for multiple objects at the same point(?)
 		public PolygonList Polygons = new PolygonList();
-		public ScriptObject Scripts;
+        public WaypointList Waypoints = new WaypointList();
+        public ScriptObject Scripts = new ScriptObject();
+		public GroupData Groups = new GroupData();
+		public DebugData DebugD = new DebugData();
+		public ScriptData ScriptD = new ScriptData();
+		public AmbientData Ambient = new AmbientData();
+		public MapIntro Intro = new MapIntro();
+		public WallMap Walls = new WallMap();
 
 		// ----PROTECTED MEMBERS----
-		protected MapHeader Header;
-		public string FileName;
-		protected Hashtable Headers;//contains the headers for each section or the complete section
+		protected MapHeader Header = new MapHeader();
+		public string FileName = "";
+		protected Hashtable Headers = new Hashtable();//contains the headers for each section or the complete section
+
+		// ----CONSTRUCTORS----
+		public Map() { }
+
+		public Map(string filename) : this()
+		{
+			Load(filename);
+		}
+        public Map(NoxBinaryReader rdr)
+            : this()
+		{
+			Load(rdr);
+		}
+        public void Load(NoxBinaryReader rdr)
+        {
+            ReadFile(rdr);
+        }
+		public void Load(string filename)
+		{
+			FileName = filename;
+			ReadFile();
+		}
 
 		#region Inner Classes and Enumerations
 
+		public abstract class Section
+		{
+			protected virtual string SectionName { get { return GetType().Name; } }//return derived class name if not overidden
+			protected long finish;
+
+			public Section() {}
+			public Section(Stream stream) {Read(stream);}
+
+			protected void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				finish = rdr.ReadInt64() + rdr.BaseStream.Position;
+
+				ReadContents(rdr.BaseStream);
+
+				Debug.Assert(rdr.BaseStream.Position == finish, "(Read, " + SectionName + ") Bad read length.");
+			}
+
+			protected abstract void ReadContents(Stream stream);
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+				wtr.Write(SectionName + "\0");
+				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
+				wtr.Write((long)0);//dummy length value
+				long startPos = wtr.BaseStream.Position;
+
+				WriteContents(wtr.BaseStream);
+
+				//rewrite the length now that we can find it
+				long length = wtr.BaseStream.Position - startPos;
+				wtr.Seek((int)startPos - 8, SeekOrigin.Begin);
+				wtr.Write((long)length);
+				wtr.Seek((int)length, SeekOrigin.Current);
+			}
+
+			protected abstract void WriteContents(Stream stream);
+		}
+
+		public abstract class SortedDictionarySection<K, V> : Section, IDictionary<K, V>, ICollection<KeyValuePair<K, V>>, IEnumerable<KeyValuePair<K, V>>
+		{
+			private SortedDictionary<K, V> contents;
+
+			public SortedDictionarySection(IComparer<K> comp)//cant call base...
+			{
+				contents = new SortedDictionary<K, V>(comp);
+			}
+
+			public SortedDictionarySection(IComparer<K> comp, Stream stream)//cant call base...
+			{
+				contents = new SortedDictionary<K, V>(comp);
+				Read(stream);
+			}
+
+			#region IDictionary<K,V> Members
+
+			public void Add(K key, V value)
+			{
+				contents.Add(key, value);
+			}
+
+			public bool ContainsKey(K key)
+			{
+				return contents.ContainsKey(key);
+			}
+
+			public bool TryGetValue(K key, out V value)
+			{
+				return contents.TryGetValue(key, out value);
+			}
+
+			public ICollection<K> Keys
+			{
+				get { return contents.Keys; }
+			}
+
+
+			public bool Remove(K key)
+			{
+				return contents.Remove(key);
+			}
+			public ICollection<V> Values
+			{
+				get { return contents.Values; }
+			}
+
+			public V this[K key]
+			{
+				get
+				{
+					return contents[key];
+				}
+
+				set
+				{
+					contents[key] = value;
+				}
+			}
+
+
+			#endregion
+
+			#region ICollection<KeyValuePair<K,V>> Members
+
+			public void Add(KeyValuePair<K, V> item)
+			{
+				throw new NotImplementedException();
+			}
+
+			public void Clear()
+			{
+				throw new NotImplementedException();
+			}
+
+			public bool Contains(KeyValuePair<K, V> item)
+			{
+				throw new NotImplementedException();
+			}
+
+			public void CopyTo(KeyValuePair<K, V>[] array, int arrayIndex)
+			{
+				throw new NotImplementedException();
+			}
+			public int Count
+			{
+                get { return Keys.Count; }
+            }
+
+			public bool IsReadOnly
+			{
+				get { throw new global::System.NotImplementedException(); }
+			}
+
+
+			public bool Remove(KeyValuePair<K, V> item)
+			{
+				throw new NotImplementedException();
+			}
+
+			#endregion
+
+			#region IEnumerable<KeyValuePair<K,V>> Members
+
+			IEnumerator<KeyValuePair<K, V>> System.Collections.Generic.IEnumerable<KeyValuePair<K, V>>.GetEnumerator()
+			{
+				throw new NotImplementedException();
+			}
+
+			#endregion
+
+			#region IEnumerable Members
+
+			public IEnumerator GetEnumerator()
+			{
+				throw new NotImplementedException();
+			}
+
+			#endregion
+		}
+
+		public class WallMap : SortedDictionarySection<Point, Wall>
+		{
+			public short Prefix = 1;//CHECKED
+			public int Var1;
+			public int Var2;
+			public int Var3;
+			public int Var4;
+
+			public WallMap() : base(new LocationComparer()) {}
+			public WallMap(Stream stream) : base(new LocationComparer(), stream) {}
+
+			protected override void ReadContents(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+
+				Prefix = rdr.ReadInt16();
+				Var1 = rdr.ReadInt32();
+				Var2 = rdr.ReadInt32();
+				Var3 = rdr.ReadInt32();
+				Var4 = rdr.ReadInt32();
+
+				byte x, y;
+				while ((x = rdr.ReadByte()) != 0xFF && (y = rdr.ReadByte()) != 0xFF)//we'll get an 0xFF for x to signal end of section
+				{
+					rdr.BaseStream.Seek(-2, SeekOrigin.Current);
+					Wall wall = new Wall(rdr.BaseStream);
+					//NOTE: not checking for duplicates (there should never be any)
+					Add(wall.Location, wall);
+				}
+			}
+
+			protected override void WriteContents(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write((short)Prefix);
+				wtr.Write((int)Var1);
+				wtr.Write((int)Var2);
+				wtr.Write((int)Var3);
+				wtr.Write((int)Var4);
+
+				foreach (Wall wall in Values)
+					wall.Write(wtr.BaseStream);
+				wtr.Write((byte)0xFF);//wallmap terminates with this byte
+			}
+		}
+
+		public class AmbientData : Section
+		{
+			//AmbientData seems to always have a short 1 followed by three very small (usually only 1 byte is used) ints
+			public short Prefix = 1;//CHECKED
+			public int Var1;
+			public int Var2;
+			public int Var3;
+
+			public AmbientData() : base() {}
+			public AmbientData(Stream stream) : base(stream) {}
+
+			protected override void ReadContents(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+
+				Prefix = rdr.ReadInt16();
+				Var1 = rdr.ReadInt32();
+				Var2 = rdr.ReadInt32();
+				Var3 = rdr.ReadInt32();
+
+				Debug.WriteLineIf(Prefix != 1, "Prefix not 1: 0x" + Prefix.ToString("x"), "AmbientData.Read");
+			}
+
+			protected override void WriteContents(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write((short)Prefix);
+				wtr.Write((int)Var1);
+				wtr.Write((int)Var2);
+				wtr.Write((int)Var3);
+			}
+		}
+
+		public class ScriptData : Section
+		{
+			public short Prefix = 1;//CHECKED
+			public byte Count = 0;//always zero? //CHECKED
+			public List<ScriptDataEntry> entries = new List<ScriptDataEntry>();
+			private byte[] data;
+
+			public ScriptData() : base() {}
+			public ScriptData(Stream stream) : base(stream) {}
+
+			protected override void ReadContents(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+
+				Prefix = rdr.ReadInt16();
+				Count = rdr.ReadByte();
+
+				// Use then when we understand it totally
+				/*for (int i = 0; i < Count; i++)
+					entries.Add(new ScriptDataEntry(rdr));*/
+				data = rdr.ReadBytes((int)(finish - rdr.BaseStream.Position));
+
+				Debug.WriteLineIf(Prefix != 1, "Prefix not 1: 0x" + Prefix.ToString("x"), "ScriptData.Read");
+			}
+
+			protected override void WriteContents(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write((short)Prefix);
+				wtr.Write((byte)Count);
+				//wtr.Write((byte)entries.Count);
+				/*foreach (ScriptDataEntry sde in entries)
+					sde.Write(wtr);*/
+				wtr.Write(data);
+			}
+
+			public class ScriptDataEntry
+			{
+				Int64 Unknown1;
+				Int64 Unknown2;
+				Int16 Unknown3; //Might be a count
+				Int64 Unknown4;
+
+				public ScriptDataEntry()
+				{
+				}
+				public ScriptDataEntry(BinaryReader rdr)
+				{
+					Read(rdr);
+				}
+				public void Read(BinaryReader rdr)
+				{
+					Unknown1 = rdr.ReadInt64();
+					Unknown2 = rdr.ReadInt64();
+					Unknown3 = rdr.ReadInt16();
+					Unknown4 = rdr.ReadInt64();
+					Debug.WriteLineIf(Unknown3 != 1, "Unknown3 not 1: 0x" + Unknown3.ToString("x"), "ScriptData.ScriptDataEntry.Read");
+				}
+				public void Write(BinaryWriter wtr)
+				{
+					wtr.Write(Unknown1);
+					wtr.Write(Unknown2);
+					wtr.Write(Unknown3);
+					wtr.Write(Unknown4);
+				}
+			}
+		}
+
+		public class MapIntro : Section
+		{
+			public short numSubSections = 1;//CHECKED
+			//public int Var1;//always zero? //CHECKED
+            public String text;
+
+            public MapIntro() : base() {}
+			public MapIntro(Stream stream) : base(stream) { }
+
+			protected override void ReadContents(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				numSubSections = rdr.ReadInt16();
+				Debug.WriteLineIf(numSubSections != 1, "SubSections not 1: 0x" + numSubSections.ToString("x"), "MapIntro.Read");
+                text = new String(rdr.ReadChars(rdr.ReadInt32())); //entire subSection is ascii text; rdr.ReadInt32 is subSection size
+            }
+
+			protected override void WriteContents(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write((short)numSubSections);
+				wtr.Write((int)text.Length);
+                wtr.Write(text.ToCharArray());
+            }
+		}
+
+		public class DebugData : Section
+		{
+			public short Unknown = 1;//CHECKED
+			public int Unknown2;//probably a count //CHECKED
+			protected byte[] data;
+
+			public DebugData() : base() {}
+			public DebugData(Stream stream) : base(stream) {}
+
+
+			protected override void ReadContents(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+
+				Unknown = rdr.ReadInt16();
+				Unknown2 = rdr.ReadInt32();
+
+				//TODO: skip the rest for now
+				data = rdr.ReadBytes((int)(finish - rdr.BaseStream.Position));
+
+				Debug.WriteLineIf(Unknown != 1, "Unknown short is not 1: 0x" + Unknown.ToString("x"), "Map.DebugData.Read");
+				Debug.WriteLineIf(Unknown2 != 0, "Unknown long is not 0 (probably a count!): 0x" + Unknown2.ToString("x"), "Map.DebugData.Read");
+			}
+
+			protected override void WriteContents(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				wtr.Write((short)Unknown);
+				wtr.Write((int)Unknown2);
+				wtr.Write(data);
+			}
+		}
+
+        public class Group : ArrayList
+        {
+            public GroupTypes type;
+            public string name;
+            public int id;
+            public Group(string n, GroupTypes t, int i) : base()
+            {
+                type = t;
+                name = n;
+                id = i;
+            }
+            public enum GroupTypes : byte
+            {
+                objects = 0,
+                waypoint = 1, // This could be used for other stuff; only saw in Con01A
+                walls = 2
+            };
+
+			public override string ToString()
+			{
+				return String.Format("{0} {1}", name, Enum.GetName(typeof(GroupTypes),type));
+			}
+        }
+
+		public class GroupData : SortedDictionarySection<String,Group>
+		{
+			public short Unknown = 3;//CHECKED
+			protected byte[] data;
+
+            public GroupData() : base(StringComparer.CurrentCulture) {}
+            public GroupData(Stream stream) : base(StringComparer.CurrentCulture, stream) { }
+
+            protected override void ReadContents(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+
+				Unknown = rdr.ReadInt16();
+				int count = rdr.ReadInt32();
+				//TODO: skip the rest for now
+				//data = rdr.ReadBytes((int) (finish - rdr.BaseStream.Position));
+                int size = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    Group grp = new Group(rdr.ReadString(), (Group.GroupTypes)rdr.ReadByte(), rdr.ReadInt32());
+                    size = rdr.ReadInt32();
+                    for (int k = 0; k < size; k++)
+                    {
+                        switch (grp.type)
+                        {
+                            case Group.GroupTypes.walls:
+                                grp.Add(new Point(rdr.ReadInt32(), rdr.ReadInt32()));
+                                break;
+                            case Group.GroupTypes.waypoint:
+                            case Group.GroupTypes.objects:
+                                grp.Add(rdr.ReadInt32());
+                                break;
+                            default:
+                                Debug.WriteLine("Unknown type 0x" + grp.type.ToString("x"), "Map.GroupData.Read");
+                                break;
+                        }
+                    }
+                    if(!ContainsKey(grp.name))
+                        Add(grp.name,grp);
+                }
+
+                Debug.WriteLineIf(Unknown != 3, "Unknown was not 3, it was: 0x" + Unknown.ToString("x"), "Map.GroupData.Read");
+			}
+
+            protected override void WriteContents(Stream stream)
+            {
+				BinaryWriter wtr = new BinaryWriter(stream);
+
+				int index = Count - 1;
+				wtr.Write((short)Unknown);
+				wtr.Write((int)Count);
+				foreach(Group grp in Values)
+                {
+                    wtr.Write(grp.name);
+                    wtr.Write((byte)grp.type);
+                    wtr.Write(index);
+                    wtr.Write(grp.Count);
+                    foreach (System.Object obj in grp)
+                    {
+                        if (obj.GetType() == typeof(Int32))
+                            wtr.Write((Int32)obj);
+                        else if (obj.GetType() == typeof(Point))
+                        {
+                            wtr.Write(((Point)obj).X);
+                            wtr.Write(((Point)obj).Y);
+                        }
+                        else
+                            Debug.WriteLine("Unknown type 0x" + grp.type.ToString("x"), "Map.GroupData.Write");
+                    }
+					index--;
+                }
+			}
+		}
+
 		public class PolygonList : ArrayList
 		{
-			public short TermCount;//seems to control amount of useless data at the end???
-			public ArrayList Points = new ArrayList();
+			public short TermCount;//seems to control amount of useless data at the end??? FIXME: set to 3 or 4 by default but which?
+			public List<PointF> Points = new List<PointF>();
 
 			public PolygonList() {}
 			public PolygonList(Stream stream)
@@ -104,18 +602,21 @@ namespace NoxShared
 		public class Polygon
 		{
 			public string Name;
-			public Color AmbientLightColor;//the area's ambient light color
+            public string EnterFunc;
+            public Color AmbientLightColor;//the area's ambient light color
 			public byte MinimapGroup;//the visible wall group when in this area
-			public ArrayList Points = new ArrayList();//the unindexed points that define the polygon
+			public List<PointF> Points = new List<PointF>();//the unindexed points that define the polygon
 			protected byte[] endbuf;
+            protected short Unknown1 = 1;
 
-			public Polygon(string name, Color ambient, byte mmGroup, IList points)
+            public Polygon(string name, Color ambient, byte mmGroup, List<PointF> points, string enterfunc)
 			{
 				Name = name;
 				AmbientLightColor = ambient;
 				MinimapGroup = mmGroup;
-				Points = new ArrayList(points);
-				//N.B. that endbuf is left null here
+				Points = points;
+                EnterFunc = enterfunc;
+                //N.B. that endbuf is left null here
 			}
 
 			public Polygon(Stream stream, PolygonList list)
@@ -142,19 +643,15 @@ namespace NoxShared
 				//  termCount of 0x0004 means we end with the normal unknown endbuf of the last polygon
 				//  termCount of 0x0003 means we omit the last 4 (null) bytes.
 				//always "01 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00" or 4 shorter?
-				System.IO.MemoryStream nStream = new System.IO.MemoryStream();
-				System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(nStream);
-				
+                System.IO.MemoryStream nStream = new System.IO.MemoryStream();
+                System.IO.BinaryWriter wtr = new System.IO.BinaryWriter(nStream);
 
-				//some maps (solo) have strings in this area?
-				//please document/comment this, Andrew
-				wtr.Write(rdr.ReadInt16());
-				string temp = new string(rdr.ReadChars(rdr.ReadInt32()));
-				wtr.Write((int)temp.Length);
-				wtr.Write(temp.ToCharArray());
+                Unknown1 = rdr.ReadInt16();
+                Debug.WriteLineIf(Unknown1 != 1, String.Format("Unknown1 != 1, it is: {0}", Unknown1), "Map.Polygon.Read");
+                EnterFunc = new string(rdr.ReadChars(rdr.ReadInt32()));
 				wtr.Write(rdr.ReadInt32());
 				wtr.Write(rdr.ReadInt16());
-				temp = new string(rdr.ReadChars(rdr.ReadInt32()));
+				string temp = new string(rdr.ReadChars(rdr.ReadInt32()));
 				wtr.Write((int)temp.Length);
 				wtr.Write(temp.ToCharArray());
 
@@ -178,25 +675,237 @@ namespace NoxShared
 				wtr.Write((short) Points.Count);
 				foreach (PointF pt in Points)
 					wtr.Write((int) (list.Points.IndexOf(pt)+1));
-				if (endbuf != null)
+                wtr.Write(Unknown1);
+                wtr.Write(EnterFunc.Length);
+                wtr.Write(EnterFunc.ToCharArray());
+                if (endbuf != null)
 					wtr.Write(endbuf);
 				else
 				{
 					if (list.TermCount == 0x0003)
-						wtr.Write(new byte[] {01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00});
+						wtr.Write(new byte[] { 00, 00, 00, 00, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00});
 					else if (list.TermCount == 0x0004)
-						wtr.Write(new byte[] {01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00});
+						wtr.Write(new byte[] { 00, 00, 00, 00, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00});
 					else
 						Debug.Assert(false, "(Map, Polygons) Unhandled terminal count.");
 				}
 			}
+			public override string ToString()
+			{
+				return String.Format("{0} {1} {2}, {3}", Name, MinimapGroup, Points[0].X,Points[1].Y);
+			}
 		}
+        public class WaypointList : ArrayList
+        {
+            public short TermCount;//seems to control amount of useless data at the end???
+            public Hashtable num_wp = new Hashtable();
 
-		public class Tile
+            public WaypointList() { }
+            public WaypointList(Stream stream)
+            {
+                Read(stream);
+            }
+
+            protected void Read(Stream stream)
+            {
+                BinaryReader rdr = new BinaryReader(stream);
+                long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
+                TermCount = rdr.ReadInt16();
+                int numWaypoints = rdr.ReadInt32();
+                while (numWaypoints-- > 0)
+                {
+                    Waypoint wp = new Waypoint(rdr.BaseStream, this);
+                    Add(wp);
+                    num_wp.Add(wp.num, wp);
+                }
+                foreach (Waypoint wp in this)
+                {
+                    ArrayList conn = (ArrayList)wp.connections.Clone();
+                    foreach (Waypoint.WaypointConnection wpc in conn)
+                    {
+                        if (num_wp.ContainsKey(wpc.wp_num))
+                            wpc.wp = (Waypoint)num_wp[wpc.wp_num];
+                        else
+                            wp.connections.Remove(wpc);
+                    }
+                }
+             
+                Debug.Assert(rdr.BaseStream.Position == finish, "(Map, Waypoints) Bad read length.");
+            }
+            public void SetNameFromPoint(Point pt, string name)
+            {
+                //Map.Waypoints
+                int mod = (7 * 2);
+                foreach (Waypoint wp in this)
+                {
+                    float lowX = wp.Point.X - mod;
+                    float highX = wp.Point.X + mod;
+                    float lowY = wp.Point.Y - mod;
+                    float highY = wp.Point.Y + mod;
+
+                    if (pt.X >= lowX && pt.X <= highX && pt.Y >= lowY && pt.Y <= highY)
+                    {
+                        wp.Name = name;
+                    }
+                }
+            }
+            public Waypoint GetWPFromPoint(Point pt)
+            {
+                //Map.Waypoints
+                int mod = (7 * 2);
+                foreach (Waypoint wp in this)
+                {
+                    float lowX = wp.Point.X - mod;
+                    float highX = wp.Point.X + mod;
+                    float lowY = wp.Point.Y - mod;
+                    float highY = wp.Point.Y + mod;
+
+                    if (pt.X >= lowX && pt.X <= highX && pt.Y >= lowY && pt.Y <= highY)
+                    {
+                        return (wp);
+                    }
+                }
+                return (null);
+            }
+            public override void Remove(object obj)
+            {
+                foreach (Waypoint wp in this)
+                {
+                    ArrayList conn = (ArrayList)wp.connections.Clone();
+                    foreach (Waypoint.WaypointConnection wc in conn)
+                        if (wc.wp == obj)
+                            wp.connections.Remove(wc);
+                }
+                base.Remove(obj);
+            }
+
+            public void Write(Stream stream)
+            {
+                BinaryWriter wtr = new BinaryWriter(stream);
+                wtr.Write("WayPoints\0");
+                wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
+                wtr.Write((long)0);//dummy length value
+                long startPos = wtr.BaseStream.Position;
+
+                wtr.Write(TermCount);
+                wtr.Write((int)this.Count);
+                int i = this.Count;
+                foreach (Waypoint wp in this)
+                {
+                    wtr.Write(wp.num);
+                    wp.Write(wtr.BaseStream, this);
+                    foreach (Waypoint.WaypointConnection wpc in wp.connections)
+                    {
+                        wtr.Write(wpc.wp.num);
+                        wtr.Write(wpc.flag);
+                    }
+                }
+
+                //rewrite the length now that we can find it
+                long length = wtr.BaseStream.Position - startPos;
+                wtr.Seek((int)startPos - 8, SeekOrigin.Begin);
+                wtr.Write((long)length);
+                wtr.Seek((int)length, SeekOrigin.Current);
+            }
+        }
+
+        public class Waypoint
+        {
+            public string Name;
+            public PointF Point;
+            public ArrayList connections = new ArrayList();
+            public int enabled;
+            public int num;
+
+            public Waypoint(string name, PointF point, int number)
+            {
+                Name = name;
+                Point = point;
+                num = number;
+            }
+
+            public Waypoint(Stream stream, WaypointList list)
+            {
+                Read(stream, list);
+            }
+           
+            protected void Read(Stream stream, WaypointList list)
+            {
+                BinaryReader rdr = new BinaryReader(stream);
+                num = rdr.ReadInt32(); //Waypoint number
+                Point = new PointF(rdr.ReadSingle(), rdr.ReadSingle());
+                Name = rdr.ReadString();
+                enabled = rdr.ReadInt32();
+                for (int i = rdr.ReadByte(); i > 0; i--)
+                {
+                    connections.Add(new WaypointConnection(rdr.ReadInt32(),rdr.ReadByte()));
+                }
+            }
+
+            public void Write(Stream stream, WaypointList list)
+            {
+                BinaryWriter wtr = new BinaryWriter(stream);
+                wtr.Write(Point.X);
+                wtr.Write(Point.Y);
+                wtr.Write(Name);
+                wtr.Write(enabled);
+                wtr.Write((byte)(connections.Count));
+            }
+            public class WaypointConnection
+            {
+                public int wp_num;
+                public static byte DefaultFlag = 0x80;
+                public Waypoint wp;
+                public byte flag;
+                public WaypointConnection(int num, byte flg)
+                {
+                    wp_num = num;
+                    flag = flg;
+                }
+                public WaypointConnection(Waypoint wayp, byte flg)
+                {
+                    wp = wayp;
+                    flag = flg;
+                }
+				public override string ToString()
+				{
+					return String.Format("{0} ({1})", wp, flag);
+				}
+            }
+            public void RemoveConnByNum(Waypoint wp)
+            {
+                foreach (WaypointConnection wc in this.connections)
+                {
+                    if (wc.wp == wp)
+                    {
+                        this.connections.Remove(wc);
+                        return;
+                    }
+                }
+            }
+            public void AddConnByNum(Waypoint wp, byte tag)
+            {
+                foreach (WaypointConnection wc in this.connections)
+                {
+                    if (wc.wp_num == num)
+                    {
+                        return;
+                    }
+                }
+                connections.Add(new WaypointConnection(wp,tag));
+            }
+			public override string ToString()
+			{
+				return String.Format("{2}: {3} {0}, {1}", Point.X, Point.Y, num, Name);
+			}
+        }
+        public class Tile
 		{
+            public bool hascolor;
+            public Color col;
 			public Point Location;
-			protected byte graphicId;
-			public byte Variation;
+			public byte graphicId;
+			public UInt16 Variation;
 			public ArrayList EdgeTiles = new ArrayList();
 
 			public string Graphic
@@ -207,7 +916,7 @@ namespace NoxShared
 				}
 			}
 
-			public int Variations
+			public List<uint> Variations
 			{
 				get
 				{
@@ -215,14 +924,15 @@ namespace NoxShared
 				}
 			}
 
-			public Tile(Point loc, byte graphic, byte variation, ArrayList edgetiles)
+			public Tile(Point loc, byte graphic, UInt16 variation, ArrayList edgetiles)
 			{
-				Location = loc;
+                hascolor = false;
+                Location = loc;
 				graphicId = graphic; Variation = variation;
 				EdgeTiles = edgetiles;
 			}
 
-			public Tile(Point loc, byte graphic, byte variation) : this(loc, graphic, variation, new ArrayList()) {}
+			public Tile(Point loc, byte graphic, UInt16 variation) : this(loc, graphic, variation, new ArrayList()) {}
 
 			public Tile(Stream stream)
 			{
@@ -233,8 +943,8 @@ namespace NoxShared
 			{
 				BinaryReader rdr = new BinaryReader(stream);
 				graphicId = rdr.ReadByte();
-				Variation = (byte) rdr.ReadByte();
-				rdr.ReadBytes(3);//these are always null for first tilePair of a blending group (?)
+				Variation = rdr.ReadUInt16();
+				rdr.ReadBytes(2);//these are always null for first tilePair of a blending group (?)
 				for (int numEdgeTiles = rdr.ReadByte(); numEdgeTiles > 0; numEdgeTiles--)
 					EdgeTiles.Add(new EdgeTile(rdr.BaseStream));
 			}
@@ -244,8 +954,8 @@ namespace NoxShared
 				BinaryWriter wtr = new BinaryWriter(stream);
 
 				wtr.Write((byte )graphicId);
-				wtr.Write((byte) Variation);
-				wtr.Write(new byte[3]);//3 nulls
+				wtr.Write((UInt16) Variation);
+				wtr.Write(new byte[2]);//3 nulls
 				wtr.Write((byte) EdgeTiles.Count);
 				foreach(EdgeTile edge in EdgeTiles)
 					edge.Write(stream);
@@ -254,7 +964,7 @@ namespace NoxShared
 			public class EdgeTile//maybe derive from tile?
 			{
 				public byte Graphic;
-				public byte Variation;
+				public UInt16 Variation;
 				public byte unknown1 = 0x00; //Always 00(?)
 				public Direction Dir;
 				public byte Edge;
@@ -284,7 +994,7 @@ namespace NoxShared
 					//TODO: figure out what's up with the different directions
 				}
 
-				public EdgeTile(byte graphic, byte variation, Direction dir, byte edge)
+				public EdgeTile(byte graphic, ushort variation, Direction dir, byte edge)
 				{
 					Graphic = graphic; Variation = variation; Dir = dir; Edge = edge;
 				}
@@ -299,14 +1009,12 @@ namespace NoxShared
 					BinaryReader rdr = new BinaryReader(stream);
 
 					Graphic = rdr.ReadByte();
-					Variation = rdr.ReadByte();
-					unknown1 = rdr.ReadByte();
-					if (unknown1 != 0)
-						Debug.WriteLine(String.Format("WARNING: tile unknown byte was not 0, it was {0}", unknown1), "MapRead");
+					Variation = rdr.ReadUInt16();
 					Edge = rdr.ReadByte();
 					Dir = (Direction) rdr.ReadByte();
-					if (!Enum.IsDefined(typeof(Direction), (byte) Dir))
-						Debug.WriteLine(String.Format("WARNING: edgetile direction {0} is undefined", (byte) Dir), "MapRead");
+
+					//Debug.WriteLineIf(unknown1 != 0, String.Format("WARNING: tile unknown byte was not 0, it was {0}.", unknown1), "MapRead");
+					Debug.WriteLineIf(!Enum.IsDefined(typeof(Direction), (byte) Dir), String.Format("WARNING: edgetile direction {0} is undefined.", (byte) Dir), "MapRead");
 				}
 
 				public void Write(Stream stream)
@@ -314,32 +1022,41 @@ namespace NoxShared
 					BinaryWriter wtr = new BinaryWriter(stream);
 
 					wtr.Write((byte) Graphic);
-					wtr.Write((byte) Variation);
-					wtr.Write((byte) unknown1);
+					wtr.Write((UInt16) Variation);
 					wtr.Write((byte) Edge);
 					wtr.Write((byte) Dir);
 				}
 			}
+			public override string ToString()
+			{
+				return String.Format("{0}, {1} {2}", Location.X, Location.Y, Graphic);
+			}
 		}
 
-		public class TileMap : SortedList
+		public class FloorMap : SortedDictionarySection<Point, Tile>
 		{
-			protected byte[] header;
+			public short Prefix;
+			public int Var1;
+			public int Var2;
+			public int Var3;
+			public int Var4;
 
-			public TileMap() : base(new LocationComparer()) {}
+			public FloorMap() : base(new LocationComparer()) {}
+			public FloorMap(Stream stream) : base(new LocationComparer(), stream) {}
 
-			public TileMap(Stream stream) : this()
-			{
-				Read(stream);
-			}
-
-			protected void Read(Stream stream)
+			protected override void ReadContents(Stream stream)
 			{
 				BinaryReader rdr = new BinaryReader(stream);
-				ArrayList tilePairs = new ArrayList();
-				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
 
-				header = rdr.ReadBytes(0x12);
+				List<TilePair> tilePairs = new List<TilePair>();
+
+				Prefix = rdr.ReadInt16();
+				Var1 = rdr.ReadInt32();
+				Var2 = rdr.ReadInt32();
+				Var3 = rdr.ReadInt32();
+				Var4 = rdr.ReadInt32();
+
+				Debug.WriteLine(String.Format("contents of header: 0x{0:x} 0x{1:x} 0x{2:x} 0x{3:x} 0x{4:x}", Prefix, Var1, Var2, Var3, Var4));
 
 				while (true)//we'll get an 0xFF for both x and y to signal end of section
 				{
@@ -355,8 +1072,6 @@ namespace NoxShared
 						tilePairs.Add(tilePair);
 				}
 
-				Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (FloorMap) ERROR: bad section length");
-
 				foreach (TilePair tp in tilePairs)
 				{
 					if (tp.Left != null) this.Add(tp.Left.Location, tp.Left);
@@ -364,30 +1079,36 @@ namespace NoxShared
 				}
 			}
 
-			public void Write(Stream stream)
+			protected override void WriteContents(Stream stream)
 			{
 				BinaryWriter wtr = new BinaryWriter(stream);
 
-				wtr.Write("FloorMap\0");
-				long length = 0;
-				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
-				long pos = wtr.BaseStream.Position;
-				wtr.Write(length);
-				wtr.Write(header);
+				wtr.Write((short)Prefix);
+				wtr.Write((int)Var1);
+				wtr.Write((int)Var2);
+				wtr.Write((int)Var3);
+				wtr.Write((int)Var4);
 
 				//generate the TilePairs...
 				ArrayList tilePairs = new ArrayList();
-				SortedList tiles = (SortedList) this.Clone();
-				while (tiles.Count > 0)
+
+				//dumb replacement for clone()
+				SortedDictionary<Point, Tile> tiles = new SortedDictionary<Point, Tile>(new LocationComparer());
+				foreach (Point key in Keys)
+					tiles.Add(key, this[key]);
+
+				List<Tile> tileList = new List<Tile>(tiles.Values);
+				List<Tile>.Enumerator tEnum = tileList.GetEnumerator();
+				while (tEnum.MoveNext())
 				{
 					Tile left = null, right = null;
-					Tile tile1 = (Tile) tiles.GetByIndex(0);
+					Tile tile1 = tEnum.Current;
 					if (tile1.Location.X % 2 == 1)//we got a right tile. the right tile will always come before it's left tile
 					{
 						right = tile1;
-						Tile tile2 = (Tile) tiles[new Point(tile1.Location.X - 1, tile1.Location.Y + 1)];
-						if (tile2 != null)
-							left = tile2;
+						Point t2p = new Point(tile1.Location.X - 1, tile1.Location.Y + 1);
+						if (tiles.ContainsKey(t2p))
+							left = tiles[t2p];
 						tilePairs.Add(new TilePair((byte) ((right.Location.X-1)/2), (byte) ((right.Location.Y+1)/2), left, right));
 					}
 					else //assume that this tile is a single since the ordering would have forced the right tile to be handled first
@@ -404,23 +1125,18 @@ namespace NoxShared
 					tilePair.Write(wtr.BaseStream);
 
 				wtr.Write((ushort) 0xFFFF);//terminating x and y
-						
-				//rewrite the length now that we can find it
-				length = wtr.BaseStream.Position - (pos + 8);
-				wtr.Seek((int) pos, SeekOrigin.Begin);
-				wtr.Write(length);
-				wtr.Seek((int) length, SeekOrigin.Current);
 			}
 		}
 
 		protected class MapHeader
 		{
-			const uint LENGTH = 0x18;
-			const uint FILE_ID = 0xFADEFACE;
-			public uint CheckSum;//checksum for rest of file. determines whether download is necessary.
-			public uint u1;//UNKNOWN
-			public uint u2;//UNKNOWN
+			private const int LENGTH = 0x18;
+			private const uint FILE_ID = 0xFADEFACE;
+			public int CheckSum;//checksum for rest of file. used in determining whether download is necessary.
+			public int u1;//UNKNOWN
+			public int u2;//UNKNOWN
 
+			public MapHeader() { }
 			public MapHeader(Stream stream)
 			{
 				Read(stream);
@@ -429,14 +1145,20 @@ namespace NoxShared
 			public void Read(Stream stream)
 			{
 				BinaryReader rdr = new BinaryReader(stream);
-				uint id = rdr.ReadUInt32();//first int is always FADEFACE
-				Debug.Assert(id == FILE_ID);
+				int id = rdr.ReadInt32();//first int is always FADEFACE
+				Debug.Assert((uint)id == FILE_ID);
 
-				rdr.ReadInt32();//always null?
-				CheckSum = rdr.ReadUInt32();
-				rdr.ReadInt32();//always null?
-				u1 = rdr.ReadUInt32();
-				u2 = rdr.ReadUInt32();
+				int check;
+				check = rdr.ReadInt32();
+				Debug.WriteLineIf(check != 0, "int in header was not null: 0x" + check.ToString("x"), "MapHeader.Read");
+				CheckSum = rdr.ReadInt32();
+				check = rdr.ReadInt32();
+				Debug.WriteLineIf(check != 0, "int in header was not null: 0x" + check.ToString("x"), "MapHeader.Read");
+				u1 = rdr.ReadInt32();
+				u2 = rdr.ReadInt32();
+
+				Debug.WriteLine("u1 is 0x" + u1.ToString("x"), "MapHeader.Read");
+				Debug.WriteLine("u2 is 0x" + u2.ToString("x"), "MapHeader.Read");
 			}
 
 			public void Write(Stream stream)
@@ -444,11 +1166,11 @@ namespace NoxShared
 				BinaryWriter wtr = new BinaryWriter(stream);
 
 				wtr.Write(FILE_ID);
-				wtr.Write((uint) 0);
-				wtr.Write((uint) CheckSum);
-				wtr.Write((uint) 0);
-				wtr.Write((uint) u1);
-				wtr.Write((uint) u2);
+				wtr.Write((int) 0);
+				wtr.Write((int) CheckSum);
+				wtr.Write((int) 0);
+				wtr.Write((int) u1);
+				wtr.Write((int) u2);
 			}
 
 			public void GenerateChecksum(byte[] data)
@@ -457,9 +1179,9 @@ namespace NoxShared
 			}
 		}
 
-		public class MapInfo
+		public class MapInfo : Section
 		{
-			public short unknown;//usually 2 or 3, but changing it causes the map not to load sometimes?
+			public short unknown = 2;//CHECKED
 			public string Summary;//the map's brief name
 			public string Description;//the map's long description
 			public string Author;
@@ -469,19 +1191,21 @@ namespace NoxShared
 			public string Version;//the map's current version
 			public string Copyright;
 			public string Date;
-			public MapType Type;
+			public MapType Type = MapType.ARENA;
 			public byte RecommendedMin;
 			public byte RecommendedMax;
+			public String QIntroTitle = "";
+			public String QIntroGraphic = "";
 
-			public MapInfo()
-			{
-				Type = MapType.ARENA;
-			}
+			protected override string SectionName { get { return "MapInfo"; } }
+			public MapInfo() : base() { }
+			public MapInfo(Stream stream) : base(stream) { }
 
 			public enum MapType : uint
 			{
 				SOLO = 0x00000001,
 				QUEST = 0x00000002,
+				SOLO_T = 0x00000003,
 				ARENA = 0x00000034,
 				CTF = 0x00000018,
 				SOCIAL = 0x80000000,
@@ -499,120 +1223,126 @@ namespace NoxShared
 				MapTypeNames.Add(MapType.SOCIAL, "Social");
 				MapTypeNames.Add(MapType.QUEST, "Quest");
 				MapTypeNames.Add(MapType.SOLO, "Solo");
+				MapTypeNames.Add(MapType.SOLO_T, "Solo Template");
 				MapTypeNames.Add(MapType.FLAGBALL, "Flagball");
 			}
+			const int PREFIX = 0x02;
+			const int TITLE = 0x40;
+			const int DESCRIPTION = 0x200;
+			const int VERSION = 0x10;
+			const int AUTHOR = 0x40;
+			const int EMAIL = 0xC0;
+			const int EMPTY = 0x80;
+			const int COPYRIGHT = 0x80;//only on very few maps
+			const int DATE = 0x20;
+			const int TYPE = 0x04;
+			const int MINMAX = 0x02;
+			const int TOTAL = PREFIX + TITLE + DESCRIPTION + VERSION + 2*(AUTHOR + EMAIL) + EMPTY + COPYRIGHT + DATE + TYPE + MINMAX;
 
-			protected enum SectionLength
-			{
-				PREFIX = 0x02,
-				TITLE = 0x40,
-				DESCRIPTION = 0x200,
-				VERSION = 0x10,
-				AUTHOR = 0x40,
-				EMAIL = 0xC0,
-				EMPTY = 0x80,
-				COPYRIGHT = 0x80,//only on very few maps
-				DATE = 0x20,
-				TYPE = 0x04,
-				MINMAX = 0x02,
-				TOTAL = PREFIX + TITLE + DESCRIPTION + VERSION + 2*(AUTHOR + EMAIL) + EMPTY + COPYRIGHT + DATE + TYPE + MINMAX
-			};
-
-			public void Read(Stream stream)
+			protected override void ReadContents(Stream stream)
 			{
 				NoxBinaryReader rdr = new NoxBinaryReader(stream);
-				long finish = rdr.ReadInt64() + rdr.BaseStream.Position;//order matters!
 
 				unknown = rdr.ReadInt16();//dont know what this is for
-				//the ReadStrings below are equivalent to lines like these two:
-				//  Summary = new string(rdr.ReadChars((int) SectionLength.TITLE));
-				//  Summary = Summary.Substring(0, Summary.IndexOf('\0'));
-				Summary = rdr.ReadString((int) SectionLength.TITLE);
-				Description = rdr.ReadString((int) SectionLength.DESCRIPTION);
-				Version = rdr.ReadString((int) SectionLength.VERSION);
-				Author = rdr.ReadString((int) SectionLength.AUTHOR);
-				Email = rdr.ReadString((int) SectionLength.EMAIL);
-				Author2 = rdr.ReadString((int) SectionLength.AUTHOR);
-				Email2 = rdr.ReadString((int) SectionLength.EMAIL);
-				rdr.ReadBytes((int) SectionLength.EMPTY);
-				Copyright = rdr.ReadString((int) SectionLength.COPYRIGHT);
-				Date = rdr.ReadString((int) SectionLength.DATE);
-				//TODO: quest maps have an extra section after this part and no min/max recommended players
-				//TODO/FIXME: mapinfo does not read map type properly for Conflict.map
-				Type = (MapType) rdr.ReadUInt32();
-				RecommendedMin = rdr.ReadByte();
-				RecommendedMax = rdr.ReadByte();
-				Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (MapInfo) WARNING: section length is incorrect");
+				Summary = rdr.ReadString((int) TITLE);
+				Description = rdr.ReadString((int) DESCRIPTION);
+				Version = rdr.ReadString((int) VERSION);
+				Author = rdr.ReadString((int) AUTHOR);
+				Email = rdr.ReadString((int) EMAIL);
+				Author2 = rdr.ReadString((int) AUTHOR);
+				Email2 = rdr.ReadString((int) EMAIL);
+				rdr.ReadBytes((int) EMPTY);
+				Copyright = rdr.ReadString((int) COPYRIGHT);
+				Date = rdr.ReadString((int) DATE);
+				uint temp = rdr.ReadUInt32();
+				Type = (MapType)temp;
+				Debug.WriteLineIf(Type == null, String.Format("Map Type was unknown, {0}", temp), "Map.MapIntro.Read");
+
+				if (Type == MapType.QUEST)//quest maps have an extra variable length section
+				{
+					QIntroTitle = Encoding.ASCII.GetString(rdr.ReadBytes(rdr.ReadByte()));
+					QIntroGraphic = Encoding.ASCII.GetString(rdr.ReadBytes(rdr.ReadByte()));
+				}
+				else
+				{
+					RecommendedMin = rdr.ReadByte();
+					RecommendedMax = rdr.ReadByte();
+				}
+
+				Debug.WriteLineIf(unknown != 2, "Unknown in MapInfo is not 2, it is: " + unknown, "Map.MapInfo.Read");
 			}
 
-			public void Write(Stream stream)
+			protected override void WriteContents(Stream stream)
 			{
 				BinaryWriter wtr = new BinaryWriter(stream);
-				wtr.Write("MapInfo\0");
-				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
-				wtr.Write((long) SectionLength.TOTAL);
-
-				long finish = wtr.BaseStream.Position + (long) SectionLength.TOTAL;
 
 				wtr.Write((short) unknown);
 
 				wtr.Write(Summary.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.TITLE - Summary.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) TITLE - Summary.Length, SeekOrigin.Current);
 
 				wtr.Write(Description.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.DESCRIPTION - Description.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) DESCRIPTION - Description.Length, SeekOrigin.Current);
 
 				wtr.Write(Version.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.VERSION - Version.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) VERSION - Version.Length, SeekOrigin.Current);
 
 				wtr.Write(Author.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.AUTHOR - Author.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) AUTHOR - Author.Length, SeekOrigin.Current);
 
 				wtr.Write(Email.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.EMAIL - Email.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) EMAIL - Email.Length, SeekOrigin.Current);
 
 				wtr.Write(Author2.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.AUTHOR - Author2.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) AUTHOR - Author2.Length, SeekOrigin.Current);
 
 				wtr.Write(Email2.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.EMAIL - Email2.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) EMAIL - Email2.Length, SeekOrigin.Current);
 
-				wtr.BaseStream.Seek((int) SectionLength.EMPTY, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) EMPTY, SeekOrigin.Current);
 
 				wtr.Write(Copyright.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.COPYRIGHT - Copyright.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) COPYRIGHT - Copyright.Length, SeekOrigin.Current);
 
 				wtr.Write(Date.ToCharArray());
-				wtr.BaseStream.Seek((int) SectionLength.DATE - Date.Length, SeekOrigin.Current);
+				wtr.BaseStream.Seek((int) DATE - Date.Length, SeekOrigin.Current);
 
 				wtr.Write((int) Type);
-				wtr.Write((byte) RecommendedMin);
-				wtr.Write((byte) RecommendedMax);
 
-				Debug.Assert(wtr.BaseStream.Position == finish, "NoxMap (MapInfo) ERROR: wrote wrong length");
+				if (Type == MapType.QUEST)
+				{
+					wtr.Write((byte) QIntroTitle.Length);
+					wtr.Write(Encoding.ASCII.GetBytes(QIntroTitle));
+					wtr.Write((byte) QIntroGraphic.Length);
+					wtr.Write(Encoding.ASCII.GetBytes(QIntroGraphic));
+
+				}
+				else
+				{
+					wtr.Write((byte) RecommendedMin);
+					wtr.Write((byte) RecommendedMax);
+				}
 			}
 		}
 
-		public class SectHeader
+		protected class LocationComparer : IComparer<Point>
 		{
-			public string name;
-			public long length;
-			public byte[] header;
-			public SectHeader(string n, int len, byte []h)
+			public int Compare(Point lhs, Point rhs)
 			{
-				name = n; length = len; header = h;
-			}
-		}
-
-		protected class LocationComparer : IComparer
-		{
-			public int Compare(object x, object y)
-			{
-				Point lhs = (Point) x, rhs = (Point) y;
 				if (lhs.Y != rhs.Y)
 					return lhs.Y - rhs.Y;
 				else
 					return lhs.X - rhs.X;
+			}
+
+			public bool Equals(Point lhs, Point rhs)
+			{
+				return lhs.Equals(rhs);
+			}
+
+			public int GetHashCode(Point p)
+			{
+				return p.GetHashCode();
 			}
 		}
 
@@ -736,19 +1466,35 @@ namespace NoxShared
 			//TODO: Make a list of all types and have a string
 			//perhaps add these in the NoxTypes namespace?
 			public WallFacing Facing;
-			protected byte matId;
-			public byte Unknown1 = 0x00;
+			/*protected*/public byte matId;
+			public byte Variation;
 			public byte Minimap = 0x64;
-			public byte Unknown2 = 0x01;
+			protected byte alwaysNull;
 			public bool Destructable;
 			public bool Secret;
 			public bool Window;
+
+			public byte Variations
+			{
+				get
+				{
+					return ThingDb.Walls[matId].Variations;
+				}
+			}
 
 			//these unknowns follow the wall's entry in the SecretWalls section
 			// and usually (always?) have these values
 			//    (initialized here so they are the default for new walls)
 			public int Secret_u1 = 0x00000003;
-			public int Secret_u2 = 0x00000106;
+			public uint Secret_flags;
+			//the lowest bits seem to be flags of some sort, maybe a delay? ranges from 1-6
+			[Flags]
+			public enum SecretFlags : uint
+			{
+				AutoOpen = 0x2,
+				AutoClose = 0x4,
+				Unknown100 = 0x100
+			}
 
 			public string Material
 			{
@@ -763,18 +1509,14 @@ namespace NoxShared
 				Read(stream);
 			}
 
-			public Wall(Point loc, byte facing, byte mat) : this(loc, (WallFacing) facing, mat)
-			{
-			}
-
 			public Wall(Point loc, WallFacing facing, byte mat)
 			{
 				Location = loc;	Facing = facing; matId = mat;
 			}
 
-			public Wall(Point loc, WallFacing facing, byte mat, byte mmGroup)
+			public Wall(Point loc, WallFacing facing, byte mat, byte mmGroup, byte var)
 			{
-				Location = loc;	Facing = facing; matId = mat; Minimap = mmGroup;
+				Location = loc; Facing = facing; matId = mat; Minimap = mmGroup; Variation = var;
 			}
 
 			protected void Read(Stream stream)
@@ -783,9 +1525,11 @@ namespace NoxShared
 				Location = new Point(rdr.ReadByte(), rdr.ReadByte());
 				Facing = (WallFacing) (rdr.ReadByte() & 0x7F);//I'm almost certain the sign bit is just garbage and does not signify anything about the wall
 				matId = rdr.ReadByte();
-				Unknown1 = rdr.ReadByte();
+				Variation = rdr.ReadByte();
 				Minimap = rdr.ReadByte();
-				Unknown2 = rdr.ReadByte();
+				alwaysNull = rdr.ReadByte();
+				Debug.WriteLineIf(Variation >= Variations, String.Format("Wall at {0} has a Variation that is out of range.", Location), "Map.Wall.Read");
+				Debug.WriteLineIf(alwaysNull != 0, String.Format("Wall at {0} has non-null alwaysNull: {1}.", Location, alwaysNull), "Map.Wall.Read");
 			}
 
 			public void Write(Stream stream)
@@ -796,9 +1540,9 @@ namespace NoxShared
 				wtr.Write((byte) Location.Y);
 				wtr.Write((byte) Facing);
 				wtr.Write((byte) matId);
-				wtr.Write((byte) Unknown1);
+				wtr.Write((byte) Variation);
 				wtr.Write((byte) Minimap);
-				wtr.Write((byte) Unknown2);
+				wtr.Write((byte) alwaysNull);
 			}
 
 			public int CompareTo(object obj)
@@ -809,13 +1553,19 @@ namespace NoxShared
 				else
 					return Location.X - rhs.Location.X;
 			}
+
+			public override string ToString()
+			{
+				return String.Format("{0}, {1}", Location.X, Location.Y);
+			}
 		}
 
 		public class ObjectTable : ArrayList
 		{
 			protected SortedList toc = new SortedList();
-			protected short tocUnknown;
-			protected short dataUnknown;
+			protected short tocUnknown = 1;
+			protected short dataUnknown = 1;
+			short id = 1;
 
 			public ArrayList extents = new ArrayList();
 
@@ -833,7 +1583,12 @@ namespace NoxShared
 			{
 			}
 
-			public override int Add(object obj) 			{ 				extents.Add(((Object)obj).Extent); 				return base.Add (obj); 			} 
+			public override int Add(object obj)
+
+			{
+				extents.Add(((Object) obj).Extent);
+				return base.Add(obj);
+			}
 
 			public void Read(Stream toc, Stream data)
 			{
@@ -854,7 +1609,6 @@ namespace NoxShared
 				//now read the table and construct its objects
 				rdr = new BinaryReader(data);
 				finish = rdr.ReadInt64() + rdr.BaseStream.Position;
-
 				dataUnknown = rdr.ReadInt16();//0x0001 -- useful?
 				while (rdr.BaseStream.Position < finish)
 				{
@@ -865,8 +1619,15 @@ namespace NoxShared
 					Add(new Object(rdr.BaseStream, this.toc));
 				}
 
+				Debug.WriteLineIf(tocUnknown != 1, "tocUnknown was not 1, it was: " + tocUnknown);
+				Debug.WriteLineIf(dataUnknown != 1, "dataUnknown was not 1, it was: " + dataUnknown);
+				Debug.WriteLine(this.toc.Count + " objects in TOC.");
+				Debug.WriteLine(Count + " objects read.");
+
 				//check that length of section matches
 				Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (ObjectDATA) ERROR: bad section length");
+
+
 			}
 
 			/// <summary>
@@ -880,15 +1641,12 @@ namespace NoxShared
 				//before we start writing, we need to build a new toc
 				Sort();
 				toc = new SortedList();
-				short id = 1;
 				foreach (Object obj in this)
 				{
 					if (toc[obj.Name] == null)
 						toc.Add(obj.Name, id++);
-					if (obj.inven > 0) //If object has an inventory
-						foreach (Object o in obj.childObjects)
-							if (toc[o.Name] == null) //What if there are embedded inventories? That needs fixed.
-								toc.Add(o.Name, id++);
+					foreach (Object o in obj.childObjects)
+						AddEmbeddedObjects(o);
 				}
 
 				//--write the ObjectTOC--
@@ -921,7 +1679,6 @@ namespace NoxShared
 				startPos = wtr.BaseStream.Position;
 				wtr.Write((long) length);//will be rewritten later
 				wtr.Write((short) dataUnknown);
-
 				foreach (Object obj in this)
 					obj.Write(wtr.BaseStream, toc);
 
@@ -932,11 +1689,23 @@ namespace NoxShared
 				wtr.Seek((int) startPos,SeekOrigin.Begin);
 				wtr.Write((long) length);
 				wtr.Seek(0, SeekOrigin.End);
+				
+				Debug.WriteLine(toc.Count + " objects in TOC.");
+				Debug.WriteLine(Count + " objects written.");
+			}
+			private void AddEmbeddedObjects(Object o)
+			{
+				if (toc[o.Name] == null) //What if there are embedded inventories? That needs fixed.
+					toc.Add(o.Name, id++);
+				foreach (Object obj in o.childObjects)
+					AddEmbeddedObjects(obj);
 			}
 		}
 
+		[Serializable]
 		public class Object : IComparable, ICloneable
 		{
+            public int UniqueID;
 			public string Name;
 			public Property Properties;
 			public short Type2;
@@ -948,40 +1717,24 @@ namespace NoxShared
 			public byte[] modbuf = new byte[0];
 			public ArrayList enchants = new ArrayList();
 			public byte Team;//Specified in the extra stuff that comes with 0xFF Terminator
-			public string Scr_Name;//Name used in Script Section
-			public byte inven; //Number of objects in inventory, important for object ordering
+			public string Scr_Name = "";//Name used in Script Section
+			//public byte inven; //Number of objects in inventory, important for object ordering
 			public ArrayList childObjects = new ArrayList(); //Objects in its inventory
-			public byte[] temp1 = new byte[0];//Temporary buffers for FF term. stuff, unknowns 
-			public byte[] temp2 = new byte[0];//Temporary buffers for FF term. stuff, unknowns 
+			public string pickup_func = ""; //Function to execute when picked-up
+			public byte unknown1 = 0;//Temporary buffers for FF term. stuff, unknowns 
+			public List<UInt32> unknown2 = new List<uint>();//FF term. unknown (Used by SaveGameLocation)
+			public bool AutoEquip = false; //Found by RogueTeddyBear
+            public UInt16 temp1 = 0x0100;//Temporary buffers for FF term. stuff, unknowns 
+			public UInt16 temp2 = 0x0000;//Temporary buffers for FF term. stuff, unknowns 
+			public UInt32 temp3 = 0x00010000;//Temporary buffers for FF term. stuff, unknowns
+			public UInt64 temp4 = 0;//Temporary buffers for FF term. stuff, unknowns
 
-			//note: there's a good chance that these are not flags at all and
-			// should be a regular enumeration
-			/*[Flags] public enum PropertyFlags : short
-			{
-				Always = 0x003C,//these three bits always seem to be set
-				HasMana = 0x0001,//this is misnamed because elevators and buttons have it. "interactable"?
-				HasAmmo = 0x0002,//should be "pickupable"? in stronghd.map, all items have this but in others most items are 0x3c
-				//wands always have 3e and bows too
-				Enemy = 0x0040//this seems to be the only bit set
-			}
-			
-			public bool HasMana
-			{
-				get {return (Properties & PropertyFlags.HasMana) != 0;}
-				set {if (value) Properties |= PropertyFlags.HasMana; else Properties &= ~PropertyFlags.HasMana;}
-			}
-
-			public bool HasAmmo
-			{
-				get {return (Properties & PropertyFlags.HasAmmo) != 0;}
-				set {if (value) Properties |= PropertyFlags.HasAmmo; else Properties &= ~PropertyFlags.HasAmmo;}
-			}*/
-
-			public enum Property : short
+            public enum Property : short
 			{
 				Normal = 0x003C,
 				Interact = 0x003D,
 				Pickup = 0x003E,
+				Quest = 0x003F,
 				Enemy = 0x0040
 			}
 
@@ -993,6 +1746,7 @@ namespace NoxShared
 				Properties = Property.Normal;
 				Type2 = 0x0040;//always??
 				Location = new PointF(0, 0);
+                UniqueID = 0;
 			}
 
 			public Object(string name, PointF loc) : this()
@@ -1009,56 +1763,53 @@ namespace NoxShared
 			public void Read(Stream stream, IDictionary toc)
 			{
 				BinaryReader rdr = new BinaryReader(stream);
-
 				Name = (string) toc[rdr.ReadInt16()];
 				rdr.BaseStream.Seek((8 - rdr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
 				long endOfData = rdr.ReadInt64() + rdr.BaseStream.Position;
 				Properties = (Property) rdr.ReadInt16();
-				Debug.WriteLineIf(!Enum.IsDefined(typeof(Property), Properties), String.Format("object {0} has properties 0x{1:x}", Name, (short) Properties));
 				Type2 = rdr.ReadInt16();
-				Debug.WriteLineIf(Type2 != 0x40, String.Format("object {0} has type2 0x{1:x}", Name, Type2));
 				Extent = rdr.ReadInt32();
 				Unknown = rdr.ReadInt32();//always null?
-				Debug.WriteLineIf(Unknown != 0, String.Format("object {0}'s Unknown was not null! it was 0x{1:x}", Name, Unknown));
-				Unknown = 0;//FIXME? remove this Andrew unless it's here for a reason, if so, add a comment
 				Location = new PointF(rdr.ReadSingle(), rdr.ReadSingle());//x then y
+				int inven = 0;
+
 				if(Location.X > 5880 || Location.Y > 5880)
 					Location = new PointF(5870,5870);
 				Terminator = rdr.ReadByte();
 				if(Terminator == 0xFF)
 				{
-					temp1 = rdr.ReadBytes(4);
+					unknown1 = rdr.ReadByte();
+					AutoEquip = rdr.ReadBoolean();
+					temp1 = rdr.ReadUInt16();
 					Scr_Name = rdr.ReadString();
 					Team = rdr.ReadByte();
 					inven = rdr.ReadByte();
-					temp2 = rdr.ReadBytes(20);
-				}
-				if (rdr.BaseStream.Position < endOfData)
-				{
-					/*
-					//TODO: Loop to get the modifiers
-					Modifier mod;
-					rdr.ReadInt32();
-					rdr.ReadInt32();
-					rdr.ReadInt32();
-					long length = rdr.ReadInt64();
-							if(rdr.PeekChar() == 0x00)
-								break;
-							rdr.BaseStream.Seek(1, SeekOrigin.Current);
-							if(rdr.PeekChar() == 0x00)
-								break;
-							rdr.BaseStream.Seek(-1, SeekOrigin.Current);
-							mod = new Modifier();
-							mod.name = rdr.ReadString();
-							entry.Modifiers.Add(mod);
+					for (int i = rdr.ReadInt16(); i > 0; i--)
+						unknown2.Add(rdr.ReadUInt32());
+					temp2 = rdr.ReadUInt16();
+					temp3 = rdr.ReadUInt32();
+					if (Type2 == 0x40)
+					{
+						int strsize = rdr.ReadInt32();
+						pickup_func = strsize > 0 ? new string(rdr.ReadChars(strsize)) : "";
 					}
-					//*/
-					//For now, just skip them.
+					temp4 = rdr.ReadUInt64();
+					Debug.WriteLineIf(temp1 != 0x100, String.Format("Object: {0} temp1 was not 0x100, it was: {1:x}", this, temp1));
+					Debug.WriteLineIf(temp2 != 0, String.Format("Object: {0} temp2 was not 0, it was: {1:x}", this, temp2));
+					Debug.WriteLineIf(temp3 != 0x00010000, String.Format("Object: {0} temp3 was not 0x10000, it was: {1:x}", this, temp2));
+                }
+				if (rdr.BaseStream.Position < endOfData)
 					modbuf = rdr.ReadBytes((int)(endOfData - rdr.BaseStream.Position));
-				}
+				else if (rdr.BaseStream.Position > endOfData)
+					Debug.Fail(String.Format("Object: {0} went beyond endOfData ({1})", this, endOfData));
+
+				Debug.WriteLineIf(Terminator != 0 && Terminator != 0xFF, "Terminator was not 0 or ff, it was: " + Terminator);
+				Debug.WriteLineIf(!Enum.IsDefined(typeof(Property), Properties), String.Format("object {0} has undefined properties 0x{1:x}.", Name, (short)Properties));
+				Debug.WriteLineIf(Type2 != 0x40 && Type2 != 0x3F, String.Format("object {0} has type2 0x{1:x}.", Name, Type2));
+				Debug.WriteLineIf(Unknown != 0, "Unknown in Object '" + Name + "' at " + Location + " was not null, it was: 0x" + Unknown.ToString("x"));
 
 				//check that this entry's length matches
-				Debug.Assert(rdr.BaseStream.Position == endOfData, "NoxMap (ObjectData) ERROR: bad entry length");
+				Debug.Assert(rdr.BaseStream.Position == endOfData, String.Format("NoxMap (ObjectData) ERROR: bad entry length: diff = {0}", endOfData - rdr.BaseStream.Position));
 				if(inven > 0)
 				{
 					childObjects = new ArrayList(inven);
@@ -1073,18 +1824,13 @@ namespace NoxShared
 			/// <param name="toc">A Mapping of string to short IDs</param>
 			public void Write(Stream stream, IDictionary toc)
 			{
+				if (pickup_func != null && pickup_func.Length > 0) { Type2 = 0x40; };
 				BinaryWriter wtr = new BinaryWriter(stream);
 				wtr.Write((short) toc[Name]);
 				wtr.BaseStream.Seek((8 - wtr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
 				int xtraLength = 0;
 				if (Terminator == 0xFF)
-				{
-					if(temp1 == null)
-						temp1 = new Byte[] {0, 0, 0, 1};
-					if(temp2 == null)
-						temp2 = new Byte[] {00, 00,00, 00, 00, 00, 01, 00, 00,00,00,00,00,00,00,00,00,00,00,00};
-					xtraLength = temp1.Length + temp2.Length + 3 + Scr_Name.Length;
-				}
+					xtraLength = 23 + Scr_Name.Length + pickup_func.Length + (Type2 - 0x3F)*4 + unknown2.Count*4;
 				long dataLength = 0x15 + modbuf.Length + xtraLength;//0x15 is the minumum length of an entry
 				wtr.Write((long) dataLength);
 				//the 0x15 is the length of these entries combined...
@@ -1098,81 +1844,211 @@ namespace NoxShared
 				//... these entries make 0x15 bytes
 				if (Terminator == 0xFF)
 				{
+					wtr.Write(unknown1);
+					wtr.Write(AutoEquip);
 					wtr.Write(temp1);
 					wtr.Write(Scr_Name);
 					wtr.Write(Team);
-					wtr.Write(inven);
+					wtr.Write((byte)childObjects.Count);
+					wtr.Write((short)unknown2.Count);
+					foreach (UInt32 u in unknown2)
+						wtr.Write(u);
 					wtr.Write(temp2);
-				}
+					wtr.Write(temp3);
+					if (Type2 == 0x40)
+					{
+						wtr.Write(pickup_func.Length);
+						wtr.Write(pickup_func.ToCharArray());
+					}
+                    wtr.Write(temp4);
+                }
 				if (modbuf != null)
 					wtr.Write(modbuf);
-				if(inven > 0)
-					foreach(Object o in childObjects)
-						o.Write(stream,toc);
+				foreach(Object o in childObjects)
+					o.Write(stream,toc);
 			}
 
 			public int CompareTo(object obj)
 			{
-				return Name.CompareTo(((Object) obj).Name);
+				return (Name.CompareTo(((Object)obj).Name) == 0) ? Extent.CompareTo(((Object)obj).Extent) : Name.CompareTo(((Object)obj).Name);
 			}
 
+			public override string ToString()
+			{
+				return Name + " " + Extent.ToString();
+			}
 
 			public object Clone()
 			{
 				Object copy = (Object) MemberwiseClone();
-				copy.modbuf = (byte[]) modbuf.Clone();
-				copy.enchants = (ArrayList) enchants.Clone();
-				copy.childObjects = (ArrayList) childObjects.Clone();
-				copy.temp1 = (byte[]) temp1.Clone();
-				copy.temp2 = (byte[]) temp2.Clone();
+				copy.AutoEquip = AutoEquip;
+				copy.childObjects = new ArrayList(childObjects.Count);
+				foreach (Object o in childObjects)
+					copy.childObjects.Add(o.Clone());
+				copy.Extent = Extent;
+				copy.Location = Location;
+				copy.modbuf = new byte[modbuf.Length];
+				modbuf.CopyTo(copy.modbuf, 0);
+				copy.Name = Name;
+				copy.pickup_func = pickup_func;
+				copy.Properties = Properties;
+				copy.Scr_Name = Scr_Name;
+				copy.Team = Team;
+				copy.temp1 = temp1;
+				copy.temp2 = temp2;
+				copy.temp3 = temp3;
+				copy.Terminator = Terminator;
+				copy.Unknown = Unknown;
+				copy.unknown1 = unknown1;
 				return copy;
 			}
 		}
 		
 		public class ScriptObject
 		{
-			public SortedList SctStr;
-			public byte[] rest; // CODE till DONE, hopefully	
-		}
+            public List<String> SctStr = new List<String>();
+            public List<ScriptFunction> Funcs = new List<ScriptFunction>();
+            public byte[] rest; // CODE till DONE, hopefully	
+            public ScriptObject()
+            {
+                ScriptFunction sf = new ScriptFunction("GLOBAL");
+                sf.code = new Byte[] { 0x48, 0, 0, 0 };
+                Funcs.Add(sf);
+                sf = new ScriptFunction("GLOBAL");
+                sf.vars.Add(1);
+                sf.vars.Add(1);
+                sf.vars.Add(1);
+                sf.vars.Add(1);
+                sf.code = new Byte[]{0x48,0,0,0};
+                Funcs.Add(sf);
+                sf = new ScriptFunction("MapInitialize");
+                sf.code = new Byte[] { 0x48, 0, 0, 0 };
+                Funcs.Add(sf);
+            }
+        }
+        public class ScriptFunction : IComparable //bug in beta 2 prevents IndexOf from using generic IComparable
+        {
+            public ScriptFunction()
+            {
+            }
+            public ScriptFunction(string s)
+            {
+                name = s;
+            }
+            public string name;
+            public byte[] code;
+            public List<int> vars = new List<int>();
+
+            public override bool Equals(System.Object other)
+            {
+				if (other.GetType() == typeof(ScriptFunction))
+					return (name.Equals(((ScriptFunction)other).name));
+				else
+					return false;
+            }
+            public int CompareTo(System.Object other)
+            {
+				if (other.GetType() == typeof(ScriptFunction))
+					return name.CompareTo(((ScriptFunction)other).name);
+				else
+					return -1;
+            }
+
+			public override string ToString()
+			{
+				return String.Format("{0}", name);
+			}
+        }
 		public class Modifier
 		{
 			//TODO: is object to modifier a 1 to n relationship? or is it more like constructor info instead of modifiers?
 		}
-
-		// ---- ENUMS ----
-		protected enum MapType
-		{
-			//SINGLE = //0x??,
-			//MULTI = 0x??
-			//QUEST = 0x??
-		};
 		#endregion
 
-		// ----CONSTRUCTORS----
-		public Map()
-		{
-			WallMap = new SortedList(new LocationComparer());
-			FloorMap = new TileMap();
-			Headers = new Hashtable();
-			Info = new MapInfo();
-			Objects = new ObjectTable();//dummy table
-		}
-
-		public Map(string filename) : this()
-		{
-			Load(filename);
-		}
-
-		public void Load(string filename)
-		{
-			FileName = filename;
-      		ReadFile();
-		}
-
 		#region Reading Methods
+        public void ReadFile(NoxBinaryReader rdr)
+        {
+            Debug.WriteLine("Reading " + FileName + ".", "MapRead");
+            Debug.Indent();
+            
+            //check to see if the file is not encrypted
+            if (rdr.ReadUInt32() != 0xFADEFACE)//all unencrypted maps start with this
+            {
+                rdr = new NoxBinaryReader(File.Open(FileName, FileMode.Open), CryptApi.NoxCryptFormat.NONE);
+                Encrypted = false;
+            }
+            rdr.BaseStream.Seek(0, SeekOrigin.Begin);//reset to start
+
+            Header = new MapHeader(rdr.BaseStream);
+
+            while (rdr.BaseStream.Position < rdr.BaseStream.Length)
+            {
+                //I don't know if the map format allows sections out of order, but this app supports it...
+                string section = rdr.ReadString();
+                rdr.SkipToNextBoundary();
+                switch (section)
+                {
+                    case "MapInfo":
+                        Info = new MapInfo(rdr.BaseStream);
+                        break;
+                    case "WallMap":
+                        Walls = new WallMap(rdr.BaseStream);
+                        break;
+                    case "FloorMap":
+                        Tiles = new FloorMap(rdr.BaseStream);
+                        break;
+                    case "SecretWalls":
+                        ReadSecretWalls(rdr);
+                        break;
+                    case "DestructableWalls":
+                        ReadDestructableWalls(rdr);
+                        break;
+                    case "WayPoints":
+                        Waypoints = new WaypointList(rdr.BaseStream);
+                        break;
+                    case "DebugData":
+                        DebugD = new DebugData(rdr.BaseStream);
+                        break;
+                    case "WindowWalls":
+                        ReadWindowWalls(rdr);
+                        break;
+                    case "GroupData":
+                        Groups = new GroupData(rdr.BaseStream);
+                        break;
+                    case "ScriptObject":
+                        ReadScriptObject(rdr);
+                        break;
+                    case "AmbientData":
+                        Ambient = new AmbientData(rdr.BaseStream);
+                        break;
+                    case "Polygons":
+                        Polygons = new PolygonList(rdr.BaseStream);
+                        break;
+                    case "MapIntro":
+                        Intro = new MapIntro(rdr.BaseStream);
+                        break;
+                    case "ScriptData":
+                        ScriptD = new ScriptData(rdr.BaseStream);
+                        break;
+                    case "ObjectTOC":
+                        ReadObjectToc(rdr);
+                        break;
+                    case "ObjectData":
+                        ReadObjectData(rdr);
+                        break;
+                    default:
+                        Debug.WriteLineIf(section.Length > 0, "WARNING: Unhandled section: " + section + ".");
+                        break;
+                }
+            }
+
+            rdr.Close();
+            Debug.Unindent();
+            Debug.WriteLine("Read successful.", "MapRead");
+        }
 		public void ReadFile()
 		{
-			Debug.WriteLine("Reading " + FileName, "MapRead");
+			Debug.WriteLine("Reading " + FileName + ".", "MapRead");
 			Debug.Indent();
 			NoxBinaryReader rdr	= new NoxBinaryReader(File.Open(FileName, FileMode.Open), CryptApi.NoxCryptFormat.MAP);
 
@@ -1194,13 +2070,13 @@ namespace NoxShared
 				switch (section)
 				{
 					case "MapInfo":
-						Info.Read(rdr.BaseStream);
+						Info = new MapInfo(rdr.BaseStream);
 						break;
 					case "WallMap":
-						ReadWallMap(rdr);
+						Walls = new WallMap(rdr.BaseStream);
 						break;
 					case "FloorMap":
-						FloorMap = new TileMap(rdr.BaseStream);
+						Tiles = new FloorMap(rdr.BaseStream);
 						break;
 					case "SecretWalls":
 						ReadSecretWalls(rdr);
@@ -1209,40 +2085,31 @@ namespace NoxShared
 						ReadDestructableWalls(rdr);
 						break;
 					case "WayPoints":
-						//TODO
-						SkipSection(rdr,"WayPoints");
-						break;
+                        Waypoints = new WaypointList(rdr.BaseStream);
+                        break;
 					case "DebugData":
-						//TODO
-						SkipSection(rdr,"DebugData");
+						DebugD = new DebugData(rdr.BaseStream);
 						break;
 					case "WindowWalls":
-						//TODO
 						ReadWindowWalls(rdr);
 						break;
 					case "GroupData":
-						//TODO
-						SkipSection(rdr,"GroupData");
+						Groups = new GroupData(rdr.BaseStream);
 						break;
 					case "ScriptObject":
-						//TODO
-						//SkipSection(rdr,"ScriptObject");
 						ReadScriptObject(rdr);
 						break;
 					case "AmbientData":
-						//TODO
-						SkipSection(rdr,"AmbientData");
+						Ambient = new AmbientData(rdr.BaseStream);
 						break;
 					case "Polygons":
 						Polygons = new PolygonList(rdr.BaseStream);
 						break;
 					case "MapIntro":
-						//TODO
-						SkipSection(rdr,"MapIntro");
+						Intro = new MapIntro(rdr.BaseStream);
 						break;
 					case "ScriptData":
-						//TODO
-						SkipSection(rdr,"ScriptData");
+						ScriptD = new ScriptData(rdr.BaseStream);
 						break;
 					case "ObjectTOC":
 						ReadObjectToc(rdr);
@@ -1251,14 +2118,14 @@ namespace NoxShared
 						ReadObjectData(rdr);
 						break;
 					default:
-						Debug.WriteLine("unhanled section");
+						Debug.WriteLineIf(section.Length > 0, "WARNING: Unhandled section: " + section + ".");
 						break;
 				}
 			}
 
 			rdr.Close();
 			Debug.Unindent();
-			Debug.WriteLine("Read successful", "MapRead");
+			Debug.WriteLine("Read successful.", "MapRead");
 		}
 
 		private Stream tocStream;
@@ -1286,32 +2153,31 @@ namespace NoxShared
 				Objects = new ObjectTable(tocStream, dataStream);
 		}
 
-		protected void ReadWallMap(NoxBinaryReader rdr)
+		public class SectHeader
 		{
-			byte x, y;
-			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;//order matters here!
-
-			//rdr.ReadBytes(0x12);//unknown (section header?)
-			SectHeader hed = new SectHeader("WallMap",12,rdr.ReadBytes(0x12));
-			Headers.Add(hed.name,hed);
-
-			while ((x = rdr.ReadByte()) != 0xFF && (y = rdr.ReadByte()) != 0xFF)//we'll get an 0xFF for x to signal end of section
+			public string name;
+			public byte[] header;
+			public SectHeader(string n, byte[] h)
 			{
-				rdr.BaseStream.Seek(-2, SeekOrigin.Current);
-				Wall wall = new Wall(rdr.BaseStream);
-				//NOTE: not checking for duplicates (there should never be any)
-				WallMap.Add(wall.Location, wall);
+				name = n; header = h;
+				Debug.WriteLine("header '" + name + "' has bytes: " + ToString());
 			}
-			
-			Debug.Assert(rdr.BaseStream.Position == finish, "NoxMap (WallMap) ERROR: bad section length");
+
+			public override string ToString()
+			{
+				string s = "";
+				foreach (byte b in header)
+					s += String.Format("{0:x2} ", b);
+				return s;
+			}
 		}
-		
+
 		//TODO: make WallMap class that extends SortedList to clean this wall reading/writing up
 		protected void ReadDestructableWalls(NoxBinaryReader rdr)
 		{
 			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
 			
-			SectHeader hed = new SectHeader("DestructableWalls",2,rdr.ReadBytes(2));
+			SectHeader hed = new SectHeader("DestructableWalls", rdr.ReadBytes(2));
 			Headers.Add(hed.name,hed);
 
 			int num = rdr.ReadInt16();
@@ -1319,7 +2185,7 @@ namespace NoxShared
 			{
 				int x = rdr.ReadInt32();
 				int y = rdr.ReadInt32();
-				Wall wall = (Wall) WallMap[new Point(x,y)];
+				Wall wall = Walls[new Point(x,y)];
 				wall.Destructable = true;
 				num--;
 			}
@@ -1331,7 +2197,7 @@ namespace NoxShared
 		{
 			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
 
-			SectHeader hed = new SectHeader("WindowWalls",2,rdr.ReadBytes(2));
+			SectHeader hed = new SectHeader("WindowWalls", rdr.ReadBytes(2));
 			Headers.Add(hed.name,hed);
 
 			int num = rdr.ReadInt16();//the number of window walls
@@ -1340,7 +2206,7 @@ namespace NoxShared
 			{
 				int x = rdr.ReadInt32();
 				int y = rdr.ReadInt32();
-				Wall wall = (Wall) WallMap[new Point(x,y)];
+				Wall wall = Walls[new Point(x,y)];
 				wall.Window = true;
 				num--;
 			}
@@ -1352,7 +2218,7 @@ namespace NoxShared
 		{
 			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
 
-			SectHeader hed = new SectHeader("SecretWalls",2,rdr.ReadBytes(2));
+			SectHeader hed = new SectHeader("SecretWalls", rdr.ReadBytes(2));
 			Headers.Add(hed.name,hed);
 
 			int num = rdr.ReadInt16();//the number of window walls
@@ -1361,12 +2227,17 @@ namespace NoxShared
 			{
 				int x = rdr.ReadInt32();
 				int y = rdr.ReadInt32();
-				Wall wall = (Wall) WallMap[new Point(x,y)];
+				Wall wall = Walls[new Point(x,y)];
 				wall.Secret = true;
 				wall.Secret_u1 = rdr.ReadInt32();
-				wall.Secret_u2 = rdr.ReadInt32();
-				rdr.ReadBytes(7);//7 nulls
+				wall.Secret_flags = rdr.ReadUInt32();
+				byte[] nulls = rdr.ReadBytes(7);//7 nulls
 				num--;
+				foreach (byte b in nulls)
+					if (b != 0)
+						Debug.WriteLine("nulls in SecretWall are not null!!");
+				Debug.WriteLineIf(wall.Secret_u1 != 0x3, String.Format("Wall at {0} Secret_u1 != 0x00000003: 0x{1:x}.", wall.Location, wall.Secret_u1));
+				Debug.WriteLineIf((wall.Secret_flags & (0xFFFFFEF9)) != 0, String.Format("Wall at {0} Secret_flags != 0x00000106: 0x{1:x}.", wall.Location, wall.Secret_flags));
 			}
 
 			Debug.Assert(num == 0, "NoxMap (SecretWalls) ERROR: bad wall count");
@@ -1376,71 +2247,70 @@ namespace NoxShared
 		protected void ReadScriptObject(NoxBinaryReader rdr)
 		{
 			long finish = rdr.ReadInt64() + rdr.BaseStream.Position;
-			SectHeader hed = new SectHeader("ScriptObject",2,rdr.ReadBytes(2));//always 0x0001?
+			SectHeader hed = new SectHeader("ScriptObject", rdr.ReadBytes(2));//always 0x0001?
 			Headers.Add(hed.name,hed);
 			short unknown = BitConverter.ToInt16(hed.header, 0);
-			Debug.WriteLineIf(unknown != 0x0001, "header for ScriptObject was not 0x0001, it was 0x" + unknown.ToString("x"));
+			Debug.WriteLineIf(unknown != 0x0001, "header for ScriptObject was not 0x0001, it was 0x" + unknown.ToString("x") + ".");
 			
 			Scripts = new ScriptObject();
-			
-			int Sectlen = rdr.ReadInt32();
+            Scripts.SctStr = new List<String>();
+
+            int Sectlen = rdr.ReadInt32();
 			while(rdr.BaseStream.Position < finish)
 			{
-				if(rdr.BaseStream.Position < finish-12 && new string(rdr.ReadChars(12)) == "SCRIPT03STRG")
-				{
-					int numStr = rdr.ReadInt32();
-					Scripts.SctStr = new SortedList(numStr);
-					for(int i = 0; i < numStr; i++)
-						Scripts.SctStr.Add(i,new string(rdr.ReadChars(rdr.ReadInt32())));
-				}
-				else
-					rdr.BaseStream.Seek(-12,SeekOrigin.Current);
-				Scripts.rest = rdr.ReadBytes((int)(finish - rdr.BaseStream.Position));
+                if (rdr.BaseStream.Position < finish - 12 && new string(rdr.ReadChars(12)) == "SCRIPT03STRG")
+                {
+                    int numStr = rdr.ReadInt32();
+                    for (int i = 0; i < numStr; i++)
+                        Scripts.SctStr.Add(new string(rdr.ReadChars(rdr.ReadInt32())));
+                    if (rdr.BaseStream.Position < finish - 4 && new string(rdr.ReadChars(4)) == "CODE")
+                    {
+                        Scripts.Funcs = new List<ScriptFunction>(rdr.ReadInt32());
+                        while (new string(rdr.ReadChars(4)) == "FUNC")
+                        {
+                            ScriptFunction func = new ScriptFunction();
+                            Scripts.Funcs.Add(func);
+                            func.name = new string(rdr.ReadChars(rdr.ReadInt32()));
+                            rdr.ReadInt64();
+                            rdr.ReadInt32(); // SYMB
+                            for(Int64 i = rdr.ReadInt64(); i > 0 ; i--)
+                                func.vars.Add(rdr.ReadInt32());
+                            rdr.ReadInt32(); // DATA
+                            func.code = rdr.ReadBytes(rdr.ReadInt32());
+                        }
+                    }
+                }
+                else
+                    rdr.BaseStream.Seek(-12, SeekOrigin.Current);
+                Scripts.rest = rdr.ReadBytes((int)(finish - rdr.BaseStream.Position));
 			}		
 
 		}
-		//Just a utility method to skip sections, remove this when all sections are being read properly.
-		private void SkipSection(NoxBinaryReader rdr, string name)
-		{
-			int len = (int) rdr.ReadInt64();
-			SectHeader hed = new SectHeader(name,len,rdr.ReadBytes(len));
-			Headers.Add(name,hed);
-		}
-
 		#endregion
 
 		#region Writing Methods
-		private void SkipSection(NoxBinaryWriter wtr, string str)
-		{
-			wtr.Write(str + "\0");//write the section name
-
-			SectHeader hed = (SectHeader) Headers[str];
-			long length = hed.length;
-			wtr.SkipToNextBoundary();
-			wtr.Write(length);
-			wtr.Write(hed.header);
-		}
-
 		protected byte[] mapData;
-		protected void Serialize()
+		protected void WriteMapData()
 		{
+			Debug.WriteLine("Writing " + FileName + ".", "MapWrite");
+			Debug.Indent();
 			NoxBinaryWriter wtr = new NoxBinaryWriter(new MemoryStream(), CryptApi.NoxCryptFormat.NONE);//encrypt later
 
 			Header.Write(wtr.BaseStream);
 			Info.Write(wtr.BaseStream);
-			WriteWallMap(wtr);
-			FloorMap.Write(wtr.BaseStream);
+			Walls.Write(wtr.BaseStream);
+			Tiles.Write(wtr.BaseStream);
 			WriteSecretWalls(wtr);
 			WriteDestructableWalls(wtr);
-			SkipSection(wtr,"WayPoints");
-			SkipSection(wtr,"DebugData");
+            Waypoints.Write(wtr.BaseStream);
+			DebugD.Write(wtr.BaseStream);
 			WriteWindowWalls(wtr);
-			SkipSection(wtr,"GroupData");
+			Groups.Write(wtr.BaseStream);
 			WriteScriptObject(wtr);
-			SkipSection(wtr,"AmbientData");
+			Ambient.Write(wtr.BaseStream);
 			Polygons.Write(wtr.BaseStream);
-			SkipSection(wtr,"MapIntro");
-			SkipSection(wtr,"ScriptData");
+			Intro.Write(wtr.BaseStream);
+			ScriptD.Write(wtr.BaseStream);
 			Objects.Write(wtr.BaseStream);
 
 			//write null bytes to next boundary -- this is needed only because
@@ -1458,11 +2328,14 @@ namespace NoxShared
 			mapData = ((MemoryStream) wtr.BaseStream).ToArray();
 			if (Encrypted)
 				mapData = CryptApi.NoxEncrypt(mapData, CryptApi.NoxCryptFormat.MAP);
+
+			Debug.Unindent();
+			Debug.WriteLine("Write successful.", "MapWrite");
 		}
 
 		public void WriteMap()
 		{
-			Serialize();
+			WriteMapData();
 			BinaryWriter fileWtr = new BinaryWriter(File.Open(FileName, FileMode.Create));
 			fileWtr.Write(mapData);
 			fileWtr.Close();
@@ -1470,7 +2343,7 @@ namespace NoxShared
 
 		public void WriteNxz()
 		{
-			Serialize();
+			//WriteMapData(); Recreating MapData causes checksums to be different and objects to be in different order
 			//do a stupid replace of ".map" -- better be named correctly!!!
 			BinaryWriter fileWtr = new BinaryWriter(File.Open(FileName.Replace(".map", ".nxz"), FileMode.Create));
 			fileWtr.Write((uint) mapData.Length);
@@ -1494,7 +2367,7 @@ namespace NoxShared
 			//TODO: give these a consistent ordering before writing. the maps do have an ordering...
 			//   seems to be based on x, y. figure it out and then enforce it here.
 			short count = 0;
-			foreach (Wall wall in WallMap.Values)
+			foreach (Wall wall in Walls.Values)
 				if(wall.Window)
 				{
 					wtr.Write((uint) wall.Location.X);
@@ -1506,7 +2379,7 @@ namespace NoxShared
 			length = wtr.BaseStream.Position - (pos + 8);
 			wtr.Seek((int) pos, SeekOrigin.Begin);
 			wtr.Write(length);
-			wtr.Seek((int) hed.length, SeekOrigin.Current);
+			wtr.Seek((int) hed.header.Length, SeekOrigin.Current);
 			//rewrite the windowwall count
 			wtr.Write((short) count);
 			wtr.Seek(0, SeekOrigin.End);
@@ -1526,7 +2399,7 @@ namespace NoxShared
 			wtr.Write((Int16)0);
 
 			Int16 count = 0;
-			foreach (Wall wall in WallMap.Values)
+			foreach (Wall wall in Walls.Values)
 				if(wall.Destructable)
 				{
 					wtr.Write((uint) wall.Location.X);
@@ -1538,7 +2411,7 @@ namespace NoxShared
 			length = wtr.BaseStream.Position - (pos+8);
 			wtr.Seek((int)pos,SeekOrigin.Begin);
 			wtr.Write(length);
-			wtr.Seek((int)hed.length,SeekOrigin.Current);
+			wtr.Seek((int)hed.header.Length,SeekOrigin.Current);
 			wtr.Write((Int16)count);
 			wtr.Seek(0,SeekOrigin.End);
 		}
@@ -1557,13 +2430,13 @@ namespace NoxShared
 			wtr.Write((Int16)0);
 
 			Int16 count = 0;
-			foreach (Wall wall in WallMap.Values)
+			foreach (Wall wall in Walls.Values)
 				if(wall.Secret)
 				{
 					wtr.Write((uint) wall.Location.X);
 					wtr.Write((uint) wall.Location.Y);
 					wtr.Write((uint) wall.Secret_u1);
-					wtr.Write((uint) wall.Secret_u2);
+					wtr.Write((uint) wall.Secret_flags);
 					wtr.Write(new byte[7]);//7 nulls
 					count++;
 				}
@@ -1572,33 +2445,11 @@ namespace NoxShared
 			length = wtr.BaseStream.Position - (pos+8);
 			wtr.Seek((int)pos,SeekOrigin.Begin);
 			wtr.Write(length);
-			wtr.Seek((int)hed.length,SeekOrigin.Current);
+			wtr.Seek((int)hed.header.Length,SeekOrigin.Current);
 			wtr.Write((Int16)count);
 			wtr.Seek(0,SeekOrigin.End);
 		}
 
-		private void WriteWallMap(NoxBinaryWriter wtr)
-		{
-			string str = "WallMap";
-			SectHeader hed = (SectHeader) Headers[str];
-			wtr.Write(str+"\0");
-			long length = 0;
-			long pos;
-			wtr.SkipToNextBoundary();
-			pos = wtr.BaseStream.Position;
-			wtr.Write(length);
-			wtr.Write(hed.header);
-
-			foreach (Wall wall in WallMap.Values)
-				wall.Write(wtr.BaseStream);
-			wtr.Write((byte) 0xFF);//wallmap terminates with this byte
-
-			//rewrite the length
-			length = wtr.BaseStream.Position - (pos + 8);
-			wtr.Seek((int) pos, SeekOrigin.Begin);
-			wtr.Write(length);
-			wtr.Seek(0, SeekOrigin.End);
-		}
 		private void WriteScriptObject(NoxBinaryWriter wtr)
 		{
 			string str = "ScriptObject";
@@ -1616,20 +2467,38 @@ namespace NoxShared
 			long secpos;
 			secpos = wtr.BaseStream.Position;
 			wtr.Write(sectlen);
-			// if there is a strings section
-			if (Scripts.SctStr != null)//Eric fixed a bug here: "SCRIPTTO3STRG" should(? - see Bunker) be written even if count is 0
-			{
-				wtr.Write("SCRIPT03STRG".ToCharArray()); // tokens used to distiguish sections of the section
-				wtr.Write(Scripts.SctStr.Count); // write number of strings
-				foreach(String s in Scripts.SctStr.Values) // write each string
-				{
-					wtr.Write(s.Length);
-					wtr.Write(s.ToCharArray());
-				}
-			}
-			// if there was anything after the strings section
+            if (Scripts.SctStr.Count != 0 || Scripts.Funcs.Count != 0)
+            {
+                // if there is a strings section
+                //Eric fixed a bug here: "SCRIPTTO3STRG" should(? - see Bunker) be written even if count is 0
+                wtr.Write("SCRIPT03STRG".ToCharArray()); // tokens used to distiguish sections of the section
+                wtr.Write(Scripts.SctStr.Count); // write number of strings
+                foreach (String s in Scripts.SctStr) // write each string
+                {
+                    wtr.Write(s.Length);
+                    wtr.Write(s.ToCharArray());
+                }
+                wtr.Write("CODE".ToCharArray());
+                wtr.Write(Scripts.Funcs.Count);
+                foreach (ScriptFunction sf in Scripts.Funcs)
+                {
+                    wtr.Write("FUNC".ToCharArray());
+                    wtr.Write(sf.name.Length);
+                    wtr.Write(sf.name.ToCharArray());
+                    wtr.Write((Int64)0);
+                    wtr.Write("SYMB".ToCharArray());
+                    wtr.Write((Int64)sf.vars.Count);
+                    foreach(int var in sf.vars)
+                        wtr.Write(var);
+                    wtr.Write("DATA".ToCharArray());
+                    wtr.Write(sf.code.Length);
+                    wtr.Write(sf.code);
+                }
+                wtr.Write("DONE".ToCharArray());
+            }
+            /* Shouldn't be anything left over
 			if(Scripts.rest != null)
-				wtr.Write(Scripts.rest); // write rest of the section
+				wtr.Write(Scripts.rest); // write rest of the section*/
 			// rewrite section length
 			sectlen = (int)(wtr.BaseStream.Position - (secpos + 4));
 			wtr.Seek((int)secpos,SeekOrigin.Begin);

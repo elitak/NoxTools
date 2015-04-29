@@ -22,8 +22,22 @@ namespace NoxShared
 		[XmlIgnore] public int Number;
 		[XmlIgnore] public bool Unkickable;
 
+       /* public byte[] HairColor = new byte [2];
+        public byte[] SkinColor = new byte[2];
+        public byte[] MustacheColor = new byte[2];
+        public byte[] BeardColor = new byte[2];
+        public byte[] SideburnsColor = new byte[2];
+
+        public byte[] PantsColor = new byte[2];
+        public byte[] ShirtColor = new byte[2];
+        public byte[] ShirtTrimColor = new byte[2];
+        public byte[] ShoesColor = new byte[2];
+        public byte[] ShoesTrimColor = new byte[2];*/
+
 		public static Player ReadFromMemory(Stream stream)
 		{
+            // ADD CLOTHING COLOR LOADING, if not == normal
+            // colors then overwrite them with valid colors.
 			Player player = new Player();
 			BinaryReader rdr = new BinaryReader(stream);
 			long startPos = rdr.BaseStream.Position;
@@ -36,6 +50,22 @@ namespace NoxShared
 			rdr.BaseStream.Seek(0x29, SeekOrigin.Current);
 			player.Name = new string(Encoding.Unicode.GetChars(rdr.ReadBytes(NAME_LENGTH))).Split('\0')[0];
 			player.Unkickable = rdr.ReadInt16() != 0 && player.Name.Length == MAX_NAME_CHARS;
+
+            // Load the colors
+           /* rdr.BaseStream.Seek(21, SeekOrigin.Current);
+            HairColor = rdr.ReadBytes(3);
+            SkinColor = rdr.ReadBytes(3);
+            MustacheColor = rdr.ReadBytes(3);
+            BeardColor = rdr.ReadBytes(3);
+            SideburnsColor = rdr.ReadBytes(3);
+
+            rdr.BaseStream.Seek(24, SeekOrigin.Current);
+            PantsColor = rdr.ReadBytes(3);
+            ShirtColor = rdr.ReadBytes(3);
+            ShirtTrimColor = rdr.ReadBytes(3);
+            ShoesColor = rdr.ReadBytes(3);
+            ShoesTrimColor = rdr.ReadBytes(3);*/
+            // End color loading
 
 			rdr.BaseStream.Seek(0x12dc - (rdr.BaseStream.Position - startPos), SeekOrigin.Current);
 

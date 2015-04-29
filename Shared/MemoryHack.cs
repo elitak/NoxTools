@@ -27,7 +27,7 @@ namespace NoxShared
 				thread.Start();
 
 			//TODO: make this optional
-			//Fixes.ApplyFixes();
+			Fixes.ApplyFixes();
 		}
 
 		~NoxMemoryHack()
@@ -43,7 +43,7 @@ namespace NoxShared
 				Teams.Read();
 				Players.Read();
 
-				Thread.Sleep(1000);
+				Thread.Sleep(100);
 			}
 		}
 

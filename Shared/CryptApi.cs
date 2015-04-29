@@ -2515,13 +2515,35 @@ namespace NoxShared
 		};
 		#endregion
 
-		public static byte[] NxzEncrypt(byte[] data)
+		[System.Runtime.InteropServices.DllImport("nxzdll.dll")]
+		extern private static void nxzDecrypt(byte[] nxzData, uint nxzLength, byte[] mapData, uint mapLength);
+
+		public static bool NxzDecrypt(byte[] nxzData, byte[] mapData)
 		{
+			try
+			{
+				nxzDecrypt(nxzData, (uint)nxzData.Length, mapData, (uint) mapData.Length);
+			}
+			catch (Exception)
+			{
+				//System.Windows.Forms.MessageBox.Show("Unable to load nxzdll.dll. Make sure it is in the mapeditor directoy, if you want to load nxz files.");
+				return false;
+			}
+			return true;
+		}
+
+		/*public static byte[] NxzEncrypt(byte[] data)
+		{
+            byte[] working = NxzEncrypt2(data);
 			int udata = 0;//input index
-			BinaryWriter output = new BinaryWriter(new MemoryStream());
-			int i = 0, k = 0, comp = 0, dist = 255, k2 = 0, tracker = 0, num = 0, num2 = 0, num3 = 0, num4 = 0, num5 = 0, var0 = 0;
+            System.Collections.Generic.List<byte> output = new System.Collections.Generic.List<byte>();
+			//BinaryWriter output = new BinaryWriter(new MemoryStream());
+            int i = 0, k = 0, cout = 0, comp = 0, dist = 255, k2 = 0, tracker = 0, num = 0, num2 = 0, num3 = 0, num4 = 0, num5 = 0, var0 = 0, upper = 0, lower = 0;
+
+            output.Add(new byte());
 			while(udata < data.Length)
 			{
+                output.Add(new byte());
 				while(i <=274)
 				{
 					if(data[udata] == table2[i])
@@ -2531,14 +2553,62 @@ namespace NoxShared
 				udata++;
 				comp = i;
 				i = 0;
-				k = 15;
+			    upper = 15;
 				dist =  1000;
 				while(comp<dist)
 				{
-					dist = table1[k*2+1];
-					k--;
+					dist = table1[upper*2+1];
+					upper--;
 				}
-				i = comp-dist;
+                upper++;
+				lower = comp-dist;
+                num = table1[(upper) * 2];
+                
+                comp = (upper << num) | lower;
+                if (cout > 0)
+                    output[cout-1] |= (byte)(comp >> (num + 4 + tracker));
+                output[cout] |= (tracker + (num - 4)) > 0 ? (byte)(comp >> tracker + (num - 4)) : (byte)(comp << Math.Abs(tracker + (num - 4)));
+                output[cout + 1] = (byte)(comp << (12 - (num + tracker)));
+                if (tracker >= 8)
+                {
+                    output.Add(new byte());
+                    output[++cout + 1] = (byte)(comp << (12 - num));
+                    tracker = 0;
+                }
+                tracker += num - 4;
+                cout++;
+                
+			}
+
+
+			//return ((MemoryStream) output.BaseStream).ToArray();
+            return output.ToArray();
+		}*/
+        public static byte[] NxzEncrypt(byte[] data)
+        {
+            int udata = 0;//input index
+            BinaryWriter output = new BinaryWriter(new MemoryStream());
+            int i = 0, k = 0, comp = 0, dist = 255, k2 = 0, tracker = 0, num = 0, num2 = 0, num3 = 0, num4 = 0, num5 = 0, var0 = 0;
+
+            while (udata < data.Length)
+            {
+                while (i <= 274)
+                {
+                    if (data[udata] == table2[i])
+                        break;
+                    i++;
+                }
+                udata++;
+                comp = i;
+                i = 0;
+                k = 15;
+                dist = 1000;
+                while (comp < dist)
+                {
+                    dist = table1[k * 2 + 1];
+                    k--;
+                }
+                i = comp - dist;
 				if (tracker > 0)
 				{
 					if(table1[(k+1)*2] == 5)
@@ -2550,26 +2620,7 @@ namespace NoxShared
 					else if(table1[(k+1)*2] == 3)
 					{
 						k2 = k;
-						num2 = i << 1;
-						/*		i = 0;
-								while(i <=274)
-								{
-									if(*udata == table2[i])
-										break;
-									i++;
-								}
-								comp = i;
-								k = 15;
-								dist =  1000;
-								while(comp<dist)
-								{
-									dist = table1[k*2+1];
-									k--;
-								}
-								i = comp-dist;
-								comp = ((k+1)<<4)+i;
-								num2 = num2 | (comp>>(7+tracker)); */
-						
+						num2 = i << 1;						
 						num = 3;
 						i = num2;
 						k = k2;
@@ -2621,14 +2672,8 @@ namespace NoxShared
 						i = (var0 << (-1)*(tracker+1))|(num5 >> (9+tracker));
 						k = ((k2+1) << (-1)*(tracker))&0xF;
 						num3 = (k << 4)+ i;
-						//(i&((2^(4-tracker))-1));
-						//num2 = num2 | (num5>>(7+tracker));
 						i = var0;
 						k = k2;
-						//	num2 = i >> 1;
-						//	num = i & 1;
-						//	i = num2;
-						//	assert(false);
 						num = 0;
 					}
 					else if(table1[(k+1)*2] == 3)
@@ -2657,11 +2702,7 @@ namespace NoxShared
 						i = (var0 << ((-1)*(tracker)+1))|(num5 >> (7+tracker));
 						k = ((k2+1) << (-1)*(tracker))&0xF;
 						num3 = (k << 4)| i;
-						//(i&((2^(4-tracker))-1));
-						//num2 = num2 | (num5>>(7+tracker));
 						tracker--;
-						//	num = i & 1;
-						//	i = num2;
 						num = 3;
 						i = var0;
 						k = k2;
@@ -2692,8 +2733,6 @@ namespace NoxShared
 						i = (var0 << (-1)*(tracker))|(num5 >> (8+tracker));
 						k = ((k2+1) << (-1)*(tracker))&0xF;
 						num3 = (k << 4)| i;
-						//(i&((2^(4-tracker))-1));
-						//num2 = num2 | (num5>>(7+tracker));
 						i = var0;
 						k = k2;
 					}
@@ -2704,7 +2743,6 @@ namespace NoxShared
 
 					if(num != 2 && num != 3)
 					{
-						//num4 = num;
 						num = 2;
 						tracker++;
 						if(tracker == 8)
@@ -2762,11 +2800,12 @@ namespace NoxShared
 					num4 = 0;
 				}
 				i = 0;
-			}
-			if(num5 != 0)
+            }
+            
+			if(tracker > 0)
 				output.Write((byte) num5);
 
-			return ((MemoryStream) output.BaseStream).ToArray();
-		}
+            return ((MemoryStream) output.BaseStream).ToArray();
+        }
 	}
 }

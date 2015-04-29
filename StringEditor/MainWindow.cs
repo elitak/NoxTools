@@ -24,36 +24,10 @@ namespace NoxStringEditor
 		private System.Windows.Forms.MenuItem menuItem4;
 		private System.Windows.Forms.MenuItem menuItem5;
 		private System.Windows.Forms.MenuItem menuItem6;
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.Container components = null;
 
 		public MainWindow()
 		{
-			//
-			// Required for Windows Form Designer support
-			//
 			InitializeComponent();
-
-			//
-			// TODO: Add any constructor code after InitializeComponent call
-			//
-		}
-
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		protected override void Dispose( bool disposing )
-		{
-			if( disposing )
-			{
-				if (components != null) 
-				{
-					components.Dispose();
-				}
-			}
-			base.Dispose( disposing );
 		}
 
 		#region Windows Form Designer generated code
@@ -125,10 +99,6 @@ namespace NoxStringEditor
 		}
 		#endregion
 
-		/// <summary>
-		/// The main entry point for the application.
-		/// </summary>
-		[STAThread]
 		static void Main() 
 		{
 			Application.Run(new MainWindow());
@@ -149,8 +119,8 @@ namespace NoxStringEditor
 			if (System.IO.File.Exists(fd.FileName))
 			{
 				//TODO: check for changes and prompt to save
-				StringDb db = new StringDb();
-				db.Load(fd.FileName);
+				StringDb db = new StringDb(fd.FileName);
+				db.Write(File.OpenWrite("output.csf"));
 			}
 		}
 	}

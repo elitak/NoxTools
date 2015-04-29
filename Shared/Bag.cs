@@ -59,21 +59,32 @@ public abstract class Bag// : Observable
 		bagPath = path;
 	}
 
-	protected virtual void Read()
+	protected virtual bool Read()
 	{
-		if (!File.Exists(bagPath))
-			throw new FileNotFoundException("Specified .bag was not found.", bagPath);
-		bag = File.Open(bagPath, FileMode.OpenOrCreate);
+        if (!File.Exists(bagPath))
+        {
+            throw new FileNotFoundException("Specified .bag was not found.", bagPath);
+            return false;
+        }
+        try
+        {
+            bag = File.Open(bagPath, FileMode.OpenOrCreate, FileAccess.Read);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
 		//TODO:enforce .bag extension??
 
 		//open .idx if it is avalaible
 		//string idxPath = Regex.Replace(bag.Name, "\\.bag$", ".idx");
 		string idxPath = bag.Name.Replace(".bag",".idx");
 		if (File.Exists(idxPath))
-			idx = File.Open(idxPath, FileMode.OpenOrCreate);
+			idx = File.Open(idxPath, FileMode.OpenOrCreate, FileAccess.Read);
 		else
 			idx = bag;//.bag will serve as .idx if not found
 		//TODO: separate IDX into a separate class and manage IDX and BAG separately?
+        return true;
 	}
 
 	public abstract void ExtractAll(string path);

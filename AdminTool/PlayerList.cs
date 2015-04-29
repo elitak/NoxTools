@@ -167,23 +167,36 @@ namespace NoxTrainer
 				return;
 			}
 
-			NoxShared.Console.WriteLine("{0} has joined the game.", e.Player.Name);
+			AppConsole.WriteLine("{0} has joined the game.", e.Player.Name);
 			if (e.Player.Unkickable)
 			{
-				NoxShared.Console.WriteLine("{0} has an 'unkickable' name.", e.Player.Name);
-				NoxShared.Console.WriteLine("Fixing {0}'s 'unkickable' name.", e.Player.Name);
+				AppConsole.WriteLine("{0} has an 'unkickable' name.", e.Player.Name);
+				AppConsole.WriteLine("Fixing {0}'s 'unkickable' name.", e.Player.Name);
 				NoxMemoryHack.Fixes.FixUnkickable(e.Player.Number);
 			}
+            if (e.Player.Login.Length > 9)
+            {
+                AppConsole.WriteLine("{0} has an fake login.", e.Player.Name);
+                AppConsole.WriteLine("Kicking {0}", e.Player.Name);
+                NoxMemoryHack.KickPlayer(e.Player.Number);
+            }
+            if (e.Player.Name.Contains("HurtsMore"))
+            {
+                AppConsole.WriteLine("{0} has an crash char.", e.Player.Name);
+                AppConsole.WriteLine("Kicking {0}", e.Player.Name);
+                NoxMemoryHack.KickPlayer(e.Player.Number);
+            }
+            // ADD A CLOTHING CHECK HERE
 
 			Player orig = (Player) BannedPlayers[e.Player.Serial];
 			if (AutoKickBanned && orig != null)
 			{
-				NoxShared.Console.WriteLine("{0} was banned under the alias {1}, kicking...", e.Player.Name, orig.Name);
+				AppConsole.WriteLine("{0} was banned under the alias {1}, kicking...", e.Player.Name, orig.Name);
 				NoxMemoryHack.KickPlayer(e.Player.Number);
 			}
 			else if (e.Player.Unkickable && AutoKickUnkickables)
 			{
-					NoxShared.Console.WriteLine("Autokicking {0} for 'unkickable' name.", e.Player.Name);
+					AppConsole.WriteLine("Autokicking {0} for 'unkickable' name.", e.Player.Name);
 					NoxMemoryHack.KickPlayer(e.Player.Number);
 			}
 
@@ -200,7 +213,7 @@ namespace NoxTrainer
 				return;
 			}
 
-			NoxShared.Console.WriteLine("{0} has left the game.", e.Player.Name);
+			AppConsole.WriteLine("{0} has left the game.", e.Player.Name);
 			if (Created)
 				for (int ndx = 0; ndx < dataTable.Rows.Count; ndx++)
 					if ((int) ((DataRow) dataTable.Rows[ndx]).ItemArray[2] == e.Player.Number)//FIXME: hardcoded index

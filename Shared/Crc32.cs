@@ -24,12 +24,12 @@ namespace NoxShared
 			}
 		}
 
-		public static uint Calculate(byte[] data)
+		public static int Calculate(byte[] data)
 		{
 			uint crc32 = 0xFFFFFFFF;
 			foreach (byte b in data)
 				crc32 = (crc32 >> 8) ^ table[b ^ (crc32 & 0xFF)];
-			return ~crc32;
+			return (int)~crc32;
 		}
 	}
 }

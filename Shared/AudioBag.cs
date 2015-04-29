@@ -32,8 +32,8 @@ namespace NoxShared
 			public uint SampleRate;
 			public uint Offset;
 			public uint Length;
-			public int u1;
-			public int u2;
+			public int Flags;//according to xccu/xcc/misc/cc_structures.h
+			public int ChunkSize;//according to xccu/xcc/misc/cc_structures.h
 
 			public Entry(Stream stream)
 			{
@@ -49,8 +49,8 @@ namespace NoxShared
 				Offset = rdr.ReadUInt32();
 				Length = rdr.ReadUInt32();
 				SampleRate = rdr.ReadUInt32();
-				u1 = rdr.ReadInt32();
-				u2 = rdr.ReadInt32();
+				Flags = rdr.ReadInt32();
+				ChunkSize = rdr.ReadInt32();
 			}
 		}
 
@@ -108,9 +108,10 @@ namespace NoxShared
 			Read();
 		}
 
-		protected override void Read()
+		protected override bool Read()
 		{
-			base.Read();
+            if (!base.Read())
+                return false;
 			header = new Header(idx);
 
 			int count;
@@ -120,6 +121,7 @@ namespace NoxShared
 			}
 
 			System.Diagnostics.Debug.Assert(count == header.Entries, "ERROR: Wrong number of entries read.");
+            return true;
 		}
 
 		public override void ExtractAll(string path)

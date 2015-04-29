@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Globalization;
 using System.Windows.Forms;//for messageboxes only
+using System.Collections.Generic;
+using System.Drawing;
 
 namespace NoxShared
 {
@@ -36,13 +38,15 @@ namespace NoxShared
 				Edge = ThingToken.EDGE
 			}
 
+            public Color col;
+            public bool hascolor = false;
 			public TileType Type;
 			public string Name;
-			public int Variations;
+			public List<uint> Variations = new List<uint>();
 			public byte numRows;
 			public byte numCols;
 
-			public uint Id;//must be set as the entries are read in. sorted in this order. (0-n)
+			public int Id;//must be set as the entries are read in. sorted in this order. (0-n)
 
 			public Tile(Stream stream)
 			{
@@ -62,8 +66,9 @@ namespace NoxShared
 				numRows = rdr.ReadByte();
 				numCols = rdr.ReadByte();
 				if (Type == TileType.Floor) rdr.ReadInt16();
-				while(rdr.ReadInt32() != (int) ThingToken.END)//Variations
-					Variations++;
+				uint var;
+				while ((var = rdr.ReadUInt32()) != (int)ThingToken.END)//Variations
+					Variations.Add(var);
 			}
 
 			public int CompareTo(object obj)
@@ -74,13 +79,18 @@ namespace NoxShared
 				else
 					return (int)(Id - rhs.Id);
 			}
+
+			public override string ToString()
+			{
+				return Name;
+			}
 		}
 
 		public class Wall
 		{
 			public string Name;
-
-			public uint Id;
+			public int Id;
+			public byte Variations;
 
 			public Wall(Stream stream)
 			{
@@ -105,20 +115,25 @@ namespace NoxShared
 				rdr.ReadString();//secret open sound
 				rdr.ReadString();//secret close sound
 				rdr.ReadString();//break sound
-				rdr.ReadInt32();
-				rdr.ReadInt32();
+				rdr.ReadByte();//oftentimes equal to variation count
 				rdr.BaseStream.Seek((8 - rdr.BaseStream.Position % 8) % 8, SeekOrigin.Current);//SkipToNextBoundary
+				Variations = (byte) rdr.ReadInt32();//probably less than 32 bits
 				int something;
 				while((something  = rdr.ReadInt32()) != (int) ThingToken.END);
 			}
 
 			public int CompareTo(object obj)
 			{
-				Tile rhs = obj as Tile;
+				Wall rhs = obj as Wall;
 				if (rhs == null || Id == rhs.Id)
 					return 0;
 				else
 					return (int)(Id - rhs.Id);
+			}
+
+			public override string ToString()
+			{
+				return Name;
 			}
 		}
 
@@ -331,12 +346,12 @@ namespace NoxShared
 					public void Read(Stream stream)
 					{
 						BinaryReader rdr = new BinaryReader(stream);
-
-						Debug.Assert(rdr.ReadUInt32() == (uint) ThingToken.SEQU, "Invalid ThingDb.Image.Animation.Sequece entry.");
+						uint next = rdr.ReadUInt32();
+						Debug.Assert(next == (uint) ThingToken.SEQU, "Invalid ThingDb.Image.Animation.Sequece entry.");
 						Name = rdr.ReadString();
 						while (true)
 						{
-							uint next = rdr.ReadUInt32();
+							next = rdr.ReadUInt32();
 							rdr.BaseStream.Seek(-4, SeekOrigin.Current);
 							if (next != (uint) ThingToken.SEQU//HACK: this condition is used to detect end of Frame list within a Sequence(FIXME)
 								&& next != (uint) ThingToken.STAT
@@ -359,7 +374,7 @@ namespace NoxShared
 				}
 
 				public AnimationType Type;
-				public ArrayList Frames = new ArrayList();//At least i think they're frames?
+				public List<int> Frames = new List<int>();//At least i think they're frames?
 				public byte b1;
 
 				public ArrayList Sequences = new ArrayList();
@@ -372,11 +387,9 @@ namespace NoxShared
 				public void Read(Stream stream)
 				{
 					BinaryReader rdr = new BinaryReader(stream);
-
 					byte count = rdr.ReadByte();
 					b1 = rdr.ReadByte();
-					//Console.WriteLine("type {0}, byte is {1}", Enum.GetName(typeof(AnimationType), Type), b1);
-					Type = (AnimationType) Enum.Parse(typeof(AnimationType), rdr.ReadString());
+					Type = (AnimationType)Enum.Parse(typeof(AnimationType), rdr.ReadString());
 					uint next = rdr.ReadUInt32();
 					rdr.BaseStream.Seek(-4, SeekOrigin.Current);
 					if (next == (uint) ThingToken.SEQU)
@@ -398,7 +411,7 @@ namespace NoxShared
 			public class State
 			{
 				public string Name;
-				Animation Animation;
+				public Animation Animation;
 
 				public State(Stream stream)
 				{
@@ -408,10 +421,11 @@ namespace NoxShared
 				public void Read(Stream stream)
 				{
 					BinaryReader rdr = new BinaryReader(stream);
-
-					Debug.Assert(rdr.ReadUInt32() == (uint) ThingToken.STAT, "Invalid ThingDb.Image.State entry.");
+					uint next = rdr.ReadUInt32();
+					Debug.Assert(next == (uint) ThingToken.STAT, "Invalid ThingDb.Image.State entry."); // Never put a read in an assert
 					//FIXME: special cases beyond this point
 					int type = rdr.ReadInt32();
+					
 					if (type <= 0x08)//in this form, the States usually come in threes, the first has type 2, then 4, then 8
 					{
 						//Note that this format is similar to that of MonsterDraw, except that monster draw has 1 byte preceding this part, not 4
@@ -439,7 +453,7 @@ namespace NoxShared
 							Animation = new Animation(rdr.BaseStream);
 							while (true)
 							{
-								uint next = rdr.ReadUInt32();
+								next = rdr.ReadUInt32();
 								rdr.BaseStream.Seek(-4, SeekOrigin.Current);
 								if (next == (uint) ThingToken.STAT
 									|| next == (uint) ThingToken.END)
@@ -454,6 +468,9 @@ namespace NoxShared
 
 			public string Name;
 
+			public int type1;
+			public Animation type2;
+
 			public Image(Stream stream)
 			{
 				Read(stream);
@@ -466,10 +483,10 @@ namespace NoxShared
 				Name = rdr.ReadString();
 				byte type = rdr.ReadByte();
 				if (type == 1)
-					rdr.ReadInt32();
+					type1 = rdr.ReadInt32();
 				else if (type == 2)
 				{
-					new Animation(rdr.BaseStream);
+					type2 = new Animation(rdr.BaseStream);
 				}
 				else
 					Console.WriteLine("Unkown Image type");
@@ -484,9 +501,14 @@ namespace NoxShared
 			public uint Health;
 			public uint Worth;
 			public string Size;
+            public string Extent;
+            public string ExtentType;
+            public int ExtentX;
+            public int ExtentY;
 			public int Z;
 			public string ZSize;
-			public string Extent;
+            public int ZSizeX;
+            public int ZSizeY;
 			public FlagsFlags Flags;
 			public ClassFlags Class;
 			public BitArray Subclass = new BitArray(subclassBitCount);
@@ -864,16 +886,48 @@ namespace NoxShared
 							flags |= (FlagsFlags) Enum.Parse(typeof(FlagsFlags), match.Groups["flag"].Value);
 						field.SetValue(this, flags);
 					}
-					else if (field.Name == "Class")
-					{
-						regex = new Regex("(?<flag>\\w+)");//group "flag" will have whatever's between plus signs
-						ClassFlags flags = 0;
-						ArrayList enums = new ArrayList();
+                    else if (field.Name == "Z")
+                    {
+                        field.SetValue(this, Convert.ToInt32(valString));
+                    }
+                    else if (field.Name == "ZSize")
+                    {
+                        field.SetValue(this, valString);
+                        string[] strs = valString.Split(' ');
+                        ZSizeX = Convert.ToInt32(strs[0]);
+                        ZSizeY = Convert.ToInt32(strs[1]);
+                    }
+                    else if (field.Name == "Extent")
+                    {
+                        field.SetValue(this, valString);
+                        if (valString.Contains("CIRCLE"))
+                        {
+                            string[] strs = valString.Split(' ');
+                            ExtentType = strs[0];
+                            ExtentX = Convert.ToInt32(strs[1]);
+                        }
+                        else if (valString.Contains("BOX"))
+                        {
+                            string[] strs = valString.Split(' ');
+                            ExtentType = strs[0];
+                            ExtentX = Convert.ToInt32(strs[1]);
+                            ExtentY = Convert.ToInt32(strs[2]);
+                        }
+                        else if (valString.Contains("CENTER"))
+                        {
+                            ExtentType = valString;
+                        }
+                    }
+                    else if (field.Name == "Class")
+                    {
+                        regex = new Regex("(?<flag>\\w+)");//group "flag" will have whatever's between plus signs
+                        ClassFlags flags = 0;
+                        ArrayList enums = new ArrayList();
 
-						foreach (Match match in regex.Matches(valString))
-							flags |= (ClassFlags) Enum.Parse(typeof(ClassFlags), match.Groups["flag"].Value);
-						field.SetValue(this, flags);
-					}
+                        foreach (Match match in regex.Matches(valString))
+                            flags |= (ClassFlags)Enum.Parse(typeof(ClassFlags), match.Groups["flag"].Value);
+                        field.SetValue(this, flags);
+                    }
 					if (field.Name == "Subclass")
 					{
 						/*
@@ -914,16 +968,16 @@ namespace NoxShared
 			}
 		}
 
-		public static ArrayList FloorTiles = new ArrayList();
-		public static ArrayList EdgeTiles = new ArrayList();
-		public static ArrayList Walls = new ArrayList();
-		public static SortedList Things = new SortedList();
-		public static SortedList AudioMappings = new SortedList();
-		public static SortedList Avnts = new SortedList();
-		public static SortedList Spells = new SortedList();
-		public static SortedList Abilities = new SortedList();
-		public static ArrayList Images = new ArrayList();
-		
+		public static List<Tile> FloorTiles = new List<Tile>();
+		public static List<Tile> EdgeTiles = new List<Tile>();
+		public static List<Wall> Walls = new List<Wall>();
+		public static SortedDictionary<string, Thing> Things = new SortedDictionary<string, Thing>();
+		public static SortedDictionary<string, AudioMapping> AudioMappings = new SortedDictionary<string, AudioMapping>();
+		public static SortedDictionary<string, Avnt> Avnts = new SortedDictionary<string, Avnt>();
+		public static SortedDictionary<string, Spell> Spells = new SortedDictionary<string, Spell>();
+		public static SortedDictionary<string, Ability> Abilities = new SortedDictionary<string, Ability>();
+		public static List<Image> Images = new List<Image>();
+
 		public static ArrayList FloorTileNames
 		{
 			get
@@ -962,7 +1016,7 @@ namespace NoxShared
 			dbFile = "thing.bin";
 			NoxBinaryReader rdr = new NoxBinaryReader(GetStream(), CryptApi.NoxCryptFormat.THING);
 
-			uint floorId = 0, edgeId = 0, wallId = 0;
+			int floorId = 0, edgeId = 0, wallId = 0;
 			for (ThingToken token = NextToken(rdr); Enum.IsDefined(typeof(ThingToken), token); token = NextToken(rdr))
 			{
 				if (token == ThingToken.FLOR)
@@ -999,7 +1053,7 @@ namespace NoxShared
 				else if (token == ThingToken.THNG)
 				{
 					Thing thing = new Thing(rdr.BaseStream);
-					if (Things[thing.Name] == null)//there are a few duplicates, but they seem to be identical
+					if (!Things.ContainsKey(thing.Name))//there are a few duplicates, but they seem to be identical
 						Things.Add(thing.Name, thing);
 				}
 				else

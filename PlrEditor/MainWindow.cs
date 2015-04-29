@@ -135,6 +135,7 @@ namespace PlrEditor
 			this.tabControl1 = new System.Windows.Forms.TabControl();
 			this.tabPage1 = new System.Windows.Forms.TabPage();
 			this.groupBox3 = new System.Windows.Forms.GroupBox();
+			this.nameLengthLabel = new System.Windows.Forms.Label();
 			this.classBox = new System.Windows.Forms.DomainUpDown();
 			this.classLabel = new System.Windows.Forms.Label();
 			this.tabPage3 = new System.Windows.Forms.TabPage();
@@ -191,7 +192,6 @@ namespace PlrEditor
 			this.label4 = new System.Windows.Forms.Label();
 			this.label3 = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
-			this.nameLengthLabel = new System.Windows.Forms.Label();
 			this.tabControl1.SuspendLayout();
 			this.tabPage1.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -264,10 +264,10 @@ namespace PlrEditor
 			// 
 			// nameBox
 			// 
-			this.nameBox.Font = new System.Drawing.Font("Lucida Console", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((System.Byte)(0)));
+			this.nameBox.Font = new System.Drawing.Font("Arial Unicode MS", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((System.Byte)(0)));
 			this.nameBox.Location = new System.Drawing.Point(48, 24);
 			this.nameBox.Name = "nameBox";
-			this.nameBox.Size = new System.Drawing.Size(176, 18);
+			this.nameBox.Size = new System.Drawing.Size(176, 22);
 			this.nameBox.TabIndex = 1;
 			this.nameBox.Text = "";
 			this.nameBox.TextChanged += new System.EventHandler(this.nameBox_TextChanged);
@@ -304,6 +304,15 @@ namespace PlrEditor
 			this.groupBox3.Size = new System.Drawing.Size(312, 464);
 			this.groupBox3.TabIndex = 2;
 			this.groupBox3.TabStop = false;
+			// 
+			// nameLengthLabel
+			// 
+			this.nameLengthLabel.Location = new System.Drawing.Point(232, 24);
+			this.nameLengthLabel.Name = "nameLengthLabel";
+			this.nameLengthLabel.Size = new System.Drawing.Size(72, 16);
+			this.nameLengthLabel.TabIndex = 5;
+			this.nameLengthLabel.Text = "Length: ";
+			this.nameLengthLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
 			// classBox
 			// 
@@ -865,15 +874,6 @@ namespace PlrEditor
 			this.label2.TabIndex = 1;
 			this.label2.Text = "A";
 			this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-			// 
-			// nameLengthLabel
-			// 
-			this.nameLengthLabel.Location = new System.Drawing.Point(232, 24);
-			this.nameLengthLabel.Name = "nameLengthLabel";
-			this.nameLengthLabel.Size = new System.Drawing.Size(72, 16);
-			this.nameLengthLabel.TabIndex = 5;
-			this.nameLengthLabel.Text = "Length: ";
-			this.nameLengthLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
 			// MainWindow
 			// 

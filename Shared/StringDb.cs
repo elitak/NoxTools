@@ -2,12 +2,23 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections;
+using System.Diagnostics;
 
 
 namespace NoxShared
 {
-	public class StringDb
+	//only 2 TODOs keeping this from being perfect (2 unknowns in header)
+	//also: FIXME: order the entries properly when writing them. what is the order? FIFO?
+	public class StringDb : NoxDb
 	{
+		public static StringDb Current;
+
+		static StringDb()
+		{
+			dbFile = "nox.csf";
+			Current = new StringDb(noxPath + dbFile);
+		}
+
 		public class NoxStringEncoding : Encoding
 		{
 			//decode methods
@@ -49,53 +60,146 @@ namespace NoxShared
 			}
 		}
 
-		protected Hashtable Strings;
+		protected static Encoding enc = new NoxStringEncoding();
+		public Hashtable Entries = new Hashtable();
+		public StringDbHeader Header = new StringDbHeader();
 
-		public StringDb()
+		public StringDb(string filename)
 		{
-			Strings = new Hashtable();
+			Read(File.OpenRead(filename));
 		}
 
-		public void Load(string filename)
+		public class StringDbHeader
 		{
-			FileStream stream = File.Open(filename, FileMode.Open);
-			BinaryReader rdr = new BinaryReader(stream);
-			NoxStringEncoding enc = new NoxStringEncoding();
+			public string Identifier = "CSF ";
+			public int Flags = 2;//according to XCC, these are "flags"
+			public int EntryCount;
+			public int unknown_count;//TODO
 
-			//the header
-			rdr.ReadChars(4);//file identifier (" FSC")
-			rdr.ReadInt32();//always 2?
-			uint numEntries = rdr.ReadUInt32();//number of entries in the file
-			rdr.ReadInt32();//some length
-			rdr.ReadBytes(8);//null padding
+			public void Read(Stream stream)
+			{
+				BinaryReader rdr = new BinaryReader(stream);
+				Identifier = ReadIntString(rdr);
+				Flags = rdr.ReadInt32();
+				EntryCount = rdr.ReadInt32();
+				unknown_count = rdr.ReadInt32();
+				rdr.ReadBytes(8);//nulls -- according to XCC, the second int are also flags of some sort
+			}
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+				wtr.Write(StringToInt(Identifier));
+				wtr.Write((int) Flags);
+				wtr.Write((int) EntryCount);
+				wtr.Write((int) unknown_count);
+				wtr.Write(new byte[8]);//nulls
+			}
+		}
+
+		public void Read(Stream stream)
+		{
+			Header.Read(stream);
 
 			//the string entries
-			while (Strings.Count < numEntries)
+			while (Entries.Count < Header.EntryCount)
 			{
-				rdr.ReadChars(4);//always " LBL"
-				int numStrings = rdr.ReadInt32();//number of strings associated with this key
-				string key = new String(rdr.ReadChars(rdr.ReadInt32()));
-				ArrayList val = new ArrayList();
-				while (numStrings-- > 0)
-				{
-					string valueCode = new String(rdr.ReadChars(4));//" rtS" or "WrtS" ???
-					val.Add(enc.GetString(rdr.ReadBytes(rdr.ReadInt32() * 2)));	
-					if (valueCode == "WrtS")
-						val.Add(new String(rdr.ReadChars(rdr.ReadInt32())));
-				}
-				Strings.Add(key, val);
+				StringEntry ent = new StringEntry(stream);
+				Entries.Add(ent.Key, ent);
+			}
+		}
+
+		public void Write(Stream stream)
+		{
+			Header.EntryCount = Entries.Count;
+			Header.Write(stream);
+			foreach (StringEntry ent in Entries.Values)
+				ent.Write(stream);
+		}
+
+		public class StringEntry
+		{
+			public string Key;
+			public IList Values = new ArrayList();
+
+			public StringEntry(Stream stream)
+			{
+				Read(stream);
 			}
 
-			//*
-			BinaryWriter wtr = new BinaryWriter(File.Open("output.txt", FileMode.OpenOrCreate));
-			foreach (DictionaryEntry de in Strings)
+			public void Read(Stream stream)
 			{
-				wtr.Write(((string)de.Key + "\n").ToCharArray());
-				
-				foreach (string str in (ArrayList)de.Value)
-					wtr.Write(String.Format("\t{0}\n", str).ToCharArray());
+				BinaryReader rdr = new BinaryReader(stream);
+				rdr.ReadChars(4);//"LBL " backwards
+				int numStrings = rdr.ReadInt32();
+				Key = new string(rdr.ReadChars(rdr.ReadInt32()));
+				while (numStrings-- > 0)
+					Values.Add(new StringValue(rdr.BaseStream));
+				Debug.Assert(numStrings <= 0);
 			}
-			//*/
+
+			public void Write(Stream stream)
+			{
+				BinaryWriter wtr = new BinaryWriter(stream);
+				wtr.Write(StringToInt("LBL "));
+				wtr.Write((int) Values.Count);
+				wtr.Write((int) Key.Length);
+				wtr.Write(Encoding.ASCII.GetBytes(Key));
+				foreach (StringValue val in Values)
+					val.Write(wtr.BaseStream);
+			}
+
+			public class StringValue
+			{
+				string Value = "";
+				string DialogFile = "";
+
+				public StringValue(Stream stream)
+				{
+					Read(stream);
+				}
+
+				public void Read(Stream stream)
+				{
+					BinaryReader rdr = new BinaryReader(stream);
+					string valueCode = ReadIntString(rdr);//"Str " or "StrW" backwards
+					Value = enc.GetString(rdr.ReadBytes(rdr.ReadInt32() * 2));	
+					if (valueCode == "StrW")//values of type StrW also have another ASCII string associated with them that associate a sound file found in Dialog/
+						DialogFile = new string(rdr.ReadChars(rdr.ReadInt32()));
+				}
+
+				public void Write(Stream stream)
+				{
+					BinaryWriter wtr = new BinaryWriter(stream);
+					if (DialogFile == "")
+						wtr.Write(StringToInt("Str "));
+					else
+						wtr.Write(StringToInt("StrW"));
+
+					wtr.Write((int) Value.Length);
+					wtr.Write(enc.GetBytes(Value));
+
+					if (DialogFile != "")
+					{
+						wtr.Write((int) DialogFile.Length);
+						wtr.Write(Encoding.ASCII.GetBytes(DialogFile));
+					}
+				}
+			}
+		}
+
+		protected static string ReadIntString(BinaryReader rdr)
+		{
+			char[] valArray = rdr.ReadChars(4);
+			Array.Reverse(valArray);
+			return new string(valArray);
+		}
+
+		protected static int StringToInt(string val)
+		{
+			char[] valArray = val.ToCharArray();
+			Array.Reverse(valArray);
+			return BitConverter.ToInt32(Encoding.ASCII.GetBytes(valArray), 0);
 		}
 	}
 }

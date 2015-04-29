@@ -23,13 +23,14 @@ namespace NoxMapEditor
 			{
 				obj = value;
 				UpdateList();
-				if(obj.inven == 0)
-					obj.childObjects = new ArrayList();
 			}
 		}
 		private System.Windows.Forms.ListBox objectsList;
-		private System.Windows.Forms.Button addButton;
-		/// <summary>
+
+        private System.Windows.Forms.Button addButton;
+        private Button deleteButton;
+
+        /// <summary>
 		/// Required designer variable.
 		/// </summary>
 		private System.ComponentModel.Container components = null;
@@ -68,42 +69,45 @@ namespace NoxMapEditor
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.objectsList = new System.Windows.Forms.ListBox();
-			this.addButton = new System.Windows.Forms.Button();
-			this.SuspendLayout();
-			// 
-			// objectsList
-			// 
-			this.objectsList.Location = new System.Drawing.Point(8, 8);
-			this.objectsList.Name = "objectsList";
-			this.objectsList.Size = new System.Drawing.Size(176, 251);
-			this.objectsList.TabIndex = 0;
-			this.objectsList.DoubleClick += new System.EventHandler(this.objectsList_DoubleClick);
-			// 
-			// addButton
-			// 
-			this.addButton.Location = new System.Drawing.Point(200, 8);
-			this.addButton.Name = "addButton";
-			this.addButton.TabIndex = 15;
-			this.addButton.Text = "Add";
-			this.addButton.Click += new System.EventHandler(this.addButton_Click);
-			// 
-			// ObjectInventoryDialog
-			// 
-			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-			this.ClientSize = new System.Drawing.Size(292, 269);
-			this.Controls.Add(this.addButton);
-			this.Controls.Add(this.objectsList);
-			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-			this.MaximizeBox = false;
-			this.MinimizeBox = false;
-			this.Name = "ObjectInventoryDialog";
-			this.ShowInTaskbar = false;
-			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Inventory";
-			this.ResumeLayout(false);
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ObjectInventoryDialog));
+            this.objectsList = new System.Windows.Forms.ListBox();
+            this.addButton = new System.Windows.Forms.Button();
+            this.deleteButton = new System.Windows.Forms.Button();
+            this.SuspendLayout();
+// 
+// objectsList
+// 
+            this.objectsList.FormattingEnabled = true;
+            resources.ApplyResources(this.objectsList, "objectsList");
+            this.objectsList.Name = "objectsList";
+            this.objectsList.DoubleClick += new System.EventHandler(this.objectsList_DoubleClick);
+// 
+// addButton
+// 
+            resources.ApplyResources(this.addButton, "addButton");
+            this.addButton.Name = "addButton";
+            this.addButton.Click += new System.EventHandler(this.addButton_Click);
+// 
+// deleteButton
+// 
+            resources.ApplyResources(this.deleteButton, "deleteButton");
+            this.deleteButton.Name = "deleteButton";
+            this.deleteButton.Click += new System.EventHandler(this.deleteButton_Click);
+// 
+// ObjectInventoryDialog
+// 
+            resources.ApplyResources(this, "$this");
+            this.Controls.Add(this.deleteButton);
+            this.Controls.Add(this.addButton);
+            this.Controls.Add(this.objectsList);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.Name = "ObjectInventoryDialog";
+            this.ShowInTaskbar = false;
+            this.ResumeLayout(false);
 
-		}
+        }
 		#endregion
 
 		private void addButton_Click(object sender, System.EventArgs e)
@@ -113,31 +117,31 @@ namespace NoxMapEditor
 			propDlg.Object = o;
 			propDlg.ShowDialog();
 			obj.childObjects.Add(o);
-			obj.inven++;
 			UpdateList();
 		}
 
 		private void objectsList_DoubleClick(object sender, System.EventArgs e)
 		{
 			if(objectsList.SelectedItem != null)
-			{
-				String[] strs = ((String)objectsList.SelectedItem).Split(' ');	
-				foreach(Map.Object o in obj.childObjects)
-					if(strs[0] == o.Name && strs[1] == o.Extent.ToString())
-					{
-						ObjectPropertiesDialog propDlg = new ObjectPropertiesDialog();
-						propDlg.Object = o;
-						propDlg.ShowDialog();
-					}
+			{	
+				ObjectPropertiesDialog propDlg = new ObjectPropertiesDialog();
+				propDlg.Object = (Map.Object)objectsList.SelectedItem;
+				propDlg.ShowDialog();
+				UpdateList();
 			}
 		}
 
 		private void UpdateList()
 		{
 			objectsList.Items.Clear();
-			if(obj.inven > 0)
-				foreach(Map.Object o in obj.childObjects)
-					objectsList.Items.Add(o.Name + " " + o.Extent.ToString());
+			foreach(Map.Object o in obj.childObjects)
+				objectsList.Items.Add(o);
 		}
+
+        private void deleteButton_Click(object sender, EventArgs e)
+        {
+			obj.childObjects.Remove((Map.Object)objectsList.SelectedItem);
+			UpdateList();
+        }
 	}
 }
